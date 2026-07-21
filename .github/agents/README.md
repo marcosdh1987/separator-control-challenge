@@ -1,7 +1,7 @@
 # Governed Agents (tool-agnostic source of truth)
 
 Each `*.md` file defines one agent in a tool-neutral way. The skills sync engine
-(`src/ml_python_base/skills_sync`) projects them into each AI tool's native agent
+(`src/separator_control_challenge/skills_sync`) projects them into each AI tool's native agent
 format — refresh with `make sync-agents` (or `make sync-skills`, which includes
 agents).
 

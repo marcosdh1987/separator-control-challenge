@@ -3,6 +3,14 @@
 > Non-obvious facts discovered while working: gotchas, why-it-is-this-way, dead ends
 > to avoid. Append new entries at the top. One fact per entry.
 
+## Next.js development origins must match for Worker E2E tests — 2026-07-20
+
+Use `http://localhost:3000` consistently for the Playwright base URL and Next.js
+development server. Loading the page from `127.0.0.1` while the server advertises
+`localhost` can block development resources and leave a module Worker uninitialized.
+Keep Start disabled until the Worker emits its ready event so a fast first click
+cannot drop initialization messages.
+
 ## Claude Code gateway model names must match native alias resolution — 2026-07-07
 
 Claude Code reads the generated `.claude/agents/*.md` `model:` frontmatter for

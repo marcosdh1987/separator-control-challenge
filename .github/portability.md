@@ -25,7 +25,7 @@ LiteLLM aliases. When routing through the AI Gateway, pin those aliases in
 `.claude/settings.local.json` with `ANTHROPIC_DEFAULT_OPUS_MODEL`,
 `ANTHROPIC_DEFAULT_SONNET_MODEL`, `ANTHROPIC_DEFAULT_HAIKU_MODEL`, and
 `ANTHROPIC_DEFAULT_FABLE_MODEL`. The mapping lives in
-`src/ml_python_base/skills_sync/agents.py` (`_CLAUDE_TIER_DEFAULT_MODEL`). The
+`src/separator_control_challenge/skills_sync/agents.py` (`_CLAUDE_TIER_DEFAULT_MODEL`). The
 exact local models are placeholders — pick what your hardware runs. Keep the
 **tier names** stable; only the right-hand mapping changes per runtime.
 

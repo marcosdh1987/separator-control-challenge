@@ -3,7 +3,7 @@
 # consumes governed skills. Adding a new tool is ONE [[tool]] entry here (plus a
 # template under adapters/templates/). Nothing in the Makefile needs to change.
 #
-# Consumed by: src/ml_python_base/skills_sync (run via `make sync-skills`).
+# Consumed by: src/separator_control_challenge/skills_sync (run via `make sync-skills`).
 # =============================================================================
 
 schema_version = 1

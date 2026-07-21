@@ -3,7 +3,7 @@
 ## Engine overview
 
 Skill/adapter/agent projection is handled by a single declarative engine —
-`src/ml_python_base/skills_sync` — driven by the registry at
+`src/separator_control_challenge/skills_sync` — driven by the registry at
 `adapters/registry.toml`. **Adding a new AI tool is one `[[tool]]` entry** in that
 registry (plus a Jinja2 template under `adapters/templates/`); no Makefile edit is
 needed. The Makefile targets are thin wrappers:

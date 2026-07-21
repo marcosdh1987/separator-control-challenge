@@ -27,7 +27,7 @@ TEMPLATE_REPO ?= git@github.com:marcosdh1987/ml-python-base.git
 TEMPLATE_BRANCH ?= main
 
 # Declarative skills/adapters sync engine (replaces inline bash projection).
-SKILLS_SYNC = uv run python -m ml_python_base.skills_sync
+SKILLS_SYNC = uv run python -m separator_control_challenge.skills_sync
 
 # =============================================================================
 # DEVELOPMENT ENVIRONMENT CONFIGURATION
@@ -226,9 +226,9 @@ toolbelt-doctor:
 # =============================================================================
 
 # Docker configuration variables
-IMG_NAME ?= ml-python-base
+IMG_NAME ?= separator-control-challenge
 IMAGE_TAG ?= latest
-CONTAINER_NAME ?= ml-python-base-server
+CONTAINER_NAME ?= separator-control-challenge-server
 API_PORT ?= 8008
 
 # Enable Docker BuildKit
@@ -279,6 +279,9 @@ check:
 	@. $(VENV_DIR)/bin/activate && bandit -r src/ tests/ scripts/ -ll -q
 	@. $(VENV_DIR)/bin/activate && mypy src/ scripts/
 	@. $(VENV_DIR)/bin/activate && PYTHONPATH=${PWD}/src pytest tests/ --cov=src --cov-report=term-missing
+	@echo "🌐 Running frontend quality gate..."
+	@test -d node_modules || { echo "❌ Frontend dependencies missing. Run: npm ci"; exit 1; }
+	@npm run check
 	@echo "✅ Quality gate passed (read-only)."
 
 # Static type checking only.
@@ -292,7 +295,18 @@ ci:
 	@echo "🚀 Running full CI pipeline (read-only)..."
 	@make check
 	@make check-sync
+	@npm run test:e2e
 	@echo "✅ CI pipeline completed successfully!"
+
+# Frontend development and test commands.
+web-dev:
+	@npm run dev
+
+web-test:
+	@npm run test
+
+web-e2e:
+	@npm run test:e2e
 
 # =============================================================================
 # TEMPLATE SYNC WORKFLOW
@@ -425,7 +439,7 @@ template-release:
 
 # =============================================================================
 # AI TOOL SKILLS SYNC
-# Declarative engine: src/ml_python_base/skills_sync, driven by
+# Declarative engine: src/separator_control_challenge/skills_sync, driven by
 # adapters/registry.toml. Add a new AI tool by adding ONE [[tool]] entry to
 # the registry (plus a template under adapters/templates/) -- no Makefile edit.
 # =============================================================================
@@ -485,6 +499,9 @@ help:
 	@echo "Testing:"
 	@echo "  make test                 Run all tests with coverage"
 	@echo "  make test-unit            Run unit tests only"
+	@echo "  make web-dev              Start the Next.js development server"
+	@echo "  make web-test             Run frontend unit and component tests"
+	@echo "  make web-e2e              Run Playwright desktop and mobile flows"
 	@echo "  make run-batch-test       Run batch tests against API (dataset v1)"
 	@echo "  make run-batch-test-custom Run batch tests with custom parameters"
 	@echo ""
@@ -541,4 +558,4 @@ clean:
 .DEFAULT_GOAL := help
 
 # Declare phony targets
-.PHONY: init install setup-hooks run-dev run-api run-question run-interactive opencode opencode-doctor toolbelt-doctor build-api run-api-docker stop-docker build-fresh clean help generate-requirements run-batch-test run-batch-test-custom test test-unit format lint lint-fast fix fix-force check typecheck ci template-remote-setup template-sync-preview template-sync-merge template-sync-rebase setup-claude-skills setup-antigravity-skills setup-opencode-skills sync-agents render-adapters sync-skills check-sync purge-external-skills
+.PHONY: init install setup-hooks run-dev run-api run-question run-interactive opencode opencode-doctor toolbelt-doctor build-api run-api-docker stop-docker build-fresh clean help generate-requirements run-batch-test run-batch-test-custom test test-unit web-dev web-test web-e2e format lint lint-fast fix fix-force check typecheck ci template-remote-setup template-sync-preview template-sync-merge template-sync-rebase setup-claude-skills setup-antigravity-skills setup-opencode-skills sync-agents render-adapters sync-skills check-sync purge-external-skills

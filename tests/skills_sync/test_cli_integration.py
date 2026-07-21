@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from ml_python_base.skills_sync.cli import main
+from separator_control_challenge.skills_sync.cli import main
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = REPO_ROOT / "adapters/registry.toml"

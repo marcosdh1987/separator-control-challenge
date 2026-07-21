@@ -6,9 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from ml_python_base.skills_sync.errors import SkillsSyncError
-from ml_python_base.skills_sync.models import Governance, Registry, ToolSpec
-from ml_python_base.skills_sync.renderer import (
+from separator_control_challenge.skills_sync.errors import SkillsSyncError
+from separator_control_challenge.skills_sync.models import (
+    Governance,
+    Registry,
+    ToolSpec,
+)
+from separator_control_challenge.skills_sync.renderer import (
     BEGIN_MARKER,
     END_MARKER,
     render_tool,

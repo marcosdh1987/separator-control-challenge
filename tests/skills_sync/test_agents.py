@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from ml_python_base.skills_sync.agents import (
+from separator_control_challenge.skills_sync.agents import (
     discover_agents,
     project_agents,
     render_agent,
 )
-from ml_python_base.skills_sync.models import ToolSpec
+from separator_control_challenge.skills_sync.models import ToolSpec
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

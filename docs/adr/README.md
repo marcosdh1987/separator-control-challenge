@@ -30,6 +30,7 @@ The `/adr` slash command (Claude Code) scaffolds a new record from the template.
 ## Index
 
 - [0001 — Record architecture decisions](0001-record-architecture-decisions.md)
+- [0002 — Run the simulation in a Web Worker](0002-run-simulation-in-a-web-worker.md)
 
 ## Why ADRs exist
 

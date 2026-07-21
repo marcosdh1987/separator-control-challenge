@@ -16,6 +16,8 @@
 
 ## Quality
 
+- **Frontend gates are canonical.** `make check` runs the Python governance gate
+  plus frontend lint, typecheck, Vitest, and build; `make ci` also runs Playwright.
 - **Read-only CI.** CI never mutates the tree. Run `make fix` and `make format`
   locally before pushing; CI runs `make check` + `make check-sync`.
 - **Docs follow code.** Changes under `src/` or `tests/` must come with a `docs/`

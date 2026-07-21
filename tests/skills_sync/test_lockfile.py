@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ml_python_base.skills_sync.lockfile import LOCK_FILE, render_lock
+from separator_control_challenge.skills_sync.lockfile import LOCK_FILE, render_lock
 
 
 def test_render_lock_matches_committed_byte_for_byte(repo_root: Path) -> None:

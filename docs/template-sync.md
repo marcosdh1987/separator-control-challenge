@@ -5,7 +5,7 @@ This document explains how repositories created from this template can keep rece
 > Starting a brand-new project? Run `make init NAME=my_project` first — it
 > renames the package and configures this template remote automatically. See
 > `docs/project-init.md`. Note that after the rename, upstream changes to
-> renamed lines (e.g. imports under `src/ml_python_base/`) can surface as
+> renamed lines (e.g. imports under `src/separator_control_challenge/`) can surface as
 > merge conflicts; resolve them keeping your package name.
 
 ## Why

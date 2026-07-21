@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from ml_python_base.skills_sync.hashing import folder_hash
-from ml_python_base.skills_sync.manifest import read_manifest
+from separator_control_challenge.skills_sync.hashing import folder_hash
+from separator_control_challenge.skills_sync.manifest import read_manifest
 
 MANIFEST = Path(".agents/skills/.generated-manifest.tsv")
 

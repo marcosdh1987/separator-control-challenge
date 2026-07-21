@@ -79,3 +79,13 @@ notebooks/data/experiments/*
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
 .pylintrc
+
+# Next.js / Node.js
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts

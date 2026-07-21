@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ml_python_base.skills_sync.discovery import discover_skills
-from ml_python_base.skills_sync.models import KIND_EXTERNAL, KIND_INTERNAL
+from separator_control_challenge.skills_sync.discovery import discover_skills
+from separator_control_challenge.skills_sync.models import KIND_EXTERNAL, KIND_INTERNAL
 
 
 def test_discovery_orders_internal_then_external(repo_root: Path) -> None:

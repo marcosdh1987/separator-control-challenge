@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from ml_python_base.skills_sync.discovery import discover_skills
-from ml_python_base.skills_sync.linker import link_tool
-from ml_python_base.skills_sync.models import ToolSpec
+from separator_control_challenge.skills_sync.discovery import discover_skills
+from separator_control_challenge.skills_sync.linker import link_tool
+from separator_control_challenge.skills_sync.models import ToolSpec
 
 
 def _seed_repo(root: Path) -> None:

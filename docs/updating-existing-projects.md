@@ -1,14 +1,14 @@
 # Updating an existing project to the latest template governance
 
 Step-by-step, copy-paste guide to bring a project that was created from
-`ml-python-base` (e.g. `eng_dacs`) up to date with the latest governance layer
+`ml-python-base` (for example, a downstream project) up to date with the latest governance layer
 (rules, skills, agents, adapters) — **without** disturbing your code, data, or `Makefile`.
 
 It uses the **selective governance sync** (`scripts/template_sync.py`). Because older
 projects don't have that script yet, the first time you pull it by hand; after that it's
 one command.
 
-> Replace `eng_dacs` / paths with your project. Requires Python 3.11+ and `uv`.
+> Replace the example names and paths with your project. Requires Python 3.11+ and `uv`.
 
 ---
 
@@ -102,12 +102,12 @@ Now `v0.2.0` is available to every downstream project.
 
 ---
 
-## Part B — Update an existing downstream project (e.g. `eng_dacs`)
+## Part B — Update an existing downstream project
 
 Run these inside the project you want to update.
 
 ```bash
-cd /path/to/eng_dacs
+cd /path/to/downstream_project
 
 # 1. Clean tree + work on a branch (so you can review the diff before merging)
 git status                      # must be clean; commit or stash first
@@ -153,7 +153,7 @@ git push -u origin chore/template-sync-v0.2.0
 Add the `template-sync` / `template-release` make targets so next time you skip Part B step 3-4.
 
 ```bash
-cd /path/to/eng_dacs
+cd /path/to/downstream_project
 # Pull the two targets' source from the tag, then copy them into your Makefile by hand,
 # OR pull the whole governance-aware Makefile section once via a full sync:
 git show v0.2.0:Makefile | sed -n '/^template-sync:/,/Push with: git push/p'

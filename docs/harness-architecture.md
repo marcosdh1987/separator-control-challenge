@@ -18,7 +18,7 @@ to extend it.
 adapters/
   registry.toml               Declarative list of tools (the extension point)
   templates/*.j2              Jinja2 templates for adapter skill regions
-src/ml_python_base/skills_sync/   The projection engine (one place, tested)
+src/separator_control_challenge/skills_sync/   The projection engine (one place, tested)
 ```
 
 Generated, never hand-edited: `.claude/skills`, `.opencode/skills`, `.codex/skills`,
@@ -28,7 +28,7 @@ adapter file.
 
 ## The engine
 
-`src/ml_python_base/skills_sync` (run via `uv run python -m ml_python_base.skills_sync`):
+`src/separator_control_challenge/skills_sync` (run via `uv run python -m separator_control_challenge.skills_sync`):
 
 | Module | Responsibility |
 |---|---|
