@@ -4,10 +4,21 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { GameDashboard } from "./game-dashboard";
 import type {
+  RunResult,
   SimulationSample,
   WorkerEvent,
   WorkerRequest,
 } from "@/lib/simulation/types";
+
+const finishedResult = {
+  score: { safety: 35, tracking: 25, stability: 15, recovery: 15, valveEfficiency: 10, modifiers: [], total: 100, rank: "Excellent", diagnosis: "Stable", suggestion: "Keep tuning." },
+  metrics: {
+    trip: null, settled: true, recoveryTimeS: 1, minimumOilLayerPct: 20, alarmTimeS: 0,
+    loops: { total: { mae: 1, stabilityStdDev: 1, maximumPct: 51, minimumPct: 49, targetBandTimeOutsideS: 0, oscillationCrossings: 0, oscillationPeakToPeakPct: 0, recoveryTimeS: 1, settled: true, alarmTimeS: 0 }, interface: { mae: 1, stabilityStdDev: 1, maximumPct: 21, minimumPct: 19, targetBandTimeOutsideS: 0, oscillationCrossings: 0, oscillationPeakToPeakPct: 0, recoveryTimeS: 1, settled: true, alarmTimeS: 0 } },
+    actuators: { oil: { travelPct: 1, saturationTimeS: 0, integralLimitTimeS: 0 }, water: { travelPct: 1, saturationTimeS: 0, integralLimitTimeS: 0 } },
+    phaseTotals: { oilInletM3: 1, waterInletM3: 1, oilOutletM3: 1, waterOutletM3: 1, finalOilVolumeM3: 1, finalWaterVolumeM3: 1 },
+  },
+} satisfies RunResult;
 
 const initialSample = {
   timeS: 0,
@@ -85,6 +96,19 @@ class DelayedWorker extends FakeWorker {
   postMessage() {}
 }
 
+class DelayedResetWorker extends FakeWorker {
+  initialized = false;
+
+  postMessage(request: WorkerRequest) {
+    if (request.type === "initialize" && !this.initialized) {
+      this.initialized = true;
+      super.postMessage(request);
+      return;
+    }
+    this.messages.push(request);
+  }
+}
+
 class RecoverableDashboardWorker {
   static attempts = 0;
   constructor() {
@@ -98,6 +122,8 @@ describe("game dashboard", () => {
   beforeEach(() => {
     FakeWorker.instances = [];
     RecoverableDashboardWorker.attempts = 0;
+    window.localStorage.clear();
+    window.localStorage.setItem("separator-control-onboarding-v1", JSON.stringify({ quickStartDismissed: true }));
     Object.defineProperty(globalThis, "Worker", { configurable: true, value: FakeWorker });
   });
 
@@ -117,6 +143,7 @@ describe("game dashboard", () => {
     await waitFor(() => {
       expect(screen.getByRole("spinbutton", { name: "Total level proportional gain" })).toBeDisabled();
       expect(screen.getByRole("button", { name: /pause attempt/i })).toBeVisible();
+      expect(screen.getByText("Final deterministic score calculated when the attempt ends")).toBeVisible();
     });
   });
 
@@ -237,5 +264,124 @@ describe("game dashboard", () => {
     render(<GameDashboard />);
 
     expect(screen.getByRole("button", { name: /start attempt/i })).toBeDisabled();
+  });
+
+  it("states score availability truthfully and exposes stable tour anchors", async () => {
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
+
+    expect(screen.getByText("Not started")).toBeVisible();
+    expect(screen.queryByText("Current score")).not.toBeInTheDocument();
+    for (const target of ["scenario-selector", "total-pid", "interface-pid", "start-attempt", "process-view", "live-trends", "score-safety"]) {
+      expect(document.querySelector(`[data-tour="${target}"]`)).toBeTruthy();
+    }
+  });
+
+  it("shows the quick start after hydration, keeps Skip session-only, and persists Don't show again", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    const first = render(<GameDashboard />);
+
+    expect(await screen.findByRole("dialog", { name: "Your mission" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Skip and play" }));
+    expect(screen.queryByRole("dialog", { name: "Your mission" })).not.toBeInTheDocument();
+
+    first.unmount();
+    const second = render(<GameDashboard />);
+    expect(await screen.findByRole("dialog", { name: "Your mission" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Don't show again" }));
+    expect(window.localStorage.getItem("separator-control-onboarding-v1")).toContain('"quickStartDismissed":true');
+
+    second.unmount();
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Your mission" })).not.toBeInTheDocument());
+  });
+
+  it("launches the guided tour from quick start and persists its dismissal", async () => {
+    const user = userEvent.setup();
+    window.localStorage.clear();
+    const first = render(<GameDashboard />);
+
+    await user.click(await screen.findByRole("button", { name: "Start guided tour" }));
+    expect(screen.getByRole("dialog", { name: "Scenario selector" })).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "Your mission" })).not.toBeInTheDocument();
+    for (let index = 1; index < 7; index += 1) {
+      await user.click(screen.getByRole("button", { name: "Next" }));
+    }
+    await user.click(screen.getByRole("button", { name: "Finish" }));
+    expect(window.localStorage.getItem("separator-control-onboarding-v1")).toContain('"guidedTourDismissed":true');
+
+    first.unmount();
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Scenario selector" })).not.toBeInTheDocument());
+  });
+
+  it("reports a closed final score after dismissing a completed result", async () => {
+    const user = userEvent.setup();
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
+    const initialize = FakeWorker.instances[0].messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
+
+    act(() => {
+      FakeWorker.instances[0].onmessage?.({ data: { type: "status", runId: initialize.runId, status: "completed" } } as MessageEvent<WorkerEvent>);
+      FakeWorker.instances[0].onmessage?.({ data: { type: "finished", runId: initialize.runId, status: "completed", result: finishedResult } } as unknown as MessageEvent<WorkerEvent>);
+    });
+    expect(screen.getByRole("dialog", { name: "Attempt results" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Close results" }));
+
+    expect(screen.getByText("Final score closed — reset to start another attempt")).toBeVisible();
+    expect(screen.queryByText("Final deterministic score calculated when the attempt ends")).not.toBeInTheDocument();
+  });
+
+  it.each(["completed", "tripped"] as const)("reports a calculation in progress for %s attempts before the final result arrives", async (status) => {
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
+    const initialize = FakeWorker.instances[0].messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
+    act(() => FakeWorker.instances[0].onmessage?.({ data: { type: "status", runId: initialize.runId, status } } as MessageEvent<WorkerEvent>));
+
+    expect(screen.getByText("Calculating final deterministic score…")).toBeVisible();
+  });
+
+  it.each(["completed", "tripped"] as const)("prepares a fresh attempt rather than calculating a stale %s result after reset", async (status) => {
+    const user = userEvent.setup();
+    Object.defineProperty(globalThis, "Worker", { configurable: true, value: DelayedResetWorker });
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
+    const worker = FakeWorker.instances[0];
+    const initialRun = worker.messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
+
+    act(() => worker.onmessage?.({ data: { type: "status", runId: initialRun.runId, status } } as MessageEvent<WorkerEvent>));
+    await user.click(screen.getByRole("button", { name: "Reset attempt" }));
+    const resetRun = worker.messages.at(-1) as Extract<WorkerRequest, { type: "initialize" }>;
+    act(() => worker.onmessage?.({ data: { type: "status", runId: resetRun.runId, status } } as MessageEvent<WorkerEvent>));
+
+    expect(screen.getByText("Preparing a fresh attempt…")).toBeVisible();
+    expect(screen.queryByText("Calculating final deterministic score…")).not.toBeInTheDocument();
+
+    act(() => worker.onmessage?.({ data: { type: "status", runId: resetRun.runId, status: "idle" } } as MessageEvent<WorkerEvent>));
+    await waitFor(() => expect(screen.getByText("Not started")).toBeVisible());
+  });
+
+  it("prepares a fresh attempt rather than calculating a stale tripped result after retry", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(globalThis, "Worker", { configurable: true, value: DelayedResetWorker });
+    render(<GameDashboard />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
+    const worker = FakeWorker.instances[0];
+    const initialRun = worker.messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
+
+    act(() => {
+      worker.onmessage?.({ data: { type: "status", runId: initialRun.runId, status: "tripped" } } as MessageEvent<WorkerEvent>);
+      worker.onmessage?.({ data: { type: "finished", runId: initialRun.runId, status: "tripped", result: finishedResult } } as unknown as MessageEvent<WorkerEvent>);
+    });
+    await user.click(screen.getByRole("button", { name: "Tune and retry" }));
+    const retryRun = worker.messages.at(-1) as Extract<WorkerRequest, { type: "initialize" }>;
+    act(() => worker.onmessage?.({ data: { type: "status", runId: retryRun.runId, status: "tripped" } } as MessageEvent<WorkerEvent>));
+
+    expect(screen.getByText("Preparing a fresh attempt…")).toBeVisible();
+    expect(screen.queryByText("Calculating final deterministic score…")).not.toBeInTheDocument();
+
+    act(() => worker.onmessage?.({ data: { type: "status", runId: retryRun.runId, status: "idle" } } as MessageEvent<WorkerEvent>));
+    await waitFor(() => expect(screen.getByText("Not started")).toBeVisible());
   });
 });

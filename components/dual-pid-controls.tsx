@@ -4,6 +4,7 @@ import { Pause, Play, RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { PidControls } from "./pid-controls";
+import { PidPresetSelector } from "./pid-preset-selector";
 import type { DualPidConfig, LoopId, SimulationSample, SimulationStatus } from "@/lib/simulation/types";
 
 interface DualPidControlsProps {
@@ -35,7 +36,7 @@ export function DualPidControls({
       <div className="transport-bar" aria-label="Attempt transport controls">
         <div className="run-controls">
           {(status === "idle" || status === "completed" || status === "tripped") && (
-            <button className="primary-button" disabled={!ready} type="button" onClick={onStart}>
+            <button className="primary-button" data-tour="start-attempt" disabled={!ready} type="button" onClick={onStart}>
               <Play aria-hidden="true" /> Start attempt
             </button>
           )}
@@ -70,8 +71,13 @@ export function DualPidControls({
         </fieldset>
       </div>
 
+      <div className="tuning-guidance">
+        <PidPresetSelector disabled={locked} onChange={onChange} />
+        <p>Configure both controllers before starting. Gains are locked during the attempt.</p>
+      </div>
+
       <div className="process-bay">
-        <div className="process-bay__hero">{hero}</div>
+        <div className="process-bay__hero" data-tour="process-view">{hero}</div>
         <PidControls accent="oil" config={config.total} locked={locked} loopId="total" sample={sample.total} tag="LIC-101" title="Total level / oil valve" onChange={(next) => updateLoop("total", next)} />
         <PidControls accent="water" config={config.interface} locked={locked} loopId="interface" sample={sample.interface} tag="IIC-101" title="Interface / water valve" onChange={(next) => updateLoop("interface", next)} />
       </div>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ProcessVisualization } from "./process-visualization";
 import { SceneErrorBoundary } from "./scene/scene-error-boundary";
+import type { ScenePresentationMode } from "./scene/scene-presentation";
 import type { SimulationSample, SimulationStatus } from "@/lib/simulation/types";
 import { createProcessSummary } from "@/lib/visualization/scene-model";
 
@@ -19,6 +20,8 @@ const SeparatorScene = dynamic(
 interface ProcessHeroProps {
   sample: SimulationSample;
   status: SimulationStatus;
+  /** A non-interactive, static process presentation that never owns simulation state. */
+  mode?: ScenePresentationMode;
 }
 
 function supportsWebGL(): boolean {
@@ -41,12 +44,13 @@ function supportsWebGL(): boolean {
   }
 }
 
-export function ProcessHero({ sample, status }: ProcessHeroProps) {
+export function ProcessHero({ sample, status, mode = "dashboard" }: ProcessHeroProps) {
   const [webglAvailable, setWebglAvailable] = useState(false);
   const [sceneReady, setSceneReady] = useState(false);
   const [sceneFailed, setSceneFailed] = useState(false);
   const [sceneKey, setSceneKey] = useState(0);
   const [resetToken, setResetToken] = useState(0);
+  const sceneContainerRef = useRef<HTMLDivElement>(null);
   const failedAtStatus = useRef<SimulationStatus | null>(null);
   const summary = createProcessSummary(sample);
   const fallback = <ProcessVisualization announceSafety={false} sample={sample} status={status} />;
@@ -74,8 +78,20 @@ export function ProcessHero({ sample, status }: ProcessHeroProps) {
     }
   }, [sceneFailed, status]);
 
+  useEffect(() => {
+    if (!sceneReady || sceneFailed) return;
+    const canvas = sceneContainerRef.current?.querySelector("canvas");
+    if (!canvas) return;
+    const handleContextLoss = (event: Event) => {
+      event.preventDefault();
+      markSceneError();
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLoss);
+    return () => canvas.removeEventListener("webglcontextlost", handleContextLoss);
+  }, [markSceneError, sceneFailed, sceneReady]);
+
   return (
-    <div className="process-hero">
+    <div className={`process-hero ${mode === "presentation" ? "process-hero-presentation" : ""}`} data-presentation-mode={mode === "presentation" ? "true" : undefined}>
       <p
         aria-live="off"
         className="visually-hidden"
@@ -84,13 +100,13 @@ export function ProcessHero({ sample, status }: ProcessHeroProps) {
       </p>
       {!webglAvailable || !sceneReady || sceneFailed ? fallback : null}
       {webglAvailable && !sceneFailed ? (
-        <div className={sceneReady ? "scene-boundary is-ready" : "scene-boundary is-loading"} aria-hidden={sceneReady ? undefined : true}>
+        <div ref={sceneContainerRef} className={sceneReady ? "scene-boundary is-ready" : "scene-boundary is-loading"} aria-hidden={sceneReady ? undefined : true}>
           <SceneErrorBoundary fallback={fallback} onError={markSceneError} resetKey={status}>
-            <SeparatorScene key={sceneKey} onReady={markSceneReady} onSceneError={markSceneError} resetToken={resetToken} sample={sample} status={status} />
+            <SeparatorScene key={sceneKey} mode={mode} onReady={markSceneReady} onSceneError={markSceneError} resetToken={resetToken} sample={sample} status={status} />
           </SceneErrorBoundary>
         </div>
       ) : null}
-      {sceneReady && !sceneFailed ? (
+      {mode === "dashboard" && sceneReady && !sceneFailed ? (
         <button
           aria-label="Reset 3D view"
           className="scene-reset-button"

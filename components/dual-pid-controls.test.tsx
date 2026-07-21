@@ -99,6 +99,27 @@ describe("dual PID control deck", () => {
     ]);
   });
 
+  it("offers locked-safe presets and causal controller guidance before an attempt", async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderDeck();
+
+    expect(screen.getByRole("button", { name: "Balanced preset" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Conservative preset" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Aggressive preset" })).toBeEnabled();
+    expect(screen.getByText("More valve opening → more oil out → lower total level")).toBeVisible();
+    expect(screen.getByText("More valve opening → more water out → lower interface")).toBeVisible();
+    expect(screen.getByText("Configure both controllers before starting. Gains are locked during the attempt.")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Conservative preset" }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+      total: expect.objectContaining({ kp: 2.8, ki: 0.04 }),
+      interface: expect.objectContaining({ kp: 2.8, ki: 0.04 }),
+    }));
+
+    renderDeck("running");
+    expect(screen.getAllByRole("button", { name: "Balanced preset" }).at(-1)).toBeDisabled();
+  });
+
   it.each([
     ["running", "Pause attempt"],
     ["paused", "Resume attempt"],

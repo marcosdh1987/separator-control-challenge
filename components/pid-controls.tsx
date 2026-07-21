@@ -96,6 +96,7 @@ export function PidControls({
     <section
       aria-labelledby={headingId}
       className={`instrument-dock instrument-dock--${accent}`}
+      data-tour={loopId === "total" ? "total-pid" : "interface-pid"}
     >
       <header className="instrument-header">
         <div>
@@ -107,6 +108,7 @@ export function PidControls({
           {locked ? "Locked for this attempt" : "Ready to tune"}
         </span>
       </header>
+      <p className="pid-causal-label">{loopId === "total" ? "More valve opening → more oil out → lower total level" : "More valve opening → more water out → lower interface"}</p>
 
       <dl className="loop-readout" aria-label={`${loopName} live values`}>
         <div><dt>{loopName} process value</dt><dd>{sample.processValuePct.toFixed(1)}%</dd></div>

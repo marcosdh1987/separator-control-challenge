@@ -12,6 +12,7 @@ import { PhaseVolumes } from "./phase-volumes";
 import { ProcessPipe, type PipePoint } from "./process-pipe";
 import { establishSceneReadiness } from "./scene-readiness";
 import { SeparatorVessel } from "./separator-vessel";
+import { selectScenePresentation, type ScenePresentationMode } from "./scene-presentation";
 import { useSceneQuality, type SceneQuality } from "./use-scene-quality";
 import type { SimulationSample, SimulationStatus } from "@/lib/simulation/types";
 import { createSceneModel } from "@/lib/visualization/scene-model";
@@ -20,6 +21,7 @@ interface SeparatorSceneProps {
   sample: SimulationSample;
   status: SimulationStatus;
   resetToken: number;
+  mode?: ScenePresentationMode;
   onReady?: () => void;
   onSceneError?: (error: Error) => void;
 }
@@ -46,16 +48,18 @@ const WATER_PATH = [
   [-2.72, -1.42, 0.3],
 ] as const satisfies readonly PipePoint[];
 
-export function SeparatorScene({ sample, status, resetToken, onReady, onSceneError }: SeparatorSceneProps) {
-  const quality = useSceneQuality();
+export function SeparatorScene({ sample, status, resetToken, mode = "dashboard", onReady, onSceneError }: SeparatorSceneProps) {
+  const presentation = selectScenePresentation(mode, useSceneQuality());
+  const quality = presentation.quality;
   const model = createSceneModel(sample);
-  const processMotion = quality.animateAmbient && model.safety.motionEnabled && status === "running";
+  const processMotion = presentation.interactive && quality.animateAmbient && model.safety.motionEnabled && status === "running";
 
   return (
     <Canvas
       className="separator-canvas"
       camera={{ position: [...DESIGNED_CAMERA_POSITION], fov: 36, near: 0.1, far: 50 }}
       dpr={quality.dpr}
+      frameloop={presentation.frameloop}
       gl={{
         antialias: quality.tier !== "low",
         alpha: true,
@@ -70,8 +74,8 @@ export function SeparatorScene({ sample, status, resetToken, onReady, onSceneErr
       }}
     >
       <fog attach="fog" args={["#071116", 6, 13]} />
-      <SceneLights quality={quality} />
-      <CameraRig resetToken={resetToken} />
+      <SceneLights environment={presentation.environment} quality={quality} />
+      {presentation.interactive ? <CameraRig resetToken={resetToken} /> : null}
       <group position={[0, 0.16, 0]}>
         <ProcessPipe name="Feed" points={FEED_PATH} color="#6ce9db" motion={model.inletFlow} animate={processMotion} quality={quality.tier} />
         <ProcessPipe name="Oil outlet" points={OIL_PATH} color="#f2ad4e" motion={model.oilFlow} animate={processMotion} quality={quality.tier} />
@@ -90,7 +94,7 @@ export function SeparatorScene({ sample, status, resetToken, onReady, onSceneErr
         <planeGeometry args={[12, 9]} />
         <meshStandardMaterial color="#071216" metalness={0.08} roughness={0.86} />
       </mesh>
-      {quality.shadows ? (
+      {presentation.contactShadows ? (
         <ContactShadows position={[0, -1.125, 0]} opacity={0.42} scale={6.5} blur={2.7} far={3.2} resolution={quality.tier === "high" ? 512 : 256} />
       ) : null}
       {quality.postprocessing ? (
@@ -194,7 +198,7 @@ function PostRenderReadiness({
   return null;
 }
 
-function SceneLights({ quality }: { quality: SceneQuality }) {
+function SceneLights({ environment, quality }: { environment: boolean; quality: SceneQuality }) {
   return (
     <>
       <ambientLight intensity={0.16} color="#b6d9de" />
@@ -202,11 +206,11 @@ function SceneLights({ quality }: { quality: SceneQuality }) {
       <rectAreaLight color="#bce7ef" intensity={quality.tier === "low" ? 4.8 : 6.4} width={4.8} height={2.8} position={[1.4, 3.8, 3.5]} rotation={[-0.65, 0.3, 0.12]} />
       <pointLight color="#ff9f55" intensity={1.7} distance={7} decay={2} position={[-3.2, -0.2, 2.5]} />
       <spotLight color="#24d8df" intensity={2.9} distance={9} angle={0.55} penumbra={0.8} position={[2.8, 1.2, -3.6]} castShadow={quality.shadows} />
-      <Environment resolution={quality.tier === "high" ? 128 : 64}>
+      {environment ? <Environment resolution={quality.tier === "high" ? 128 : 64}>
         <Lightformer form="rect" intensity={1.8} color="#bcecf0" position={[0, 4, 3]} scale={[5, 2, 1]} />
         <Lightformer form="rect" intensity={1.2} color="#ff9c52" position={[-4, 0, 1]} rotation={[0, Math.PI / 2, 0]} scale={[2, 3, 1]} />
         <Lightformer form="ring" intensity={1.4} color="#16c9d3" position={[2, 1, -4]} scale={[2.5, 2.5, 1]} />
-      </Environment>
+      </Environment> : null}
     </>
   );
 }
