@@ -309,7 +309,7 @@ test.describe("separator control challenge", () => {
   test("keeps the semantic fallback and controls usable without WebGL", async ({ page }) => {
     await page.addInitScript(() => {
       const original = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function (type, options) {
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type, options) {
         if (type === "webgl" || type === "webgl2") return null;
         return original.call(this, type, options);
       } as typeof original;
@@ -341,7 +341,8 @@ test.describe("separator control challenge", () => {
     await expect.poll(() => readRemainingSeconds(page)).toBeLessThan(180);
     const beforeLoss = await readRemainingSeconds(page);
 
-    const contextExtension = await page.locator(".separator-canvas canvas").evaluate((canvas) => {
+    const contextExtension = await page.locator(".separator-canvas canvas").evaluate((element) => {
+      const canvas = element as HTMLCanvasElement;
       const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
       const extension = context?.getExtension("WEBGL_lose_context");
       if (!extension) return false;

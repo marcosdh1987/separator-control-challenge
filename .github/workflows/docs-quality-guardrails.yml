@@ -20,11 +20,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
       - name: Setup uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: make install
+
+      - name: Install frontend dependencies
+        run: npm ci
 
       - name: Enforce docs update when src/tests change
         env:

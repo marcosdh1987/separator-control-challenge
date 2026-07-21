@@ -17,7 +17,8 @@ This file defines Level 3 enforcement so quality does not depend on model behavi
 - `make check` is the read-only gate: it first runs `uv sync --locked --exact`
   (the dependency drift guard — see below), then `ruff format --check`,
   `ruff check`, `bandit`, `mypy`, and `pytest` (no auto-formatting, no
-  auto-fixing of source).
+  auto-fixing of source), followed by the frontend lint, type-check, unit-test,
+  and production-build checks. CI must run `npm ci` before this gate.
 - `make check-sync` fails if any generated skill artifact or adapter skill
   region is stale relative to the governed sources in `.github/`.
 - `make format` and `make fix` are **local-only** — run them before pushing.
@@ -32,6 +33,9 @@ model's verify loop running in that same `.venv` cannot detect it.
 - Every runtime/test dependency MUST be declared in `pyproject.toml` and locked
   with `uv lock`. Never `pip install` / `uv pip install` ad hoc to make a test
   pass — that is hidden, non-reproducible state.
+- Every frontend dependency MUST be declared in `package.json` and locked in
+  `package-lock.json`. CI installs that exact dependency graph with `npm ci`
+  before invoking `make check`.
 - `make check` runs `uv sync --locked --exact` first: `--locked` fails if
   `pyproject.toml` and `uv.lock` have drifted; `--exact` rebuilds `.venv` to
   exactly the lock, pruning anything undeclared. This mutates only `.venv`,
