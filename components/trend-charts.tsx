@@ -54,7 +54,7 @@ export function TrendCharts({ samples }: TrendChartsProps) {
     <Legend iconType="line" wrapperStyle={{ fontSize: 10 }} />
   </>;
 
-  return <section aria-labelledby="trends-heading" className="panel trends-panel">
+  return <section aria-labelledby="trends-heading" className="panel trends-panel" data-tour="live-trends">
     <div className="panel-heading"><div><p className="eyebrow">Synchronized historian</p><h2 id="trends-heading">Live control trends</h2></div><span className="sample-counter">{samples.length} / 900 samples</span></div>
     <div className="chart-grid">
       <ChartCard title="Total liquid level" subtitle="Truth, LT-101, SP and protection limits · %">

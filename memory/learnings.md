@@ -3,6 +3,14 @@
 > Non-obvious facts discovered while working: gotchas, why-it-is-this-way, dead ends
 > to avoid. Append new entries at the top. One fact per entry.
 
+## CI must provision both locked dependency environments — 2026-07-21
+
+`make check` verifies both Python and frontend code. Its Python drift guard can
+create and synchronize `.venv`, but its frontend stage deliberately fails when
+`node_modules` is absent. GitHub Actions must set up a compatible Node version and
+run `npm ci` before `make check`; a Python-only install cannot satisfy the complete
+quality gate.
+
 ## Next.js development origins must match for Worker E2E tests — 2026-07-20
 
 Use `http://localhost:3000` consistently for the Playwright base URL and Next.js

@@ -10,10 +10,12 @@ vi.mock("./scene/separator-scene", () => ({
     onReady,
     onSceneError,
     resetToken,
+    mode,
   }: {
     onReady?: () => void;
     onSceneError?: (error: Error) => void;
     resetToken: number;
+    mode?: "dashboard" | "presentation";
   }) => {
     useEffect(() => {
       if (sceneMock.mode === "pending") return;
@@ -23,7 +25,7 @@ vi.mock("./scene/separator-scene", () => ({
       });
       return () => cancelAnimationFrame(frame);
     }, [onReady, onSceneError]);
-    return <div data-reset-token={resetToken} data-testid="three-separator-scene" />;
+    return <div data-mode={mode} data-reset-token={resetToken} data-testid="three-separator-scene"><canvas data-testid="three-canvas" /></div>;
   },
 }));
 
@@ -55,6 +57,48 @@ describe("process hero", () => {
     expect(await screen.findByTestId("three-separator-scene")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Reset 3D view" })).toBeVisible();
     expect(screen.queryByRole("region", { name: /separator process cutaway/i })).not.toBeInTheDocument();
+  });
+
+  it("propagates the low-cost presentation profile and removes the interactive reset", async () => {
+    vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
+    render(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
+
+    expect((await screen.findByTestId("three-separator-scene"))).toHaveAttribute("data-mode", "presentation");
+    expect(screen.queryByRole("button", { name: "Reset 3D view" })).not.toBeInTheDocument();
+  });
+
+  it("returns to the SVG fallback after a ready presentation canvas loses its WebGL context", async () => {
+    vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
+    render(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
+
+    await waitFor(() => expect(screen.queryByRole("region", { name: /separator process cutaway/i })).not.toBeInTheDocument());
+    const canvas = screen.getByTestId("three-canvas");
+    canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+
+    await waitFor(() => expect(screen.queryByTestId("three-separator-scene")).not.toBeInTheDocument());
+    expect(screen.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
+  });
+
+  it("returns the dashboard to its SVG fallback after a ready canvas loses its WebGL context", async () => {
+    vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
+    render(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
+
+    expect(await screen.findByRole("button", { name: "Reset 3D view" })).toBeVisible();
+    screen.getByTestId("three-canvas").dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
+
+    await waitFor(() => expect(screen.queryByTestId("three-separator-scene")).not.toBeInTheDocument());
+    expect(screen.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Reset 3D view" })).not.toBeInTheDocument();
+  });
+
+  it("marks the presentation wrapper so its canvas can preserve vertical touch scrolling", () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+    render(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
+
+    expect(document.querySelector(".process-hero-presentation")).toHaveAttribute("data-presentation-mode", "true");
   });
 
   it("keeps the fallback and hides reset while scene compilation is pending", async () => {

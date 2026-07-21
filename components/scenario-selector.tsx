@@ -4,8 +4,10 @@ import { Activity, Droplets, Gauge, MoveDown, RadioTower, Waves } from "lucide-r
 import type { ComponentType } from "react";
 import { useId } from "react";
 
+import { DifficultyBadge } from "./difficulty-badge";
 import { SCENARIOS } from "@/lib/simulation/scenarios";
 import type { ScenarioId } from "@/lib/simulation/types";
+import { FIRST_SCORED_SCENARIO, SCENARIO_DIFFICULTY_GROUPS } from "@/lib/onboarding/scenario-guidance";
 
 interface ScenarioSelectorProps {
   value: ScenarioId;
@@ -26,13 +28,16 @@ export function ScenarioSelector({ value, disabled, onChange }: ScenarioSelector
   const instanceId = useId().replaceAll(":", "");
   const groupName = `${instanceId}-scenario`;
   return (
-    <fieldset className="scenario-selector" disabled={disabled}>
+    <fieldset className="scenario-selector" data-tour="scenario-selector" disabled={disabled}>
       <legend>
         <span className="eyebrow">Challenge deck</span>
         Select disturbance scenario
       </legend>
       <div className="scenario-scroll">
-        {SCENARIOS.map((scenario) => {
+        {SCENARIO_DIFFICULTY_GROUPS.map((group) => {
+          const scenarios = group.scenarioIds.map((id) => SCENARIOS.find((scenario) => scenario.id === id)!);
+          return <section aria-label={`${group.label} scenarios`} className="scenario-group" key={group.label}>
+            <h2>{group.label}</h2><div className="scenario-group__cards">{scenarios.map((scenario) => {
           const Icon = ICONS[scenario.id];
           return (
             <label
@@ -51,11 +56,14 @@ export function ScenarioSelector({ value, disabled, onChange }: ScenarioSelector
               <span className="scenario-icon"><Icon aria-hidden /></span>
               <span className="scenario-copy">
                 <strong>{scenario.name}</strong>
-                <small>{scenario.difficulty}</small>
+                <DifficultyBadge scenarioId={scenario.id} />
+                {scenario.id === FIRST_SCORED_SCENARIO ? <b>Start here</b> : null}
                 <span>{scenario.description}</span>
               </span>
             </label>
           );
+            })}</div>
+          </section>;
         })}
       </div>
     </fieldset>

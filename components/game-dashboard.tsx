@@ -17,6 +17,10 @@ import { ProcessHero } from "./process-hero";
 import { ResultPanel } from "./result-panel";
 import { ScenarioSelector } from "./scenario-selector";
 import { TrendCharts } from "./trend-charts";
+import { GuidedTour } from "./onboarding/guided-tour";
+import { QuickStartModal } from "./onboarding/quick-start-modal";
+import { PidLearningPanel } from "./education/pid-learning-panel";
+import { useOnboarding } from "@/hooks/use-onboarding";
 import { useSimulation } from "@/hooks/use-simulation";
 import { getScenario } from "@/lib/simulation/scenarios";
 import {
@@ -43,8 +47,11 @@ function tuningTip(pid: PidConfig, scenarioId: ScenarioId): string {
 }
 
 export function GameDashboard() {
+  const onboarding = useOnboarding();
   const [pid, setPid] = useState<DualPidConfig>(DEFAULT_DUAL_PID);
   const [scenarioId, setScenarioId] = useState<ScenarioId>("water-rich-slug");
+  const [quickStartClosedForSession, setQuickStartClosedForSession] = useState(false);
+  const [guidedTourRequested, setGuidedTourRequested] = useState(false);
   const simulation = useSimulation(pid, scenarioId);
   const sample = simulation.currentSample;
   const locked = simulation.status !== "idle";
@@ -89,6 +96,8 @@ export function GameDashboard() {
     : sample.safety.severity.toUpperCase();
   const previousSeverity = useRef(sample.safety.severity);
   const [safetyAnnouncement, setSafetyAnnouncement] = useState("");
+  const [resultDismissed, setResultDismissed] = useState(false);
+  const [freshAttemptPending, setFreshAttemptPending] = useState(false);
   useEffect(() => {
     if (sample.safety.severity !== previousSeverity.current) {
       previousSeverity.current = sample.safety.severity;
@@ -96,7 +105,49 @@ export function GameDashboard() {
     }
   }, [sample.safety.label, sample.safety.severity]);
 
-  const retry = () => simulation.reset();
+  useEffect(() => {
+    const terminal = simulation.status === "completed" || simulation.status === "tripped";
+    if (!freshAttemptPending || terminal) return;
+    const timer = window.setTimeout(() => setFreshAttemptPending(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [freshAttemptPending, simulation.status]);
+
+  const retry = () => {
+    setResultDismissed(false);
+    setFreshAttemptPending(true);
+    simulation.reset();
+  };
+  const resetAttempt = () => {
+    setResultDismissed(false);
+    setFreshAttemptPending(true);
+    simulation.reset();
+  };
+  const startAttempt = () => {
+    setResultDismissed(false);
+    setFreshAttemptPending(true);
+    simulation.start();
+  };
+  const dismissResult = () => {
+    setResultDismissed(true);
+    simulation.dismissResult();
+  };
+  const hasFinalScore = Boolean(simulation.result);
+  const showQuickStart = onboarding.hydrated
+    && !onboarding.flags.quickStartDismissed
+    && !quickStartClosedForSession;
+  const scoreSummary = hasFinalScore
+    ? simulation.result!.score.total
+    : simulation.status === "idle"
+      ? "Not started"
+      : simulation.status === "completed" || simulation.status === "tripped"
+        ? freshAttemptPending
+          ? "Preparing a fresh attempt…"
+          : resultDismissed
+          ? "Final score closed — reset to start another attempt"
+          : "Calculating final deterministic score…"
+      : simulation.status === "error"
+        ? "Final score unavailable"
+      : "Final deterministic score calculated when the attempt ends";
 
   return (
     <main className="app-shell">
@@ -114,9 +165,9 @@ export function GameDashboard() {
       </header>
 
       <section aria-label="Current attempt status" className="status-strip">
-        <div><span className={`safety-indicator ${safety.toLowerCase()}`}><ShieldCheck aria-hidden="true" /> {safety}</span><small>Safety status</small></div>
+        <div data-tour="score-safety"><span className={`safety-indicator ${safety.toLowerCase()}`}><ShieldCheck aria-hidden="true" /> {safety}</span><small>Safety status</small></div>
         <div><strong className="timer"><Clock3 aria-hidden="true" /> {formatTime(DEFAULT_SIMULATION.durationS - sample.timeS)}</strong><small>Time remaining</small></div>
-        <div><strong>{simulation.result?.score.total ?? "—"}<em>/100</em></strong><small>Current score</small></div>
+        <div className="score-status"><strong>{scoreSummary}{hasFinalScore ? <em>/100</em> : null}</strong><small>{hasFinalScore ? "Final score" : "Score status"}</small></div>
         <div className="disturbance-status"><strong><Activity aria-hidden="true" /> {sample.disturbance}</strong><small>Active disturbance</small></div>
         <div><strong>{scenario.seed}</strong><small>Deterministic seed</small></div>
       </section>
@@ -147,11 +198,13 @@ export function GameDashboard() {
             status={simulation.status}
             onChange={setPid}
             onPause={simulation.pause}
-            onReset={simulation.reset}
+            onReset={resetAttempt}
             onResume={simulation.resume}
             onSpeedChange={simulation.setSpeed}
-            onStart={simulation.start}
+            onStart={startAttempt}
           />
+
+        <PidLearningPanel />
 
         <section aria-label="Live performance metrics" className="metrics-grid">
           <article><TrendingUp aria-hidden="true" /><span>Total level</span><strong>{sample.total.processValuePct.toFixed(1)}%</strong><small>MAE {live.totalMaePct.toFixed(1)}% · peak {live.maximumTotalPct.toFixed(1)}%</small></article>
@@ -173,10 +226,33 @@ export function GameDashboard() {
       {simulation.result && (
         <ResultPanel
           result={simulation.result}
-          onClose={simulation.dismissResult}
+          onClose={dismissResult}
           onRetry={retry}
         />
       )}
+      {showQuickStart && (
+        <QuickStartModal
+          onDismiss={(persist) => {
+            setQuickStartClosedForSession(true);
+            onboarding.dismissQuickStart(persist);
+          }}
+          onStartGuidedTour={() => {
+            setQuickStartClosedForSession(true);
+            setGuidedTourRequested(true);
+          }}
+        />
+      )}
+      <GuidedTour
+        active={guidedTourRequested}
+        onComplete={() => {
+          setGuidedTourRequested(false);
+          onboarding.dismissGuidedTour();
+        }}
+        onSkip={() => {
+          setGuidedTourRequested(false);
+          onboarding.dismissGuidedTour();
+        }}
+      />
     </main>
   );
 }
