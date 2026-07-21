@@ -28,6 +28,18 @@ export const createPidState = (): PidState => ({
   previousMeasurement: null,
 });
 
+/**
+ * Calculates one reverse-acting PID sample for an outlet valve.
+ *
+ * The output is clamped to the configured physical range (normally 0–100%).
+ * Conditional integration provides anti-windup: when the proposed output is
+ * already beyond a limit and the current error would drive it farther beyond
+ * that same limit, the integrator freezes. Once the error reverses, the stored
+ * integral is allowed to unwind so the controller can recover from saturation.
+ * Derivative action is calculated from measurement, not setpoint error, then
+ * filtered with a first-order filter to avoid a derivative kick and reduce
+ * measurement-noise amplification.
+ */
 export function stepPid(
   state: PidState,
   config: PidConfig,
