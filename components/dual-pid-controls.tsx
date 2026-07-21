@@ -71,7 +71,7 @@ export function DualPidControls({
         </fieldset>
       </div>
 
-      <div className="tuning-guidance">
+      <div className="tuning-guidance" data-tour="manual-pid-tuning">
         <PidPresetSelector disabled={locked} onChange={onChange} />
         <p>Configure both controllers before starting. Gains are locked during the attempt.</p>
       </div>

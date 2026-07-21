@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { GameDashboard } from "./game-dashboard";
+import { TOUR_STEPS } from "./onboarding/guided-tour";
 import type {
   RunResult,
   SimulationSample,
@@ -305,7 +306,7 @@ describe("game dashboard", () => {
     await user.click(await screen.findByRole("button", { name: "Start guided tour" }));
     expect(screen.getByRole("dialog", { name: "Scenario selector" })).toBeVisible();
     expect(screen.queryByRole("dialog", { name: "Your mission" })).not.toBeInTheDocument();
-    for (let index = 1; index < 7; index += 1) {
+    for (let index = 1; index < TOUR_STEPS.length; index += 1) {
       await user.click(screen.getByRole("button", { name: "Next" }));
     }
     await user.click(screen.getByRole("button", { name: "Finish" }));

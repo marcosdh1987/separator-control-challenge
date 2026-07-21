@@ -19,6 +19,7 @@ import { ScenarioSelector } from "./scenario-selector";
 import { TrendCharts } from "./trend-charts";
 import { GuidedTour } from "./onboarding/guided-tour";
 import { QuickStartModal } from "./onboarding/quick-start-modal";
+import { PidLearningPanel } from "./education/pid-learning-panel";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useSimulation } from "@/hooks/use-simulation";
 import { getScenario } from "@/lib/simulation/scenarios";
@@ -202,6 +203,8 @@ export function GameDashboard() {
             onSpeedChange={simulation.setSpeed}
             onStart={startAttempt}
           />
+
+        <PidLearningPanel />
 
         <section aria-label="Live performance metrics" className="metrics-grid">
           <article><TrendingUp aria-hidden="true" /><span>Total level</span><strong>{sample.total.processValuePct.toFixed(1)}%</strong><small>MAE {live.totalMaePct.toFixed(1)}% · peak {live.maximumTotalPct.toFixed(1)}%</small></article>

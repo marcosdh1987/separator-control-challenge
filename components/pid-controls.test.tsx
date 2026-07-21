@@ -76,6 +76,9 @@ describe("PID instrument dock", () => {
     expect(screen.getByText(/oil valve command/i)).toBeVisible();
     expect(screen.getByText(/oil valve actual position/i)).toBeVisible();
     expect(screen.getByText("P / I / D")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Help with Response strength" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Help with Offset removal" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Help with Damping and anticipation" })).toBeVisible();
   });
 
   it("sanitizes numeric edits without mutating the input configuration", async () => {

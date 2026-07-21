@@ -5,6 +5,7 @@ import { useId, useState } from "react";
 
 import type { LoopId, LoopSample, PidConfig } from "@/lib/simulation/types";
 import { sanitizePidConfig } from "@/lib/simulation/validation";
+import { PidHelp } from "./education/pid-help";
 
 export interface PidControlsProps {
   loopId: LoopId;
@@ -25,7 +26,7 @@ const LOOP_NAMES: Record<LoopId, string> = {
 const GAIN_FIELDS = [
   { key: "kp", name: "proportional", symbol: "Kp", unit: "dimensionless", max: 10, step: 0.1, purpose: "Response strength" },
   { key: "ki", name: "integral", symbol: "Ki", unit: "s⁻¹", max: 0.3, step: 0.01, purpose: "Offset removal" },
-  { key: "kd", name: "derivative", symbol: "Kd", unit: "s", max: 30, step: 0.5, purpose: "Damping versus noise" },
+  { key: "kd", name: "derivative", symbol: "Kd", unit: "s", max: 30, step: 0.5, purpose: "Damping and anticipation" },
 ] as const;
 
 function finiteNumber(raw: string, fallback = 0): number {
@@ -133,7 +134,7 @@ export function PidControls({
             <div className="gain-control" key={field.key}>
               <div className="gain-label">
                 <label htmlFor={numberId}>{label}</label>
-                <output htmlFor={numberId}>{config[field.key].toFixed(field.step < 0.1 ? 2 : 1)}</output>
+                <div><PidHelp gain={field.key} /><output htmlFor={numberId}>{config[field.key].toFixed(field.step < 0.1 ? 2 : 1)}</output></div>
               </div>
               <div className="gain-entry">
                 <GainNumber

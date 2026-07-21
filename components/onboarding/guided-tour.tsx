@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MANUAL_TUNING_GOLDEN_RULE, MANUAL_TUNING_STEPS } from "@/lib/education/pid-content";
 
 export const TOUR_STEPS = [
   "scenario-selector",
   "total-pid",
   "interface-pid",
+  "manual-pid-tuning",
   "start-attempt",
   "process-view",
   "live-trends",
@@ -18,6 +20,7 @@ interface TourStep {
   target: TourTarget;
   title: string;
   description: string;
+  order?: string;
 }
 
 const STEP_DETAILS: Record<TourTarget, TourStep> = {
@@ -35,6 +38,12 @@ const STEP_DETAILS: Record<TourTarget, TourStep> = {
     target: "interface-pid",
     title: "Interface PID",
     description: "This controller moves the water valve. More opening sends more water out and lowers the interface.",
+  },
+  "manual-pid-tuning": {
+    target: "manual-pid-tuning",
+    title: "Manual PID tuning",
+    description: `Repeat the same deterministic scenario and seed. ${MANUAL_TUNING_GOLDEN_RULE.order}. ${MANUAL_TUNING_STEPS[1].body[0]} ${MANUAL_TUNING_STEPS[1].body[1]} Run the complete recovery before comparing a change.`,
+    order: MANUAL_TUNING_GOLDEN_RULE.order,
   },
   "start-attempt": {
     target: "start-attempt",
@@ -77,45 +86,50 @@ function findTarget(target: TourTarget): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-tour="${target}"]`);
 }
 
+function getAvailableIndexes(): number[] {
+  if (typeof document === "undefined") return [];
+  return TOUR_STEPS.flatMap((target, index) => findTarget(target) ? [index] : []);
+}
+
 export function GuidedTour({ active, onComplete, onSkip }: GuidedTourProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const [availableIndexes, setAvailableIndexes] = useState(getAvailableIndexes);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
 
-  const findAvailableIndex = useCallback((from: number, direction: 1 | -1): number | null => {
-    for (let index = from; index >= 0 && index < TOUR_STEPS.length; index += direction) {
-      if (findTarget(TOUR_STEPS[index])) return index;
-    }
-    return null;
-  }, []);
+  const discoveredIndexes = active ? getAvailableIndexes() : availableIndexes;
+  const activeIndexes = discoveredIndexes.length > 0 ? discoveredIndexes : availableIndexes;
+  const currentIndex = activeIndexes.includes(stepIndex) ? stepIndex : (activeIndexes[0] ?? 0);
+  const previousIndex = activeIndexes.filter((index) => index < currentIndex).at(-1) ?? null;
+  const nextIndex = activeIndexes.find((index) => index > currentIndex) ?? null;
 
   const updateSpotlight = useCallback(() => {
-    const targetIndex = findAvailableIndex(stepIndex, 1) ?? findAvailableIndex(stepIndex, -1);
-    const target = targetIndex === null ? null : findTarget(TOUR_STEPS[targetIndex]);
+    const target = findTarget(TOUR_STEPS[currentIndex]);
     if (!target) {
       setSpotlight(null);
       return;
     }
     const rect = target.getBoundingClientRect();
     setSpotlight({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
-  }, [findAvailableIndex, stepIndex]);
+  }, [currentIndex]);
 
   const move = useCallback((direction: 1 | -1) => {
-    const next = findAvailableIndex(stepIndex + direction, direction);
-    if (next !== null) setStepIndex(next);
-  }, [findAvailableIndex, stepIndex]);
+    const destination = direction === 1 ? nextIndex : previousIndex;
+    if (destination !== null) setStepIndex(destination);
+  }, [nextIndex, previousIndex]);
 
   useEffect(() => {
     if (!active) return;
     const animationFrame = window.requestAnimationFrame(() => {
-      const available = findAvailableIndex(stepIndex, 1) ?? findAvailableIndex(stepIndex, -1);
-      if (available === null) onSkip();
-      else if (available !== stepIndex) setStepIndex(available);
+      const nextAvailableIndexes = getAvailableIndexes();
+      setAvailableIndexes((previous) => previous.join(",") === nextAvailableIndexes.join(",") ? previous : nextAvailableIndexes);
+      if (nextAvailableIndexes.length === 0) onSkip();
+      else if (!nextAvailableIndexes.includes(stepIndex)) setStepIndex(nextAvailableIndexes[0]);
     });
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [active, findAvailableIndex, onSkip, stepIndex]);
+  }, [active, onSkip, stepIndex]);
 
   useEffect(() => {
     if (!active) return;
@@ -189,9 +203,7 @@ export function GuidedTour({ active, onComplete, onSkip }: GuidedTourProps) {
   }, [active, updateSpotlight]);
 
   if (!active) return null;
-  const step = STEP_DETAILS[TOUR_STEPS[stepIndex]];
-  const previousIndex = stepIndex > 0 ? stepIndex - 1 : null;
-  const nextIndex = stepIndex < TOUR_STEPS.length - 1 ? stepIndex + 1 : null;
+  const step = STEP_DETAILS[TOUR_STEPS[currentIndex]];
 
   return (
     <div className="guided-tour-scrim" ref={scrimRef}>
@@ -205,12 +217,13 @@ export function GuidedTour({ active, onComplete, onSkip }: GuidedTourProps) {
         role="dialog"
       >
         <p className="eyebrow">Control-room guide</p>
-        <p className="sr-only" id="guided-tour-progress">Step {stepIndex + 1} of {TOUR_STEPS.length}</p>
+        <p className="sr-only" id="guided-tour-progress">Step {activeIndexes.indexOf(currentIndex) + 1} of {activeIndexes.length}</p>
         <h2 id="guided-tour-title">{step.title}</h2>
         <p id="guided-tour-description">{step.description}</p>
+        {step.order ? <p className="guided-tour-order">{step.order}</p> : null}
         <div className="guided-tour-actions">
           <button className="secondary-button" type="button" onClick={onSkip}>Skip</button>
-          <span aria-hidden="true">{stepIndex + 1} / {TOUR_STEPS.length}</span>
+          <span aria-hidden="true">{activeIndexes.indexOf(currentIndex) + 1} / {activeIndexes.length}</span>
           <div>
             <button className="secondary-button" disabled={previousIndex === null} type="button" onClick={() => move(-1)}>Back</button>
             {nextIndex === null

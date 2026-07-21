@@ -34,7 +34,11 @@ export interface Reference {
   url?: string;
 }
 
-const freezeItems = <T>(items: readonly T[]) => Object.freeze(items.map((item) => Object.freeze(item)));
+export type ImmutableContentList<T extends object> = ReadonlyArray<Readonly<T>>;
+
+const freezeItems = <T extends object>(
+  items: readonly T[],
+): ImmutableContentList<T> => Object.freeze(items.map((item) => Object.freeze(item)));
 
 export const REFERENCES = freezeItems<Reference>([
   {
@@ -149,10 +153,10 @@ export const LOOP_EXPLANATIONS = Object.freeze({
 export const PID_EDUCATION_CONTENT = Object.freeze({
   theory: Object.freeze({
     title: "PID theory",
-    parallelFormula: "u(t) = Kp · e(t) + Ki · ∫e(t)dt + Kd · de(t)/dt",
-    errorDefinition: "e(t) = SP − PV, where SP is the setpoint and PV is the process variable.",
+    parallelFormula: "u(t) = bias + Kp · (PV − SP) + Ki · ∫(PV − SP)dt + Kd · filtered(dPV/dt)",
+    errorDefinition: "PV is the process variable and SP is the setpoint. Conventional theory often defines e(t) = SP − PV; this reverse-acting outlet-valve implementation uses PV − SP internally.",
     parallelGainsNote: "This simulator uses parallel gains Kp, Ki and Kd. Do not mix these values with proportional band, reset time or derivative time without explicit conversion.",
-    reverseActionConvention: "The theory uses e = SP − PV. This simulator applies reverse process action for outlet valves: a level above setpoint opens the relevant outlet further because a larger outlet opening lowers that level.",
+    reverseActionConvention: "This simulator uses a reverse-acting outlet-valve convention: a level above setpoint opens the relevant outlet further because a larger outlet opening lowers that level.",
   }),
   gains: Object.freeze({
     kp: Object.freeze<GainHelpContent>({
@@ -179,11 +183,11 @@ export const PID_EDUCATION_CONTENT = Object.freeze({
       friendlyName: "Damping and anticipation",
       technicalName: "Derivative gain — Kd",
       summary: "Higher Kd → more damping, but more sensitivity to noise.",
-      description: "Kd reacts to how quickly the error is changing. It can add damping and reduce overshoot by opposing rapid changes.",
+      description: "Kd reacts to how quickly the measurement (PV) is changing. It can add damping and reduce overshoot by opposing rapid changes.",
       increaseWhen: Object.freeze(["Proportional and integral tuning already work reasonably well.", "Overshoot remains excessive.", "The response needs additional damping."]),
       tooMuchCanCause: Object.freeze(["Sensitivity to measurement noise.", "Erratic valve commands.", "Unnecessary actuator movement.", "Derivative kick if implemented directly on setpoint error."]),
       reduceWhen: Object.freeze(["Measurement noise causes rapid valve movement.", "Derivative action does not improve the complete response."]),
-      importantNote: "Keep Kd at zero during the first tuning steps. For noisy industrial measurements, PI control is often preferable to a full PID.",
+      importantNote: "Keep Kd at zero during the first tuning steps. This controller differentiates measurement, not setpoint error, to avoid derivative kick. For noisy industrial measurements, PI control is often preferable to a full PID.",
     }),
   }),
   repeatableExperimentGoldenRule: "Change one parameter at a time and repeat the same deterministic scenario. Otherwise, you cannot know which change improved or degraded the response.",
