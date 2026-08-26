@@ -96,6 +96,53 @@ x_v = clamp(x_v_saturated, 0, 100)
 
 Scenario definitions may override `τ_actuator` per valve (e.g., `slow-water-dump` sets water τ = 12 s).
 
+## Cold start and well control
+
+The simulator begins in a realistic cold-start state, mirroring the way a real well test is initiated:
+
+- **Vessel empty**: oil volume = 0 m³, water volume = 0 m³, all levels at 0%.
+- **Well shut in**: `wellOpen = false` at initialization; the operator's first action is to open the well.
+- **Valves closed**: command `x_v = 0%` and stem position `x_v = 0%` for both level control valves.
+- **Gas cap blanketted** (when enabled): the dome spans the full vessel volume and sits at the downstream header pressure (`downstreamPressureBarA`, default 2 bar absolute). Working pressure builds as liquid fills and inlet gas flows in.
+
+### Well ramp and feed opening
+
+When the operator commands `wellOpen = true` (via the `set-well` command, protocol version 3), the well does not open instantaneously. Instead, the well factor ramps smoothly:
+
+```text
+wellRate = dtS / feedRampS    (rate per time step)
+wellFactor(k+1) = clamp(wellFactor(k) ± wellRate, 0, 1)
+```
+
+The default `feedRampS = 15 s` gives the opening 15 seconds to go from shut in to fully open. This ramp represents the mechanical reality that opening a choke is never a step; it is a gradual process. Without this ramp, the first seconds of a run would be instantaneous and unreadable. During the ramp, the inlet flow rises gradually:
+
+```text
+Q_total_inlet = Q_scenario · wellFactor
+```
+
+Once `wellFactor` reaches 1.0, inlet flow is fully established and the PID loops begin their job. Closing the well (`wellOpen = false`) reverses the ramp at the same rate.
+
+### Low-side protection arming
+
+At start-up, the vessel is empty and below every low-side alarm by definition. To avoid spurious trips during filling, each low-side protection arms individually when its corresponding signal first reaches its normal operating range. High-side protections remain armed from the first instant (overfilling is never expected during normal start-up):
+
+| Signal | Armed when | Threshold | Trip at |
+|--------|-----------|-----------|---------|
+| Total level | total level ≥ `totalLowAlarmPct` (25%) | Normal range | ≤ 10% |
+| Interface | interface level ≥ `interfaceLowAlarmPct` (8%) | Normal range | ≤ 3% |
+| Oil layer | oil layer ≥ 2 × `oilLayerLowLowPct` (10%) | Normal range | ≤ 5% |
+| Pressure (with gas) | pressure ≥ `gas.lowAlarmBarG` (default 6 bar(g)) | Normal range | ≤ 4 bar(g) |
+
+Until a low-side protection arms, falling below its alarm is reported as a `startup` safety condition (severity: safe), not an alarm. Once armed, it stays armed for the remainder of the run; a falling signal then triggers the full alarm and trip logic.
+
+This practice is standard in the field: a sensor reading below its normal range at start-up is expected and harmless; it only becomes significant once the process is established.
+
+### Emerging valve behavior
+
+The level-control PID loops command their valves as soon as inlet flow reaches them (around `t = 30 s` with the default ramp). During filling, when levels are far below setpoints, the error is large and negative (reverse-acting loop). If the loop has derivative action, this large error signal can cause the derivative term to saturate the output at its minimum (0%). The integral term, if anti-windup is configured to freeze during saturation, also remains frozen while the error stays deeply negative and the output is pinned to zero.
+
+As the level rises and approaches its target band, the error shrinks. Once it enters the band and reverses sign, anti-windup allows the integral to unwind. At that point, the proportional and integral terms combine to unsaturate the output, and the valve opens. This behavior emerges from standard PID tuning practice; there is no special startup override. The valve opening during fill is a side effect of the loop's own anti-windup logic, not a deliberate design feature.
+
 ## Two-phase PID control
 
 ### Control loops
@@ -290,7 +337,7 @@ state can be stepped deterministically.
 | Gas-oil ratio | GOR | 120 | Sm³/m³ | Typical dry gas well |
 | Gas gravity | γ_g | 0.72 | — | Near-dry C1–C2 mix |
 | Cap temperature | T_c | 45 | °C | Fixed isothermal |
-| Initial pressure | P_0 | 9 | bar(a) | Modest well-testing pressure |
+| Blanketting pressure | P_0 | 2 (= P_ds) | bar(a) | Initial: gas cap at downstream header pressure; working pressure builds during fill |
 | Valve flow coefficient | Kv | 55 | metric | See sizing note below |
 | Downstream (header) pressure | P_ds | 2 | bar(a) | Outlet datum |
 | Setpoint | SP | 8 | bar(g) | Operator target |

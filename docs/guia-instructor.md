@@ -25,17 +25,24 @@ pero la consecuencia no está simulada.
 
 ## El recorrido
 
-Siete lecciones, unos 90 minutos en total. Cada una aísla una idea:
+Siete lecciones, unos 110 minutos en total (con llenados incluidos). Cada una aísla una idea:
 
-| # | Lección | La idea | Escenario |
-|---|---|---|---|
-| 1 | Qué hace un separador trifásico | Tiempo de residencia y las dos formas de fallar | Operación normal |
-| 2 | Acción proporcional | El offset que la P sola no puede cerrar | Escalón de alimentación |
-| 3 | Acción integral | Sacar el offset sin pagarlo en sobrepaso; windup | Escalón de alimentación |
-| 4 | Interfase ruidosa | La derivativa amplifica ruido y gasta válvula | Sensor de interfase ruidoso |
-| 5 | Slugs | La realimentación siempre llega tarde; usar el volumen | Slug con alto corte de agua |
-| 6 | El tercer lazo | Presión: escala de tiempo y acople entre lazos | Salto de GOR |
-| 7 | Sintonizar con método | Procedimiento, y un canje que hay que defender | Restricción en la salida |
+| # | Lección | La idea | Escenario | Duración (min) |
+|---|---|---|---|---|
+| 1 | Puesta en marcha | Arranque en frío, llenado, entrega a los lazos, cierre de pozo | Operación normal | 15 |
+| 2 | Acción proporcional | El offset que la P sola no puede cerrar | Escalón de alimentación | 15 |
+| 3 | Acción integral | Sacar el offset sin pagarlo en sobrepaso; windup | Escalón de alimentación | 15 |
+| 4 | Interfase ruidosa | La derivativa amplifica ruido y gasta válvula | Sensor de interfase ruidoso | 15 |
+| 5 | Slugs | La realimentación siempre llega tarde; usar el volumen | Slug con alto corte de agua | 20 |
+| 6 | El tercer lazo | Presión: escala de tiempo y acople entre lazos | Salto de GOR | 20 |
+| 7 | Sintonizar con método | Procedimiento, y un canje que hay que defender | Restricción en la salida | 18 |
+
+La lección 1 ahora enseña la puesta en marcha completa: recipiente vacío, apertura del pozo con
+su rampa de alimentación (15 segundos), las válvulas cerradas durante el llenado hasta que los
+lazos toman el control cerca del setpoint, y después el ejercicio clásico de cerrar el pozo
+(botón "Abrir pozo / Cerrar pozo" en la consola) para ver si los lazos cierran sus válvulas antes
+de que el nivel caiga al disparo. Es el punto más honesto del simulador: cada corrida empieza como
+empieza un ensayo de pozo real.
 
 Dos lecciones están diseñadas para que el resultado "perfecto" no exista. La lección
 2 termina con un offset que no se puede cerrar, y la 5 no se puede sostener plana.
@@ -59,6 +66,20 @@ Una secuencia que funciona:
 4. Que cada uno lo intente en su máquina. El cierre les dice qué se midió y contra qué.
 5. Comparen resultados. La conversación interesante casi nunca es quién sacó más
    puntaje, sino qué canje eligió cada uno.
+
+### Control de pozo durante la corrida
+
+En cualquier corrida en vivo el operador puede abrir o cerrar el pozo con el botón
+**"Abrir pozo / Cerrar pozo"** de la consola. Es el ejercicio clásico de well
+testing: si el pozo empieza a producir de forma anormal, lo cerrás y dejás que el
+separador se recupere. La pregunta que el ejercicio hace es concreta: **con esta
+sintonía, ¿las válvulas cierran a tiempo, o el recipiente se vacía hasta el disparo
+por nivel bajo?**
+
+Con los lazos bien sintonizados, las dos válvulas de líquido acompañan la caída y
+cierran antes de que el nivel llegue al disparo — que a esa altura ya está armado,
+porque el recipiente ya operó en su rango normal. Con una sintonía floja, los lazos
+llegan tarde. Es una prueba mejor que cualquier puntaje, y dura treinta segundos.
 
 ## Los números que reporta el cierre
 

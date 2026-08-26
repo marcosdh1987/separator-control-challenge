@@ -11,8 +11,9 @@ describe("simulation configuration validation", () => {
   it("exports the approved dual-loop simulation defaults", () => {
     expect(DEFAULT_SIMULATION).toMatchObject({
       dtS: 0.05,
-      durationS: 180,
+      durationS: 300,
       chartSampleS: 0.2,
+      feedRampS: 15,
       diameterM: 1.2,
       lengthM: 3,
       oilDensityKgM3: 850,

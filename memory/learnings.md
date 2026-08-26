@@ -3,6 +3,20 @@
 > Non-obvious facts discovered while working: gotchas, why-it-is-this-way, dead ends
 > to avoid. Append new entries at the top. One fact per entry.
 
+## The reverse-acting PID already contains the start-up behaviour — 2026-08-26
+
+Cold start needed no controller logic: with the vessel empty, the reverse-acting
+error (PV − SP) saturates the output at its low limit, conditional anti-windup
+holds the integrator, and the valve leaves its seat only as the level nears the
+setpoint. The visible "valves stay shut while filling, then open near SP" is
+emergent from the same PID the equilibrium start used.
+
+**Why it matters:** the first instinct was to script the start-up (force valves
+shut, release at a threshold), which would have created a second control path to
+maintain and test.
+**How to apply:** before scripting a behaviour, check whether the existing physics
+already produces it from the right initial conditions.
+
 ## Lesson thresholds must be measured, not guessed — 2026-08-26
 
 Every pass mark in `lib/training/lessons.ts` was set by sweeping tunings and reading

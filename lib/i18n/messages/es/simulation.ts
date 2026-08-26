@@ -58,17 +58,17 @@ export const simulation: SimulationMessages = {
     "feed-step": {
       name: "Escalón de alimentación",
       shortName: "Escalón",
-      description: "La alimentación total sube de 50 a 70 m³/h a los 30 segundos.",
+      description: "Con el recipiente ya establecido, la alimentación total sube de 50 a 70 m³/h a los 3 minutos.",
     },
     "water-rich-slug": {
       name: "Slug con alto corte de agua",
       shortName: "Slug de agua",
-      description: "Un slug de líquido eleva la alimentación total y el corte de agua de entrada.",
+      description: "Cerca de los 3 minutos un slug de líquido eleva la alimentación total y el corte de agua de entrada.",
     },
     "oil-outlet-restriction": {
       name: "Restricción en la salida de petróleo",
       shortName: "Restricción",
-      description: "La capacidad disponible de la válvula de petróleo cae al 60% a los 45 segundos.",
+      description: "La capacidad disponible de la válvula de petróleo cae al 60% con el recipiente ya establecido.",
     },
     "slow-water-dump": {
       name: "Actuador de agua lento",
@@ -83,11 +83,13 @@ export const simulation: SimulationMessages = {
     "gor-surge": {
       name: "Salto de relación gas-petróleo",
       shortName: "Salto de GOR",
-      description: "A los 40 segundos el pozo empieza a producir mucho más gas por metro cúbico de petróleo. Requiere el domo de gas activado.",
+      description: "Con la presión ya establecida, el pozo empieza a producir mucho más gas por metro cúbico de petróleo. Requiere el domo de gas activado.",
     },
   } satisfies Record<ScenarioId, ScenarioCopy>,
 
   disturbance: {
+    "well-opening": "Abriendo el pozo",
+    "well-shut-in": "Pozo cerrado",
     "steady": "Alimentación estable de petróleo y agua",
     "feed-step-active": "Escalón de alimentación activo",
     "slug-active": "Slug con alto corte de agua activo",
@@ -101,6 +103,7 @@ export const simulation: SimulationMessages = {
 
   safetyCondition: {
     "normal": "Envolvente normal de operación",
+    "startup": "Llenando: protecciones de nivel bajo anuladas",
     "pressure-low-low": "Disparo por presión muy baja",
     "pressure-low": "Alarma por presión baja",
     "pressure-high": "Alarma por presión alta",

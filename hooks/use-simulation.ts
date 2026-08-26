@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createEngine } from "@/lib/simulation/engine";
-import { createEquilibriumSnapshot } from "@/lib/simulation/equilibrium";
-import { getScenario, scenarioAt } from "@/lib/simulation/scenarios";
+import { getScenario } from "@/lib/simulation/scenarios";
 import { sanitizeDualPidConfig, sanitizeSimulationConfig } from "@/lib/simulation/validation";
 import {
   DEFAULT_DUAL_PID,
@@ -21,22 +20,16 @@ import {
 } from "@/lib/simulation/types";
 
 /**
- * The state the dashboard shows before a run starts. With a gas cap the opening
- * sample has to come from the engine, because seeding the cap at its operating
- * pressure is part of building a run.
+ * The state the dashboard shows before a run starts: vessel empty, well shut in,
+ * valves on their seats. It comes from the engine so the idle view is exactly what
+ * pressing Start will begin from.
  */
 export function createEquilibriumSample(
   config: SimulationConfig = DEFAULT_SIMULATION,
   pid: DualPidConfig = DEFAULT_DUAL_PID,
 ): SimulationSample {
   const sanitized = sanitizeSimulationConfig(config);
-  if (sanitized.gas) {
-    return createEngine(sanitized, pid, "normal", 1001).samples[0];
-  }
-  return createEquilibriumSnapshot(
-    sanitized,
-    scenarioAt("normal", 0, sanitized.actuatorTauS),
-  ).sample;
+  return createEngine(sanitized, pid, "normal", 1001).samples[0];
 }
 
 export interface SimulationController {
@@ -53,6 +46,9 @@ export interface SimulationController {
   reset: () => void;
   retryWorker: () => void;
   setSpeed: (speed: number) => void;
+  /** Whether the operator has the well flowing. Start opens it; this toggles it live. */
+  wellOpen: boolean;
+  setWell: (open: boolean) => void;
   dismissResult: () => void;
 }
 
@@ -81,6 +77,7 @@ export function useSimulation(
   const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [speed, setSpeedState] = useState(1);
+  const [wellOpen, setWellOpenState] = useState(true);
   const [workerGeneration, setWorkerGeneration] = useState(0);
 
   const post = useCallback((request: WorkerRequest) => {
@@ -235,6 +232,7 @@ export function useSimulation(
     setSamples([idleSample]);
     setResult(null);
     setError(null);
+    setWellOpenState(true);
     initialize(runId, pid, scenarioId, config);
   }, [config, idleSample, initialize, pid, scenarioId, status]);
 
@@ -250,6 +248,7 @@ export function useSimulation(
     setSamples([idleSample]);
     setResult(null);
     setError(null);
+    setWellOpenState(true);
     initialize(runId);
   }, [idleSample, initialize, pid, ready, scenarioId, status]);
 
@@ -273,8 +272,14 @@ export function useSimulation(
     setSamples([idleSample]);
     setResult(null);
     setError(null);
+    setWellOpenState(true);
     initialize(runId);
   }, [idleSample, initialize, pid, scenarioId]);
+
+  const setWell = useCallback((open: boolean) => {
+    post({ type: "set-well", runId: runIdRef.current, open });
+    setWellOpenState(open);
+  }, [post]);
 
   const setSpeed = useCallback((nextSpeed: number) => {
     const validSpeed = [0.5, 1, 2, 4].includes(nextSpeed) ? nextSpeed : 1;
@@ -317,6 +322,8 @@ export function useSimulation(
     reset,
     retryWorker,
     setSpeed,
+    wellOpen,
+    setWell,
     dismissResult: () => setResult(null),
-  }), [error, idleSample, pause, ready, reset, result, resume, retryWorker, samples, setSpeed, speed, start, status]);
+  }), [error, idleSample, pause, ready, reset, result, resume, retryWorker, samples, setSpeed, setWell, speed, start, status, wellOpen]);
 }

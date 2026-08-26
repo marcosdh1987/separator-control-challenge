@@ -71,17 +71,17 @@ export const simulation = {
     "feed-step": {
       name: "Oil/water feed step",
       shortName: "Feed step",
-      description: "Total oil/water feed rises from 50 to 70 m³/h at 30 seconds.",
+      description: "Once the vessel is established, total feed rises from 50 to 70 m³/h at 3 minutes.",
     },
     "water-rich-slug": {
       name: "Water-rich liquid slug",
       shortName: "Water-rich slug",
-      description: "A liquid slug raises both total feed and the inlet water fraction.",
+      description: "At about 3 minutes a liquid slug raises both total feed and the inlet water fraction.",
     },
     "oil-outlet-restriction": {
       name: "Oil outlet restriction",
       shortName: "Oil restriction",
-      description: "Available oil dump-valve capacity falls to 60% at 45 seconds.",
+      description: "Available oil dump-valve capacity falls to 60% once the vessel is established.",
     },
     "slow-water-dump": {
       name: "Slow water-dump actuator",
@@ -96,11 +96,13 @@ export const simulation = {
     "gor-surge": {
       name: "Gas-oil ratio surge",
       shortName: "GOR surge",
-      description: "The well starts making far more gas per cubic metre of oil at 40 seconds. Needs the gas cap enabled.",
+      description: "Once pressure is established, the well starts making far more gas per cubic metre of oil. Needs the gas cap enabled.",
     },
   } satisfies Record<ScenarioId, ScenarioCopy>,
 
   disturbance: {
+    "well-opening": "Opening the well",
+    "well-shut-in": "Well shut in",
     "steady": "Steady oil/water feed",
     "feed-step-active": "Oil/water feed step active",
     "slug-active": "Water-rich liquid slug active",
@@ -114,6 +116,7 @@ export const simulation = {
 
   safetyCondition: {
     "normal": "Normal operating envelope",
+    "startup": "Filling — low-level protection bypassed",
     "pressure-low-low": "Pressure low-low trip",
     "pressure-low": "Pressure low alarm",
     "pressure-high": "Pressure high alarm",

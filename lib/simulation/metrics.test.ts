@@ -178,20 +178,24 @@ describe("dual-loop run metrics", () => {
 
     const metrics = calculateMetrics(samples, DEFAULT_SIMULATION, null, 0, limits);
 
-    // t=0..1 and t=3..5 use the current outside sample. The regressing t=2
-    // sample contributes no duration; t=1..3 uses the safe sample at t=3.
-    expect(metrics.alarmTimeS).toBe(3);
-    expect(metrics.loops.total.targetBandTimeOutsideS).toBe(3);
-    expect(metrics.loops.interface.targetBandTimeOutsideS).toBe(3);
-    expect(metrics.actuators.oil.saturationTimeS).toBe(3);
-    expect(metrics.actuators.water.saturationTimeS).toBe(3);
-    expect(metrics.actuators.oil.integralLimitTimeS).toBe(3);
-    expect(metrics.actuators.water.integralLimitTimeS).toBe(3);
-    expect(metrics.phaseTotals.oilInletM3).toBeCloseTo((36 * 3 + 72 * 2) / 3600, 12);
-    expect(metrics.phaseTotals.waterOutletM3).toBeCloseTo((12 * 3 + 24 * 2) / 3600, 12);
+    // Time is charged only inside the observed window, which opens at the first
+    // retained sample (t=1): the span before it is start-up, not evidence. The
+    // regressing t=2 sample contributes no duration; t=3..5 uses the outside
+    // sample at t=5.
+    expect(metrics.alarmTimeS).toBe(2);
+    expect(metrics.loops.total.targetBandTimeOutsideS).toBe(2);
+    expect(metrics.loops.interface.targetBandTimeOutsideS).toBe(2);
+    expect(metrics.actuators.oil.saturationTimeS).toBe(2);
+    expect(metrics.actuators.water.saturationTimeS).toBe(2);
+    expect(metrics.actuators.oil.integralLimitTimeS).toBe(2);
+    expect(metrics.actuators.water.integralLimitTimeS).toBe(2);
+    // Window opens at t=1, so its sample carries no duration; t=3 and t=5 carry
+    // two seconds each under the right-rectangle rule.
+    expect(metrics.phaseTotals.oilInletM3).toBeCloseTo((72 * 2 + 36 * 2) / 3600, 12);
+    expect(metrics.phaseTotals.waterOutletM3).toBeCloseTo((24 * 2 + 12 * 2) / 3600, 12);
   });
 
-  it("includes t=0 to the first retained sample for a one-sample history", () => {
+  it("charges no duration to the span before a lone retained sample", () => {
     const metrics = calculateMetrics(
       [sample(2, {
         totalProcess: 80,
@@ -208,11 +212,12 @@ describe("dual-loop run metrics", () => {
       limits,
     );
 
-    expect(metrics.alarmTimeS).toBe(2);
-    expect(metrics.loops.total.targetBandTimeOutsideS).toBe(2);
-    expect(metrics.actuators.oil.saturationTimeS).toBe(2);
-    expect(metrics.actuators.oil.integralLimitTimeS).toBe(2);
-    expect(metrics.phaseTotals.oilInletM3).toBeCloseTo((36 * 2) / 3600, 12);
+    // A single instant has no duration: nothing before the window is evidence.
+    expect(metrics.alarmTimeS).toBe(0);
+    expect(metrics.loops.total.targetBandTimeOutsideS).toBe(0);
+    expect(metrics.actuators.oil.saturationTimeS).toBe(0);
+    expect(metrics.actuators.oil.integralLimitTimeS).toBe(0);
+    expect(metrics.phaseTotals.oilInletM3).toBe(0);
     expect(metrics.actuators.oil.travelPct).toBe(0);
     expect(metrics.recoveryTimeS).toBe(90);
     expect(metrics.settled).toBe(false);

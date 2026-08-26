@@ -8,7 +8,10 @@ const VESSEL_VOLUME_M3 = 3.393;
 const LIQUID_VOLUME_M3 = 1.7;
 const GAS_VOLUME_M3 = VESSEL_VOLUME_M3 - LIQUID_VOLUME_M3;
 
-const seed = (pressureBarA = DEFAULT_GAS.initialPressureBarA) => ({
+/** The operating pressure these balance tests seed the cap at, bar absolute. */
+const OPERATING_PRESSURE_BARA = 9;
+
+const seed = (pressureBarA = OPERATING_PRESSURE_BARA) => ({
   moles: molesForPressure(
     pressureBarA,
     GAS_VOLUME_M3,
@@ -52,19 +55,19 @@ describe("gas cap balance", () => {
   it("holds steady when the valve passes exactly what the feed delivers", () => {
     const result = step();
     // The seeded cap is already at its operating point, so one step barely moves it.
-    expect(Math.abs(result.pressureBarA - DEFAULT_GAS.initialPressureBarA)).toBeLessThan(0.05);
+    expect(Math.abs(result.pressureBarA - OPERATING_PRESSURE_BARA)).toBeLessThan(0.05);
     expect(result.gasOutletSm3H).toBeGreaterThan(3500);
   });
 
   it("builds pressure when the valve cannot pass the incoming gas", () => {
     const shut = step({ valveOpenFraction: 0.02 });
-    expect(shut.pressureBarA).toBeGreaterThan(DEFAULT_GAS.initialPressureBarA);
+    expect(shut.pressureBarA).toBeGreaterThan(OPERATING_PRESSURE_BARA);
     expect(shut.gasOutletSm3H).toBeLessThan(4200);
   });
 
   it("falls when the valve is wide open and the feed cannot keep up", () => {
     const vented = step({ valveOpenFraction: 1, gasInletSm3H: 0 });
-    expect(vented.pressureBarA).toBeLessThan(DEFAULT_GAS.initialPressureBarA);
+    expect(vented.pressureBarA).toBeLessThan(OPERATING_PRESSURE_BARA);
   });
 
   it("never collapses past zero even with the valve slammed open", () => {
@@ -102,7 +105,7 @@ describe("gas cap balance", () => {
       valveOpenFraction: 0,
       dtS: 0.05,
     });
-    expect(compressed.pressureBarA).toBeGreaterThan(DEFAULT_GAS.initialPressureBarA);
+    expect(compressed.pressureBarA).toBeGreaterThan(OPERATING_PRESSURE_BARA);
     expect(compressed.gasVolumeM3).toBeLessThan(GAS_VOLUME_M3);
   });
 

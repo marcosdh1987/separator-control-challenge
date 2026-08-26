@@ -63,13 +63,14 @@ const LESSONS: Record<LessonId, Lesson> = {
       lockedGains: ["kd"],
       expectedPatterns: ["offset", "overshoot"],
     },
-    // Thresholds measured, not guessed. Proportional-only reaches 364 at best
-    // (Kp = 8), so it cannot pass; Kp 4 with Ki 0.08 reaches 315. The overshoot
-    // bound rules out buying a lower error with a wild Ki, which at 0.15 costs
-    // 55% overshoot.
+    // Graded on exactly what integral action is for. Measured on this scenario:
+    // proportional-only leaves a standing offset of 2.75% even at Kp 8, so it
+    // cannot pass; Ki 0.08 brings it to 1.16%. The overshoot bound rules out
+    // buying the offset away with a wild Ki, which at 0.15 costs 57% overshoot
+    // and swings past the setpoint from the other side.
     successCriteria: {
       forbiddenTrips: [],
-      maximumTotalIae: 330,
+      maximumSteadyOffsetPct: 1.5,
       maximumOvershootPct: 12,
     },
   },
@@ -84,13 +85,14 @@ const LESSONS: Record<LessonId, Lesson> = {
       initialPid: DEFAULT_DUAL_PID,
       expectedPatterns: ["noisy-command"],
     },
-    // Derivative here buys nothing and costs travel: tracking error is 17 whether
-    // Kd is 0 or 25, while travel goes from 148 to 875. The travel bound is what
-    // makes that visible; the error bound only guards against abandoning the loop.
+    // Derivative here buys nothing and costs travel: interface error is ~460
+    // whether Kd is 0, 8 or 25, while total valve travel goes 216 → 434 → 878.
+    // The travel bound is what makes that visible; the loose error bound only
+    // guards against abandoning the loop entirely.
     successCriteria: {
       forbiddenTrips: [],
-      maximumInterfaceIae: 60,
-      maximumValveTravelPct: 250,
+      maximumInterfaceIae: 700,
+      maximumValveTravelPct: 300,
     },
   },
 
@@ -122,8 +124,10 @@ const LESSONS: Record<LessonId, Lesson> = {
       },
       expectedPatterns: ["sustained-oscillation"],
     },
-    // Too slow a pressure loop trips outright; Kp 1 survives but tracks poorly at
-    // 344. The default 2.5 reaches 202, and a firmer loop reaches 90.
+    // Measured through the surge window: the default pressure tuning reaches an
+    // IAE of about 170 and a firmer loop 151; the bound mostly exists to catch a
+    // loop that was detuned into uselessness, because the harder criterion is
+    // surviving the surge without a pressure trip at all.
     successCriteria: {
       forbiddenTrips: ["PRESSURE_HH", "PRESSURE_LL"],
       maximumPressureIae: 230,
@@ -142,11 +146,13 @@ const LESSONS: Record<LessonId, Lesson> = {
         interface: pid({ kp: 1, ki: 0, kd: 0 }),
       },
     },
-    // The starting tuning reaches 734; Kp 6 with Ki 0.12 reaches 300. Valve travel
-    // is deliberately not graded here: in this scenario it never exceeds 53 at any
-    // tuning, so a travel bound would be a criterion that cannot fail. The trade-off
-    // it was meant to teach is graded in the noisy-interface lesson, where the
-    // numbers actually separate.
+    // Measured: the untouched starting tuning reaches an IAE of 627 through the
+    // restriction; a systematic Kp 6 / Ki 0.12 reaches 287 and a half-hearted
+    // Kp 4 / Ki 0.08 reaches 528. The bound sits between the tuned result and
+    // the half-hearted one. Valve travel is deliberately not graded here — it
+    // never exceeds ~140 on this scenario at any tuning, so a travel bound would
+    // be a criterion that cannot fail; the trade-off is graded in the
+    // noisy-interface lesson, where the numbers separate.
     successCriteria: {
       forbiddenTrips: [],
       maximumTotalIae: 340,

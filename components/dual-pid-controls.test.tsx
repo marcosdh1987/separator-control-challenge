@@ -24,7 +24,7 @@ function renderDeck(status: SimulationStatus = "idle", ready = true) {
     speed: 1,
     status,
   };
-  renderWithLocale(<DualPidControls {...props} />);
+  renderWithLocale(<DualPidControls wellOpen onWellChange={() => {}} {...props} />);
   return props;
 }
 
@@ -33,7 +33,7 @@ describe("dual PID control deck", () => {
     const user = userEvent.setup();
     function ControlledDeck() {
       const [config, setConfig] = useState(DEFAULT_DUAL_PID);
-      return <DualPidControls config={config} hero={<div>Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={setConfig} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />;
+      return <DualPidControls wellOpen onWellChange={() => {}} config={config} hero={<div>Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={setConfig} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />;
     }
     renderWithLocale(<ControlledDeck />);
     const integral = screen.getByLabelText("Total level integral gain");
@@ -91,7 +91,7 @@ describe("dual PID control deck", () => {
   });
 
   it("places the future-safe hero first in DOM order, followed by total and interface docks", () => {
-    const { container } = renderWithLocale(<DualPidControls config={DEFAULT_DUAL_PID} hero={<div data-testid="separator-hero">Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={vi.fn()} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />);
+    const { container } = renderWithLocale(<DualPidControls wellOpen onWellChange={() => {}} config={DEFAULT_DUAL_PID} hero={<div data-testid="separator-hero">Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={vi.fn()} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />);
     const bay = container.querySelector(".process-bay");
     expect(Array.from(bay?.children ?? []).map((child) => child.className)).toEqual([
       "process-bay__hero",

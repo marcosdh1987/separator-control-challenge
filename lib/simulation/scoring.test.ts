@@ -8,6 +8,7 @@ import { calculateScore, rankForScore } from "./scoring";
 import type { RunMetrics, TripKind } from "./types";
 
 const perfectMetrics: RunMetrics = {
+  establishedAtS: 0,
   alarmTimeS: 0,
   recoveryTimeS: 0,
   settled: true,

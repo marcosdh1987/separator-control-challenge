@@ -11,6 +11,8 @@ import type { DualPidConfig, LiquidLoopId, PidConfig, SimulationSample, Simulati
 
 interface DualPidControlsProps {
   hero: ReactNode;
+  wellOpen: boolean;
+  onWellChange: (open: boolean) => void;
   /** Gains a lesson holds fixed so attention stays on the one it is teaching. */
   lockedGains?: readonly ("kp" | "ki" | "kd")[];
   gainForm?: GainForm;
@@ -29,7 +31,7 @@ interface DualPidControlsProps {
 }
 
 export function DualPidControls({
-  hero, config, sample, locked, lockedGains, gainForm, ready, status, speed, onChange,
+  hero, config, sample, locked, lockedGains, gainForm, ready, status, speed, wellOpen, onWellChange, onChange,
   onStart, onPause, onResume, onReset, onSpeedChange,
 }: DualPidControlsProps) {
   const copy = useMessages().challenge.transport;
@@ -60,6 +62,28 @@ export function DualPidControls({
             <RotateCcw aria-hidden="true" /> {copy.reset}
           </button>
         </div>
+        <fieldset className="well-control" data-tour="well-control">
+          <legend>{copy.wellLegend}</legend>
+          {/* Only meaningful while the physics is live: an idle run has no well yet. */}
+          <button
+            aria-pressed={wellOpen}
+            className={wellOpen ? "is-active" : ""}
+            disabled={status !== "running" && status !== "paused"}
+            type="button"
+            onClick={() => onWellChange(true)}
+          >
+            {copy.openWell}
+          </button>
+          <button
+            aria-pressed={!wellOpen}
+            className={!wellOpen ? "is-active" : ""}
+            disabled={status !== "running" && status !== "paused"}
+            type="button"
+            onClick={() => onWellChange(false)}
+          >
+            {copy.shutWell}
+          </button>
+        </fieldset>
         <fieldset className="speed-control">
           <legend>{copy.speedLegend}</legend>
           {[0.5, 1, 2, 4].map((option) => (

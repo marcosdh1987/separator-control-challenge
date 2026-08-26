@@ -15,6 +15,7 @@ import type {
 const finishedResult = {
   score: { safety: 35, tracking: 25, stability: 15, recovery: 15, valveEfficiency: 10, modifiers: [], total: 100, rank: "master", feedback: { kind: "balanced" } },
   metrics: {
+    establishedAtS: 0,
     trip: null, settled: true, recoveryTimeS: 1, minimumOilLayerPct: 20, alarmTimeS: 0,
     loops: { total: { mae: 1, stabilityStdDev: 1, maximumPct: 51, minimumPct: 49, targetBandTimeOutsideS: 0, oscillationCrossings: 0, oscillationPeakToPeakPct: 0, recoveryTimeS: 1, settled: true, alarmTimeS: 0 }, interface: { mae: 1, stabilityStdDev: 1, maximumPct: 21, minimumPct: 19, targetBandTimeOutsideS: 0, oscillationCrossings: 0, oscillationPeakToPeakPct: 0, recoveryTimeS: 1, settled: true, alarmTimeS: 0 } },
     actuators: { oil: { travelPct: 1, saturationTimeS: 0, integralLimitTimeS: 0 }, water: { travelPct: 1, saturationTimeS: 0, integralLimitTimeS: 0 } },

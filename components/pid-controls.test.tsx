@@ -37,7 +37,8 @@ describe("PID instrument dock", () => {
     );
     expect(screen.getByText("Total level process value")).toBeVisible();
     expect(screen.getByText("Total level measured value")).toBeVisible();
-    expect(screen.getAllByText("50.0%").length).toBeGreaterThanOrEqual(2);
+    // The idle sample is the shut-in vessel, so both readings show 0.0%.
+    expect(screen.getAllByText("0.0%").length).toBeGreaterThanOrEqual(2);
   });
 
   it("creates unique control and helper ids across multiple dock instances", () => {

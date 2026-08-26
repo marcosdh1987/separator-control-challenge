@@ -68,7 +68,6 @@ export function sanitizeGasConfig(gas: GasConfig): GasConfig {
     gorSm3M3: clamp(gas.gorSm3M3, 0, 5000, DEFAULT_GAS.gorSm3M3),
     gasGravity: clamp(gas.gasGravity, 0.55, 1.2, DEFAULT_GAS.gasGravity),
     temperatureC: clamp(gas.temperatureC, -20, 200, DEFAULT_GAS.temperatureC),
-    initialPressureBarA: clamp(gas.initialPressureBarA, 1.02, 250, DEFAULT_GAS.initialPressureBarA),
     setpointBarG,
     valveKv: clamp(gas.valveKv, 0.01, 5000, DEFAULT_GAS.valveKv),
     downstreamPressureBarA: clamp(gas.downstreamPressureBarA, 1, 200, DEFAULT_GAS.downstreamPressureBarA),
@@ -85,6 +84,7 @@ export function sanitizeSimulationConfig(config: SimulationConfig): SimulationCo
     dtS: clamp(config.dtS, 0.01, 0.5, DEFAULT_SIMULATION.dtS),
     durationS: clamp(config.durationS, 0.05, 3600, DEFAULT_SIMULATION.durationS),
     chartSampleS: clamp(config.chartSampleS, 0.05, 5, DEFAULT_SIMULATION.chartSampleS),
+    feedRampS: clamp(config.feedRampS, 0, 120, DEFAULT_SIMULATION.feedRampS),
     diameterM: clamp(config.diameterM, 0.1, 10, DEFAULT_SIMULATION.diameterM),
     lengthM: clamp(config.lengthM, 0.1, 100, DEFAULT_SIMULATION.lengthM),
     oilDensityKgM3: clamp(

@@ -19,22 +19,24 @@ export interface LessonCopy {
 const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "what-is-a-separator": {
     title: "What a three-phase separator does",
-    summary: "Residence time, the two interfaces, and the two ways separation fails.",
+    summary: "A cold start: fill the vessel, watch the loops take over, learn what they protect.",
     theory: [
       "A separator is a pressure vessel whose only job is to hold the well stream still long enough for gravity to do the work. Gas rises, oil floats, water settles. Everything else in the vessel exists to protect that.",
       "The controlling quantity is residence time: how long fluid stays inside, which is simply volume divided by flow. Light crude in a warm vessel may need three to five minutes; heavy, cold crude can need twenty to thirty. Raise the inlet flow and residence time falls, the dispersed droplets never reach their own phase, and separation efficiency drops sharply.",
       "Between oil and water there is rarely a clean line. Fine solids, surfactants and emulsions can build a stable layer between them — a rag layer — that does not obey the settling laws and can grow until it blocks the internal weirs.",
       "Separation fails in two directions, and both are level problems. Let the liquid climb too high and the gas leaving the top drags droplets with it: liquid carry-over. Let it fall too low and gas escapes through the liquid outlet instead: gas carry-under. Level control exists to keep the vessel between those two failures.",
+      "Every run here begins the way a real test does: vessel empty, well shut in, valves closed. Pressing Start opens the well. While the vessel fills, the controllers hold their valves shut — there is nothing to discharge yet — and they begin to open only as the level approaches its setpoint. Watch for that moment; it is the loops taking over from the fill.",
+      "During the fill the vessel sits below every low-level limit, and that is not an upset: low-side protection stays bypassed until each level has first reached its normal range, exactly as it does in the field. From then on it is armed, and a falling level is a real event.",
     ],
     fieldNote:
       "The level controller is not there to hit a number. It is there to protect residence time and keep a liquid seal on the outlet. The number is just how we ask for that.",
     briefing: [
-      "Start the run and watch it for a while. Nothing is disturbing this separator.",
-      "Find the total level and the oil/water interface in the readouts, and follow them on the trends.",
-      "Notice that both valves sit near mid-travel: that is a vessel in balance, not a vessel doing nothing.",
+      "Press Start and watch the vessel fill. The valves stay shut — that is correct, not stuck.",
+      "Watch the oil valve as the total level nears 50%: it starts to open just before the setpoint, and the level settles through a small overshoot.",
+      "Once everything is quiet, try Shut in well, and watch the loops close the valves before the vessel drains. Open it again and let it recover.",
     ],
     debriefPassed: [
-      "That is what a settled separator looks like: levels flat, valves steady, both loops with authority in hand.",
+      "You just did a complete start-up: fill, hand-over to the loops, and a settled vessel with both valves near mid-travel and authority in hand.",
       "From here on, something will always be pushing the vessel away from this state. Every lesson is about what you do when it does.",
     ],
     debriefFailed: [
@@ -245,6 +247,7 @@ export const training = {
     "settling-time": "Settling time",
     "valve-travel": "Total valve travel",
     "score": "Score",
+    "offset-removed": "The standing offset was removed",
     "steady-state-offset": "A standing offset remained, as expected",
   },
 

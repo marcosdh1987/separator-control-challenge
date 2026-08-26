@@ -2,12 +2,12 @@ import type { ScenarioDefinition, ScenarioId, ScenarioState } from "./types";
 
 export const SCENARIOS = [
   { id: "normal", seed: 1001, disturbanceStartS: 0, disturbanceEndS: 0 },
-  { id: "feed-step", seed: 1002, disturbanceStartS: 30, disturbanceEndS: 30 },
-  { id: "water-rich-slug", seed: 1003, disturbanceStartS: 35, disturbanceEndS: 55 },
-  { id: "oil-outlet-restriction", seed: 1004, disturbanceStartS: 45, disturbanceEndS: 45 },
-  { id: "slow-water-dump", seed: 1005, disturbanceStartS: 30, disturbanceEndS: 30 },
+  { id: "feed-step", seed: 1002, disturbanceStartS: 180, disturbanceEndS: 180 },
+  { id: "water-rich-slug", seed: 1003, disturbanceStartS: 185, disturbanceEndS: 205 },
+  { id: "oil-outlet-restriction", seed: 1004, disturbanceStartS: 195, disturbanceEndS: 195 },
+  { id: "slow-water-dump", seed: 1005, disturbanceStartS: 180, disturbanceEndS: 180 },
   { id: "noisy-interface", seed: 1006, disturbanceStartS: 0, disturbanceEndS: 0 },
-  { id: "gor-surge", seed: 1007, disturbanceStartS: 40, disturbanceEndS: 40 },
+  { id: "gor-surge", seed: 1007, disturbanceStartS: 190, disturbanceEndS: 190 },
 ] satisfies ScenarioDefinition[];
 
 /** One canonical catalogue; retained export name supports existing golden-run tooling. */
@@ -35,11 +35,11 @@ export function scenarioAt(id: ScenarioId, timeS: number, nominalActuatorTauS = 
     disturbance: "steady",
   };
 
-  if (id === "feed-step" && timeS >= 30) {
+  if (id === "feed-step" && timeS >= 180) {
     return { ...base, totalInletM3H: 70, disturbance: "feed-step-active" };
   }
-  if (id === "water-rich-slug" && timeS >= 35 && timeS < 55) {
-    const phase = (Math.PI * (timeS - 35)) / 20;
+  if (id === "water-rich-slug" && timeS >= 185 && timeS < 205) {
+    const phase = (Math.PI * (timeS - 185)) / 20;
     const intensity = Math.sin(phase) ** 2;
     return {
       ...base,
@@ -48,23 +48,23 @@ export function scenarioAt(id: ScenarioId, timeS: number, nominalActuatorTauS = 
       disturbance: "slug-active",
     };
   }
-  if (id === "water-rich-slug" && timeS >= 55) {
+  if (id === "water-rich-slug" && timeS >= 205) {
     return { ...base, disturbance: "slug-ended" };
   }
-  if (id === "oil-outlet-restriction" && timeS >= 45) {
+  if (id === "oil-outlet-restriction" && timeS >= 195) {
     return { ...base, oilCapacityFactor: 0.6, disturbance: "oil-restriction-active" };
   }
   if (id === "slow-water-dump") {
     return {
       ...base,
       waterActuatorTauS: 12,
-      waterCutFraction: timeS >= 30 ? 0.5 : 0.3,
-      disturbance: timeS >= 30
+      waterCutFraction: timeS >= 180 ? 0.5 : 0.3,
+      disturbance: timeS >= 180
         ? "slow-water-dump-high-cut"
         : "slow-water-dump",
     };
   }
-  if (id === "gor-surge" && timeS >= 40) {
+  if (id === "gor-surge" && timeS >= 190) {
     // The well starts making far more gas per barrel of oil. Levels barely move,
     // so the only loop that feels it is pressure — which is the lesson.
     return { ...base, gorFactor: 1.6, disturbance: "gor-surge-active" };

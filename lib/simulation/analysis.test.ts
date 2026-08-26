@@ -352,24 +352,41 @@ describe("analyseRun over a real engine trace", () => {
     );
   });
 
-  it("rewards the calmer of two tunings on the same scenario", () => {
-    const aggressive = {
-      total: { ...DEFAULT_DUAL_PID.total, kp: 12, ki: 0.3 },
-      interface: { ...DEFAULT_DUAL_PID.interface, kp: 12, ki: 0.3 },
-    };
-    const scenario = getScenario("feed-step");
-
+  it("charges a noise-chasing tuning for its command variation", () => {
+    // Derivative on a noisy interface measurement is the canonical way to spend
+    // the valve without improving anything; total variation is the figure that
+    // shows it. Same scenario, same seed, only Kd differs.
+    const scenario = getScenario("noisy-interface");
     const calm = analyseRun(
-      runToEnd(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "feed-step", scenario.seed).samples,
+      runToEnd(
+        DEFAULT_SIMULATION,
+        {
+          total: { ...DEFAULT_DUAL_PID.total, kd: 0 },
+          interface: { ...DEFAULT_DUAL_PID.interface, kd: 0 },
+        },
+        "noisy-interface",
+        scenario.seed,
+      ).samples,
       DEFAULT_SIMULATION,
     );
-    const wild = analyseRun(
-      runToEnd(DEFAULT_SIMULATION, aggressive, "feed-step", scenario.seed).samples,
+    const chasing = analyseRun(
+      runToEnd(
+        DEFAULT_SIMULATION,
+        {
+          total: { ...DEFAULT_DUAL_PID.total, kd: 0 },
+          interface: { ...DEFAULT_DUAL_PID.interface, kd: 25 },
+        },
+        "noisy-interface",
+        scenario.seed,
+      ).samples,
       DEFAULT_SIMULATION,
     );
 
-    expect(wild.actuators.oil.totalVariationPct).toBeGreaterThan(
-      calm.actuators.oil.totalVariationPct,
+    expect(chasing.actuators.water.totalVariationPct).toBeGreaterThan(
+      calm.actuators.water.totalVariationPct * 2,
+    );
+    expect(chasing.actuators.water.reversals).toBeGreaterThan(
+      calm.actuators.water.reversals,
     );
   });
 

@@ -23,11 +23,17 @@ export function buildAttemptEvidence(
   config: SimulationConfig,
   disturbanceStartS?: number,
 ): AttemptEvidence {
+  // Judge the control, not the fill. The window opens at the scenario's
+  // disturbance when it has one, and otherwise at the moment the vessel first
+  // established — before either, every attempt looks identical.
+  const startS = disturbanceStartS && disturbanceStartS > 0
+    ? disturbanceStartS
+    : result.metrics.establishedAtS || undefined;
   return {
     samples,
     result,
     config,
-    analysis: analyseRun(samples, config, { startS: disturbanceStartS }),
+    analysis: analyseRun(samples, config, { startS }),
   };
 }
 
@@ -111,6 +117,11 @@ export function gradeAttempt(lesson: Lesson, evidence: AttemptEvidence): LessonO
 
   if (criteria.minimumScore !== undefined) {
     checks.push(check("score", score.total >= criteria.minimumScore, score.total, criteria.minimumScore));
+  }
+
+  if (criteria.maximumSteadyOffsetPct !== undefined) {
+    const offset = Math.abs(analysis.loops.total.steadyOffsetPct);
+    checks.push(check("offset-removed", offset <= criteria.maximumSteadyOffsetPct, offset, criteria.maximumSteadyOffsetPct));
   }
 
   if (criteria.requiresSteadyStateOffset) {

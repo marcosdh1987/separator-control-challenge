@@ -68,8 +68,6 @@ export interface GasConfig {
   /** Gas relative density, air = 1. */
   gasGravity: number;
   temperatureC: number;
-  /** Operating pressure the run starts at, bar absolute. */
-  initialPressureBarA: number;
   setpointBarG: number;
   /** Flow coefficient of the gas backpressure valve, metric Kv. */
   valveKv: number;
@@ -107,6 +105,12 @@ export interface SimulationConfig {
   waterRatedFlowM3H: number;
   actuatorTauS: number;
   actuatorStrokeRatePctS: number;
+  /**
+   * Seconds the feed takes to ramp from shut-in to the scenario rate after Start.
+   * Opening a choke is never a step, and the ramp keeps the first seconds of a
+   * run readable instead of instantaneous.
+   */
+  feedRampS: number;
   /** Omitted for the two-loop liquid model; present once gas is taught. */
   gas?: GasConfig;
 }
@@ -126,6 +130,8 @@ export interface ScenarioDefinition {
 
 /** What the scenario is doing to the process right now. */
 export type DisturbanceId =
+  | "well-opening"
+  | "well-shut-in"
   | "steady"
   | "feed-step-active"
   | "slug-active"
@@ -193,6 +199,7 @@ export interface LoopSample {
  */
 export type SafetyConditionId =
   | "normal"
+  | "startup"
   | "pressure-low-low"
   | "pressure-low"
   | "pressure-high"
@@ -267,6 +274,11 @@ export interface PhaseRunTotals {
 }
 
 export interface RunMetrics {
+  /**
+   * When the total level first entered its target band and scoring began. Zero
+   * when the run never established, in which case the whole run is scored.
+   */
+  establishedAtS: number;
   alarmTimeS: number;
   recoveryTimeS: number;
   settled: boolean;
@@ -341,7 +353,7 @@ export interface RunResult {
  * Bumped whenever the shape of a request or event changes. The runtime rejects a
  * message it does not recognise instead of misreading an older or newer client.
  */
-export const WORKER_PROTOCOL_VERSION = 2;
+export const WORKER_PROTOCOL_VERSION = 3;
 
 export type WorkerRequest =
   | {
@@ -356,7 +368,13 @@ export type WorkerRequest =
   | { type: "start"; runId: string }
   | { type: "pause"; runId: string }
   | { type: "reset"; runId: string }
-  | { type: "set-speed"; runId: string; speed: number };
+  | { type: "set-speed"; runId: string; speed: number }
+  /**
+   * Open or shut the well while the run is live. Shutting the feed mid-run is the
+   * classic tuning drill: the loops must close their valves before the vessel
+   * drains, or the low-level protection ends the exercise.
+   */
+  | { type: "set-well"; runId: string; open: boolean };
 
 export type WorkerEvent =
   | { type: "ready"; runId: string; sample: SimulationSample }
@@ -409,7 +427,6 @@ export const DEFAULT_GAS: GasConfig = Object.freeze({
   gorSm3M3: 120,
   gasGravity: 0.72,
   temperatureC: 45,
-  initialPressureBarA: 9,
   setpointBarG: 8,
   valveKv: 55,
   downstreamPressureBarA: 2,
@@ -428,8 +445,9 @@ export const DEFAULT_TRIPLE_PID: DualPidConfig = Object.freeze({
 
 export const DEFAULT_SIMULATION: SimulationConfig = Object.freeze({
   dtS: 0.05,
-  durationS: 180,
+  durationS: 300,
   chartSampleS: 0.2,
+  feedRampS: 15,
   diameterM: 1.2,
   lengthM: 3,
   oilDensityKgM3: 850,

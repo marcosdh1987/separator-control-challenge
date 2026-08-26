@@ -36,25 +36,50 @@ export const TRIP_CONDITIONS: Record<Exclude<TripKind, null>, SafetyConditionId>
   PRESSURE_HH: "pressure-high-high",
 });
 
+/**
+ * Which low-side protections are live. During start-up a vessel is below every
+ * low limit by definition, so the low side stays bypassed until each signal has
+ * first reached its normal range — the standard field practice. High-side
+ * protection is armed from the first instant: overfilling is never expected.
+ */
+export interface LowProtectionArming {
+  total: boolean;
+  interface: boolean;
+  oilLayer: boolean;
+  pressure: boolean;
+}
+
+export const ALL_LOW_PROTECTION_ARMED: LowProtectionArming = Object.freeze({
+  total: true,
+  interface: true,
+  oilLayer: true,
+  pressure: true,
+});
+
 export function tripForLevels(
   totalLevelPct: number,
   interfaceLevelPct: number,
   oilLayerPct: number,
   config: SimulationConfig,
+  armed: LowProtectionArming = ALL_LOW_PROTECTION_ARMED,
 ): TripKind {
   if (totalLevelPct >= config.totalHighHighPct) return "TOTAL_HH";
-  if (totalLevelPct <= config.totalLowLowPct) return "TOTAL_LL";
+  if (armed.total && totalLevelPct <= config.totalLowLowPct) return "TOTAL_LL";
   if (interfaceLevelPct >= config.interfaceHighHighPct) return "INTERFACE_HH";
-  if (interfaceLevelPct <= config.interfaceLowLowPct) return "INTERFACE_LL";
-  if (oilLayerPct <= config.oilLayerLowLowPct) return "OIL_LAYER_LL";
+  if (armed.interface && interfaceLevelPct <= config.interfaceLowLowPct) return "INTERFACE_LL";
+  if (armed.oilLayer && oilLayerPct <= config.oilLayerLowLowPct) return "OIL_LAYER_LL";
   return null;
 }
 
 /** Pressure protection, in the same gauge units the operator reads. */
-export function tripForPressure(pressureBarG: number, gas: GasConfig): TripKind {
+export function tripForPressure(
+  pressureBarG: number,
+  gas: GasConfig,
+  armed = true,
+): TripKind {
   if (!Number.isFinite(pressureBarG)) return null;
   if (pressureBarG >= gas.highHighBarG) return "PRESSURE_HH";
-  if (pressureBarG <= gas.lowLowBarG) return "PRESSURE_LL";
+  if (armed && pressureBarG <= gas.lowLowBarG) return "PRESSURE_LL";
   return null;
 }
 
@@ -67,6 +92,7 @@ export function safetyWithPressure(
   pressureBarG: number,
   gas: GasConfig,
   trip = tripForPressure(pressureBarG, gas),
+  armed = true,
 ): SafetyState {
   if (trip === "PRESSURE_HH") {
     return { severity: "trip", source: "pressure", condition: "pressure-high-high", trip };
@@ -79,6 +105,9 @@ export function safetyWithPressure(
     return { severity: "alarm", source: "pressure", condition: "pressure-high", trip: null };
   }
   if (pressureBarG <= gas.lowAlarmBarG) {
+    if (!armed) return liquidSafety.severity === "safe" && liquidSafety.condition === "normal"
+      ? { severity: "safe", source: "pressure", condition: "startup", trip: null }
+      : liquidSafety;
     return { severity: "alarm", source: "pressure", condition: "pressure-low", trip: null };
   }
   return liquidSafety;
@@ -90,6 +119,7 @@ export function safetyForLevels(
   oilLayerPct: number,
   config: SimulationConfig,
   trip = tripForLevels(totalLevelPct, interfaceLevelPct, oilLayerPct, config),
+  armed: LowProtectionArming = ALL_LOW_PROTECTION_ARMED,
 ): SafetyState {
   if (trip === "TOTAL_HH") return {
     severity: "trip",
@@ -127,24 +157,21 @@ export function safetyForLevels(
     condition: "total-high",
     trip: null,
   };
-  if (totalLevelPct <= config.totalLowAlarmPct) return {
-    severity: "alarm",
-    source: "total",
-    condition: "total-low",
-    trip: null,
-  };
+  if (totalLevelPct <= config.totalLowAlarmPct) {
+    // A low reading before arming is the fill in progress, not an upset.
+    if (!armed.total) return { severity: "safe", source: "total", condition: "startup", trip: null };
+    return { severity: "alarm", source: "total", condition: "total-low", trip: null };
+  }
   if (interfaceLevelPct >= config.interfaceHighAlarmPct) return {
     severity: "alarm",
     source: "interface",
     condition: "interface-high",
     trip: null,
   };
-  if (interfaceLevelPct <= config.interfaceLowAlarmPct) return {
-    severity: "alarm",
-    source: "interface",
-    condition: "interface-low",
-    trip: null,
-  };
+  if (interfaceLevelPct <= config.interfaceLowAlarmPct) {
+    if (!armed.interface) return { severity: "safe", source: "interface", condition: "startup", trip: null };
+    return { severity: "alarm", source: "interface", condition: "interface-low", trip: null };
+  }
   return {
     severity: "safe",
     source: null,

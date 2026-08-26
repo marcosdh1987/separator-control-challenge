@@ -9,6 +9,7 @@ import type { RunResult } from "@/lib/simulation/types";
 
 const result: RunResult = {
   metrics: {
+    establishedAtS: 0,
     alarmTimeS: 0,
     recoveryTimeS: 30,
     settled: true,

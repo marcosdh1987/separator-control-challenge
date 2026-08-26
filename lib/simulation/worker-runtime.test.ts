@@ -57,7 +57,7 @@ function terminalObservation(ticks: number[], speed = 1) {
 }
 
 describe("simulation worker runtime", () => {
-  it("publishes the complete dual-loop equilibrium when ready", () => {
+  it("publishes the shut-in, empty vessel when ready", () => {
     const events: WorkerEvent[] = [];
     const runtime = new SimulationRuntime((event) => events.push(event));
 
@@ -66,16 +66,20 @@ describe("simulation worker runtime", () => {
     const ready = events.find((event) => event.type === "ready");
     expect(ready).toMatchObject({ type: "ready", runId: "run-1" });
     if (!ready || ready.type !== "ready") throw new Error("Expected ready event");
-    expect(ready.sample.total.processValuePct).toBe(50);
-    expect(ready.sample.interface.processValuePct).toBe(20);
-    expect(ready.sample.oilLayerPct).toBe(30);
+    // What the page shows before Start is what Start will begin from: nothing in
+    // the vessel, nothing flowing, valves on their seats.
+    expect(ready.sample.total.processValuePct).toBe(0);
+    expect(ready.sample.interface.processValuePct).toBe(0);
+    expect(ready.sample.oilLayerPct).toBe(0);
+    expect(ready.sample.disturbance).toBe("well-opening");
+    expect(ready.sample.safety).toMatchObject({ severity: "safe", condition: "startup" });
     expect(ready.sample.flows).toEqual({
-      totalInletM3H: 50,
+      totalInletM3H: 0,
       waterCutFraction: 0.3,
-      oilInletM3H: 35,
-      waterInletM3H: 15,
-      oilOutletM3H: 35,
-      waterOutletM3H: 15,
+      oilInletM3H: 0,
+      waterInletM3H: 0,
+      oilOutletM3H: 0,
+      waterOutletM3H: 0,
     });
     expect(events).toContainEqual({
       type: "status",
@@ -199,31 +203,34 @@ describe("simulation worker runtime", () => {
 
     expect(JSON.stringify(events)).not.toContain("metricSamples");
     const sampleEvents = events.filter((event) => event.type === "samples");
-    expect(sampleEvents.flatMap((event) => event.samples)).toHaveLength(901);
+    expect(sampleEvents.flatMap((event) => event.samples)).toHaveLength(920);
   });
 
-  it("publishes an initially unsafe run as one immediate terminal result", () => {
+  it("publishes one terminal result when the fill runs into a hostile trip", () => {
+    // The pre-balanced start could be born tripped; a cold start cannot. The
+    // nearest equivalent is a high-high placed under the fill path, which ends
+    // the run during filling with a single terminal publication.
     const events: WorkerEvent[] = [];
     const runtime = new SimulationRuntime((event) => events.push(event));
 
     runtime.handle({
       ...initialize,
-      config: { ...DEFAULT_SIMULATION, totalSetpointPct: 95 },
+      config: {
+        ...DEFAULT_SIMULATION,
+        feedRampS: 0,
+        totalLowLowPct: 1,
+        totalLowAlarmPct: 2,
+        totalHighAlarmPct: 8,
+        totalHighHighPct: 10,
+      },
     });
+    runtime.handle({ type: "start", runId: "run-1" });
+    runtime.tick(120);
 
     expect(runtime.status).toBe("tripped");
-    expect(runtime.timeS).toBe(0);
-    expect(events.map((event) => event.type)).toEqual(["ready", "status", "finished"]);
-    expect(events[0]).toMatchObject({
-      type: "ready",
-      sample: { timeS: 0, safety: { severity: "trip", trip: "TOTAL_HH" } },
-    });
-    expect(events[1]).toEqual({
-      type: "status",
-      runId: "run-1",
-      status: "tripped",
-    });
-    expect(events[2]).toMatchObject({
+    const finished = events.filter((event) => event.type === "finished");
+    expect(finished).toHaveLength(1);
+    expect(finished[0]).toMatchObject({
       type: "finished",
       runId: "run-1",
       status: "tripped",
@@ -231,36 +238,36 @@ describe("simulation worker runtime", () => {
     });
 
     runtime.handle({ type: "start", runId: "run-1" });
-    runtime.handle({ type: "pause", runId: "run-1" });
     runtime.tick(30);
-    expect(events).toHaveLength(3);
+    expect(events.filter((event) => event.type === "finished")).toHaveLength(1);
   });
 
-  it("replays one terminal publication when an unsafe run is reset", () => {
+  it("replays the fill identically when such a run is reset", () => {
     const events: WorkerEvent[] = [];
     const runtime = new SimulationRuntime((event) => events.push(event));
-    runtime.handle({
+    const hostile = {
       ...initialize,
-      config: { ...DEFAULT_SIMULATION, interfaceSetpointPct: 50 },
-    });
+      config: {
+        ...DEFAULT_SIMULATION,
+        feedRampS: 0,
+        totalLowLowPct: 1,
+        totalLowAlarmPct: 2,
+        totalHighAlarmPct: 8,
+        totalHighHighPct: 10,
+      },
+    };
+    runtime.handle(hostile);
+    runtime.handle({ type: "start", runId: "run-1" });
+    runtime.tick(120);
+    const firstTrip = runtime.timeS;
 
     runtime.handle({ type: "reset", runId: "run-1" });
     runtime.handle({ type: "start", runId: "run-1" });
-    runtime.tick(1);
+    runtime.tick(120);
 
-    expect(events.map((event) => event.type)).toEqual([
-      "ready",
-      "status",
-      "finished",
-      "ready",
-      "status",
-      "finished",
-    ]);
+    // Determinism holds through the new start-up: same seed, same trip instant.
+    expect(runtime.timeS).toBe(firstTrip);
     expect(events.filter((event) => event.type === "finished")).toHaveLength(2);
-    expect(events.filter((event) => event.type === "status")).toEqual([
-      { type: "status", runId: "run-1", status: "tripped" },
-      { type: "status", runId: "run-1", status: "tripped" },
-    ]);
   });
 
   it("does not duplicate terminal events after a normal completion", () => {

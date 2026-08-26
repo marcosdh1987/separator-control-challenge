@@ -35,6 +35,17 @@
   model) remain bit-for-bit unchanged. Documentation updated: `docs/physical-model.md`
   has new gas section, `docs/scoring.md` reflects pressure loop in tracking/stability
   budget, ADR-0003 explains protocol versioning and optional gas config.
+- **Cold-start and live well control** implemented: simulator now begins with empty vessel,
+  shut-in well, and ramped feed opening (15 s default); well can be toggled live via
+  `set-well` command (protocol version 3). Low-side protections arm when each signal first
+  reaches its normal range, staying armed for the run (standard field practice). Scoring
+  begins when total level enters target band (`establishedAtS`). Gas cap initializes
+  blanketted at header pressure (2 bar abs); working pressure builds during fill. Scenario
+  perturbations re-timed: feed-step at 180 s, slug 185–205 s, restriction at 195 s,
+  slow-water-dump at 180 s, gor-surge at 190 s. Default `durationS` now 300 s (was 180 s);
+  `feedRampS` default 15 s. Golden runs regenerated as new physics baseline. Lection 1
+  now teaches full cold-start sequence. Documentation updated: physical model cold-start
+  section, scoring establishment window, model-card fidelity table, Spanish instructor guide.
 
 ## Constraints & decisions in force
 

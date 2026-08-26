@@ -56,8 +56,9 @@ async function expectLockedPids(page: Page) {
 }
 
 async function expectResetLevels(page: Page) {
-  await expect(page.getByRole("group", { name: "Total level live values" })).toContainText("50.0%");
-  await expect(page.getByRole("group", { name: "Interface live values" })).toContainText("20.0%");
+  // Reset returns to the pre-run state: empty, shut in, valves seated.
+  await expect(page.getByRole("group", { name: "Total level live values" })).toContainText("0.0%");
+  await expect(page.getByRole("group", { name: "Interface live values" })).toContainText("0.0%");
 }
 
 /**
@@ -176,21 +177,26 @@ test.describe("separator control challenge", () => {
     await expect(results.getByRole("button", { name: "Tune and retry" })).toBeVisible();
   });
 
-  test("publishes an unsafe initial high-high trip and applies the trip modifier", async ({ page }) => {
+  test("publishes a fill-path high-high trip and applies the trip modifier", async ({ page }) => {
+    // A high-high placed under the fill path: the vessel trips while filling,
+    // because high-side protection is armed from the first instant.
     await interceptSimulationConfig(page, {
-      durationS: 5,
-      totalLowLowPct: 10,
-      totalLowAlarmPct: 20,
-      totalHighAlarmPct: 40,
-      totalHighHighPct: 49.99,
+      durationS: 60,
+      feedRampS: 0,
+      totalLowLowPct: 1,
+      totalLowAlarmPct: 2,
+      totalHighAlarmPct: 8,
+      totalHighHighPct: 10,
     });
     await page.goto("/challenge");
+    await page.getByRole("button", { name: "4× speed" }).click();
+    await startAttempt(page);
 
     const results = page.getByRole("dialog", { name: "Attempt results" });
-    await expect(results).toBeVisible({ timeout: 15_000 });
-    await expect(results.getByRole("listitem")).toContainText(
-      "Total level high-high trip cap",
-    );
+    await expect(results).toBeVisible({ timeout: 30_000 });
+    await expect(
+      results.getByRole("listitem").filter({ hasText: "Total level high-high trip cap" }),
+    ).toBeVisible();
     const sceneTrip = page.locator(".scene-safety-label.is-trip");
     await expect(sceneTrip).toContainText("TRIP", { timeout: 30_000 });
     await expect(sceneTrip).toContainText("Total level high-high trip");
@@ -198,19 +204,26 @@ test.describe("separator control challenge", () => {
   });
 
   test("reports a forced interface high-high trip through the public Worker protocol", async ({ page }) => {
+    // The interface climbs steadily while the vessel fills, so a lowered
+    // interface high-high fires mid-fill through the ordinary protocol.
     await interceptSimulationConfig(page, {
-      durationS: 5,
-      interfaceLowLowPct: 3,
-      interfaceLowAlarmPct: 8,
-      interfaceHighAlarmPct: 19,
-      interfaceHighHighPct: 19.99,
+      durationS: 120,
+      feedRampS: 0,
+      interfaceLowLowPct: 1,
+      interfaceLowAlarmPct: 2,
+      interfaceHighAlarmPct: 9,
+      interfaceHighHighPct: 10,
     });
     await page.goto("/challenge");
+    await page.getByRole("button", { name: "4× speed" }).click();
+    await startAttempt(page);
 
     const results = page.getByRole("dialog", { name: "Attempt results" });
-    await expect(results).toBeVisible({ timeout: 15_000 });
+    await expect(results).toBeVisible({ timeout: 30_000 });
     await expect(results.getByText("Interface high-high trip", { exact: true }).first()).toBeVisible();
-    await expect(results.getByRole("listitem")).toContainText("Interface high-high trip cap");
+    await expect(
+      results.getByRole("listitem").filter({ hasText: "Interface high-high trip cap" }),
+    ).toBeVisible();
     const score = await results.locator(".score-ring strong").textContent();
     expect(Number(score)).toBeLessThanOrEqual(35);
     await expect(
@@ -280,8 +293,8 @@ test.describe("separator control challenge", () => {
     const resetView = page.getByRole("button", { name: "Reset 3D view" });
     await expect(resetView).toBeVisible({ timeout: 30_000 });
     await expect(page.locator(".separator-canvas canvas")).toBeVisible();
-    await expect(page.locator('[data-valve-tag="LV-101"]')).toContainText("50.0% actual");
-    await expect(page.locator('[data-valve-tag="WV-101"]')).toContainText("50.0% actual");
+    await expect(page.locator('[data-valve-tag="LV-101"]')).toContainText("0.0% actual");
+    await expect(page.locator('[data-valve-tag="WV-101"]')).toContainText("0.0% actual");
     const sceneLabelTypography = await page.locator('[data-valve-tag="LV-101"]').evaluate((label) => ({
       description: Number.parseFloat(getComputedStyle(label.querySelector("span")!).fontSize),
       actual: Number.parseFloat(getComputedStyle(label.querySelector("output")!).fontSize),
@@ -294,7 +307,7 @@ test.describe("separator control challenge", () => {
       Number.parseFloat(getComputedStyle(source).fontSize),
     );
     expect(safetySourceSize).toBeGreaterThanOrEqual(10);
-    await expect(page.locator('[data-flow-name="Feed"]')).toHaveAttribute("data-flow-direction", "1");
+    await expect(page.locator('[data-flow-name="Feed"]')).toHaveAttribute("data-flow-direction", "0");
     await expect(page.getByRole("region", { name: /separator process cutaway/i })).toHaveCount(0);
     const resetBox = await resetView.boundingBox();
     expect(resetBox?.height).toBeGreaterThanOrEqual(44);
@@ -355,8 +368,8 @@ test.describe("separator control challenge", () => {
       .filter({ has: page.getByText("Total level process value", { exact: true }) })
       .locator("dd");
     await expect.poll(() => totalProcessValue.textContent(), { timeout: 15_000 })
-      .not.toBe("50.0%");
-    await expect(page.locator(".scene-safety-label")).toContainText("Normal operating envelope");
+      .not.toBe("0.0%");
+    await expect(page.locator(".scene-safety-label")).toContainText(/Filling|Normal operating envelope/);
   });
 
   test("keeps the semantic fallback and controls usable without WebGL", async ({ page }) => {
@@ -391,7 +404,7 @@ test.describe("separator control challenge", () => {
     await expect(page.getByRole("button", { name: "Reset 3D view" })).toBeVisible({ timeout: 30_000 });
     await page.getByRole("button", { name: "4× speed" }).click();
     await startAttempt(page);
-    await expect.poll(() => readRemainingSeconds(page)).toBeLessThan(180);
+    await expect.poll(() => readRemainingSeconds(page)).toBeLessThan(300);
     const beforeLoss = await readRemainingSeconds(page);
 
     const contextExtension = await page.locator(".separator-canvas canvas").evaluate((element) => {

@@ -46,15 +46,15 @@ describe("canonical dual-loop scenario state", () => {
     });
   });
 
-  it("applies the feed step at exactly 30 seconds", () => {
+  it("applies the feed step at exactly 180 seconds", () => {
     expect(scenarioAt("feed-step", 29.95).totalInletM3H).toBe(50);
-    expect(scenarioAt("feed-step", 30).totalInletM3H).toBe(70);
+    expect(scenarioAt("feed-step", 180).totalInletM3H).toBe(70);
   });
 
   it("models the water-rich slug at its boundaries and peak", () => {
-    const start = scenarioAt("water-rich-slug", 35);
-    const peak = scenarioAt("water-rich-slug", 45);
-    const end = scenarioAt("water-rich-slug", 55);
+    const start = scenarioAt("water-rich-slug", 185);
+    const peak = scenarioAt("water-rich-slug", 195);
+    const end = scenarioAt("water-rich-slug", 205);
     expect(start.totalInletM3H).toBeCloseTo(50, 10);
     expect(peak.totalInletM3H).toBeCloseTo(110, 10);
     expect(peak.waterCutFraction).toBeCloseTo(0.65, 10);
@@ -62,14 +62,14 @@ describe("canonical dual-loop scenario state", () => {
     expect(end.waterCutFraction).toBeCloseTo(0.3, 10);
   });
 
-  it("restricts only oil capacity at exactly 45 seconds", () => {
+  it("restricts only oil capacity at exactly 195 seconds", () => {
     expect(scenarioAt("oil-outlet-restriction", 44.95).oilCapacityFactor).toBe(1);
-    expect(scenarioAt("oil-outlet-restriction", 45)).toMatchObject({ oilCapacityFactor: 0.6, waterCapacityFactor: 1 });
+    expect(scenarioAt("oil-outlet-restriction", 195)).toMatchObject({ oilCapacityFactor: 0.6, waterCapacityFactor: 1 });
   });
 
   it("keeps the water actuator slow and raises water cut at 30 seconds", () => {
     expect(scenarioAt("slow-water-dump", 29.95)).toMatchObject({ waterActuatorTauS: 12, waterCutFraction: 0.3 });
-    expect(scenarioAt("slow-water-dump", 30)).toMatchObject({ waterActuatorTauS: 12, waterCutFraction: 0.5, totalInletM3H: 50 });
+    expect(scenarioAt("slow-water-dump", 180)).toMatchObject({ waterActuatorTauS: 12, waterCutFraction: 0.5, totalInletM3H: 50 });
   });
 
   it("adds deterministic noise and sample hold only to the interface sensor", () => {
@@ -80,8 +80,8 @@ describe("canonical dual-loop scenario state", () => {
   });
 
   it("returns fresh canonical states", () => {
-    const first = scenarioAt("slow-water-dump", 30);
-    const second = scenarioAt("slow-water-dump", 30);
+    const first = scenarioAt("slow-water-dump", 180);
+    const second = scenarioAt("slow-water-dump", 180);
     expect(first).not.toBe(second);
     first.totalInletM3H = 999;
     expect(second.totalInletM3H).toBe(50);

@@ -52,7 +52,9 @@ function loopAt(sample: SimulationSample, id: LoopId): LoopSample {
  * contribute no time and do not move the last accepted endpoint.
  */
 function durationsFor(samples: SimulationSample[]): number[] {
-  let previousTimeS = 0;
+  let previousTimeS = samples.length > 0 && Number.isFinite(samples[0].timeS)
+    ? samples[0].timeS
+    : 0;
 
   return samples.map((sample) => {
     if (!Number.isFinite(sample.timeS) || sample.timeS < previousTimeS) return 0;
@@ -363,10 +365,21 @@ export function calculateMetrics(
   integralLimits: IntegralLimits,
 ): RunMetrics {
   if (samples.length === 0) throw new Error("Metrics require at least one sample");
-  const metricSamples = acceptedMetricSamples(samples);
-  if (metricSamples.length === 0) {
+  const allSamples = acceptedMetricSamples(samples);
+  if (allSamples.length === 0) {
     throw new Error("Metrics require at least one valid sample");
   }
+
+  // A run begins empty and shut in, so its opening minutes are start-up rather
+  // than control. Scoring starts when the total level first enters its target
+  // band — the moment the process is established and holding it becomes the job.
+  // A run that never establishes is scored whole: it failed at step one.
+  const establishedIndex = allSamples.findIndex((sample) =>
+    Math.abs(sample.total.processValuePct - config.totalSetpointPct) <=
+      config.totalTargetBandPct,
+  );
+  const metricSamples = establishedIndex > 0 ? allSamples.slice(establishedIndex) : allSamples;
+  const establishedAtS = establishedIndex > 0 ? metricSamples[0].timeS : 0;
 
   const durationsS = durationsFor(metricSamples);
   const loops: RunMetrics["loops"] = {
@@ -424,6 +437,7 @@ export function calculateMetrics(
       : minimum, Number.POSITIVE_INFINITY);
   const recovery = calculateJointRecovery(metricSamples, disturbanceEndS, config);
   return {
+    establishedAtS,
     alarmTimeS: finiteNonnegative(alarmTimeS),
     ...recovery,
     minimumOilLayerPct: Number.isFinite(minimumOilLayerPct) ? minimumOilLayerPct : 0,
@@ -431,7 +445,7 @@ export function calculateMetrics(
     ...(pressureLoop ? { pressureLoop } : {}),
     actuators,
     ...(gasActuator ? { gasActuator } : {}),
-    phaseTotals: calculatePhaseTotals(metricSamples, durationsS),
+    phaseTotals: calculatePhaseTotals(allSamples, durationsFor(allSamples)),
     trip,
   };
 }

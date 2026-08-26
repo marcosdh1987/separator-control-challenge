@@ -4,22 +4,24 @@ import type { LessonId, LessonLevel } from "@/lib/training/types";
 const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "what-is-a-separator": {
     title: "Qué hace un separador trifásico",
-    summary: "Tiempo de residencia, las dos interfases, y las dos formas en que falla la separación.",
+    summary: "Arranque en frío: llená el recipiente, mirá cómo toman el control los lazos, y entendé qué protegen.",
     theory: [
       "Un separador es un recipiente a presión cuyo único trabajo es tener quieta la corriente del pozo el tiempo suficiente para que la gravedad haga lo suyo. El gas sube, el petróleo flota, el agua decanta. Todo lo demás adentro del recipiente existe para proteger eso.",
       "La magnitud que manda es el tiempo de residencia: cuánto tiempo permanece el fluido adentro, que es simplemente volumen sobre caudal. Un crudo liviano en un recipiente templado puede necesitar de tres a cinco minutos; un crudo pesado y frío puede necesitar veinte o treinta. Si sube el caudal de entrada, el tiempo de residencia baja, las gotas dispersas nunca alcanzan a llegar a su propia fase, y la eficiencia de separación cae en picada.",
       "Entre el petróleo y el agua rara vez hay una línea limpia. Sólidos finos, surfactantes y emulsiones pueden formar una capa estable entre ambos — la rag layer — que no obedece a las leyes de asentamiento y puede crecer hasta bloquear los vertederos internos.",
       "La separación falla en dos direcciones, y las dos son problemas de nivel. Si el líquido sube demasiado, el gas que sale por arriba se lleva gotas con él: liquid carry-over. Si baja demasiado, el gas se escapa por la salida de líquido: gas carry-under. El control de nivel existe para mantener el recipiente entre esas dos fallas.",
+      "Toda corrida acá empieza como empieza un ensayo real: recipiente vacío, pozo cerrado, válvulas cerradas. Apretar Iniciar abre el pozo. Mientras el recipiente se llena, los controladores mantienen sus válvulas cerradas — todavía no hay nada que descargar — y empiezan a abrirlas recién cuando el nivel se acerca a su setpoint. Prestá atención a ese momento: es cuando los lazos toman el control del llenado.",
+      "Durante el llenado el recipiente está por debajo de todos los límites de nivel bajo, y eso no es una falla: las protecciones de nivel bajo quedan anuladas hasta que cada nivel alcanza por primera vez su rango normal, exactamente como en el campo. De ahí en adelante quedan armadas, y un nivel que baja es un evento real.",
     ],
     fieldNote:
       "El controlador de nivel no está para clavar un número. Está para proteger el tiempo de residencia y mantener el sello de líquido en la salida. El número es solo la forma de pedir eso.",
     briefing: [
-      "Arrancá la corrida y miralá un rato. Nada está perturbando este separador.",
-      "Ubicá el nivel total y la interfase petróleo/agua en las lecturas, y seguilos en las tendencias.",
-      "Fijate que las dos válvulas quedan cerca de media carrera: eso es un recipiente en equilibrio, no un recipiente sin hacer nada.",
+      "Apretá Iniciar y mirá cómo se llena el recipiente. Las válvulas quedan cerradas: eso es correcto, no están trabadas.",
+      "Mirá la válvula de petróleo cuando el nivel total se acerca al 50%: empieza a abrir justo antes del setpoint, y el nivel se asienta después de un pequeño sobrepaso.",
+      "Cuando todo esté quieto, probá Cerrar pozo, y mirá cómo los lazos cierran las válvulas antes de que el recipiente se vacíe. Volvé a abrirlo y dejá que se recupere.",
     ],
     debriefPassed: [
-      "Así se ve un separador asentado: niveles planos, válvulas quietas, y los dos lazos con autoridad de sobra.",
+      "Acabás de hacer una puesta en marcha completa: llenado, entrega a los lazos, y un recipiente asentado con las dos válvulas cerca de media carrera y autoridad de sobra.",
       "De acá en adelante siempre va a haber algo empujando al recipiente fuera de este estado. Todas las lecciones son sobre qué hacés cuando eso pasa.",
     ],
     debriefFailed: [
@@ -230,6 +232,7 @@ export const training: TrainingMessages = {
     "settling-time": "Tiempo de establecimiento",
     "valve-travel": "Recorrido total de válvulas",
     "score": "Puntaje",
+    "offset-removed": "El offset permanente fue eliminado",
     "steady-state-offset": "Quedó un offset permanente, como se esperaba",
   },
 

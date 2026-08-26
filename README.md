@@ -22,6 +22,10 @@ does and does not represent is stated plainly in the [model card](docs/model-car
   presentation mode for teaching in front of a class.
 - **Bilingual, English and Spanish**, detected from the browser and switchable at any
   time — including all the teaching material.
+- **Cold-start realism**: every run begins empty, well shut in, valves closed. The feed ramps in
+  over 15 seconds and protection logic arms as signals reach normal ranges — no equilibrium magic.
+- **Live well control**: close or open the well during a run to test loop response and see why
+  tight control is the margin against a trip.
 - **Three coupled control loops**: total liquid level, oil/water interface, and
   optionally gas-cap pressure, which is where trainees first meet loop interaction.
 - **Real-gas thermodynamics** for the pressure loop: compressibility from Dranchuk &

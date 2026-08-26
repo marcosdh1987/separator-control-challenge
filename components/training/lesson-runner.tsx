@@ -64,6 +64,8 @@ export function LessonRunner({ lesson, onOutcome }: LessonRunnerProps) {
         sample={simulation.currentSample}
         speed={simulation.speed}
         status={simulation.status}
+        wellOpen={simulation.wellOpen}
+        onWellChange={simulation.setWell}
         onChange={setPid}
         onPause={simulation.pause}
         onReset={simulation.reset}

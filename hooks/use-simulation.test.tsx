@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createEquilibriumSample, useSimulation } from "./use-simulation";
-import { createEngine, finishEngine } from "@/lib/simulation/engine";
+import { createEngine, runToEnd } from "@/lib/simulation/engine";
 import {
   DEFAULT_DUAL_PID,
   DEFAULT_SIMULATION,
@@ -59,12 +59,13 @@ const equilibriumSample = createEngine(
   1001,
 ).samples[0];
 
-const completedResult = finishEngine(createEngine(
-  { ...DEFAULT_SIMULATION, totalSetpointPct: 95 },
+// A short complete run: the fixture only needs a real terminal result.
+const completedResult = runToEnd(
+  { ...DEFAULT_SIMULATION, durationS: 1 },
   DEFAULT_DUAL_PID,
   "normal",
   1001,
-)).result;
+).result;
 
 function latestInitialize(worker: ManualWorker) {
   const request = worker.messages.filter(

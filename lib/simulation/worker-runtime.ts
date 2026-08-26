@@ -1,4 +1,4 @@
-import { createEngine, finishEngine, stepEngine, type EngineState } from "./engine";
+import { createEngine, finishEngine, setWellOpen, stepEngine, type EngineState } from "./engine";
 import { WORKER_PROTOCOL_VERSION } from "./types";
 import type { SimulationStatus, WorkerEvent, WorkerRequest } from "./types";
 
@@ -87,6 +87,13 @@ export class SimulationRuntime {
       if (this.engine.status === "idle" || this.engine.status === "paused") {
         this.engine = { ...this.engine, status: "running" };
         this.emit({ type: "status", runId: request.runId, status: "running" });
+      }
+      return;
+    }
+    if (request.type === "set-well") {
+      // Valid while running or paused; a finished run has no well to operate.
+      if (this.engine.status === "running" || this.engine.status === "paused") {
+        this.engine = setWellOpen(this.engine, request.open);
       }
       return;
     }

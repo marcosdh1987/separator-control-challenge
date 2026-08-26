@@ -4,6 +4,19 @@ Scores use true simulated level and actual valve position; measurement noise onl
 affects the PID input. All values are calculated from the same fixed-step history,
 so identical configuration, scenario, and seed produce the same result.
 
+## Establishment and scoring window
+
+A run begins cold — empty vessel, well shut in. The simulator opens the well and begins feeding. For the first minutes, the process is in start-up: filling the vessel, establishing initial flow balance, and preparing the loops to do their job. Scoring does not begin at `t = 0`; it begins when the process is *established*.
+
+**Establishment** is defined as the moment when the total level first enters its target band (setpoint ± band). In the default configuration, this is when total level first reaches the range [45%, 55%]. The time at which this occurs is recorded as `establishedAtS`.
+
+- If establishment occurs at `t = 45 s`, scoring metrics are calculated only over the window `t ∈ [45 s, end]`.
+- If the run completes without the total level ever entering its target band (a failed start-up or a persistent miss), the entire run from `t = 0` is scored.
+
+This convention reflects the practical reality: before establishment, every attempt looks identical (filling). Scoring after establishment separates control skill from the inevitable early transient.
+
+**Phase totals** (inlet/outlet flows and inventories) always cover the complete run from `t = 0`. This allows verification of a mass balance: `initial_inventory + inlet_total − outlet_total = final_inventory`. The mass balance closes exactly, confirming the correctness of the physical model regardless of when scoring begins.
+
 ## Base score (100 points)
 
 The score comprises five weighted categories. When a gas cap (pressure loop) is

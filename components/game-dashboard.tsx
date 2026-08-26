@@ -76,6 +76,16 @@ export function GameDashboard() {
     ? `${advisory.title}: ${advisory.suggestion}`
     : messages.education.gainAdvisoryFallback;
   const live = useMemo(() => {
+    // Live figures follow the same rule as scoring: the fill is start-up, not
+    // evidence, so accumulation begins once the level first enters its band.
+    const establishedIndex = simulation.samples.findIndex((item) =>
+      Math.abs(item.total.processValuePct - item.total.setpointPct) <=
+        DEFAULT_SIMULATION.totalTargetBandPct);
+    const scored = establishedIndex > 0
+      ? simulation.samples.slice(establishedIndex)
+      : establishedIndex === 0
+        ? simulation.samples
+        : [];
     let totalOutsideS = 0;
     let interfaceOutsideS = 0;
     let oilTravelPct = 0;
@@ -84,21 +94,21 @@ export function GameDashboard() {
     let interfaceAbsoluteError = 0;
     let maximumTotalPct = sample.total.processValuePct;
     let minimumInterfacePct = sample.interface.processValuePct;
-    for (let index = 0; index < simulation.samples.length; index += 1) {
-      const item = simulation.samples[index];
+    for (let index = 0; index < scored.length; index += 1) {
+      const item = scored[index];
       maximumTotalPct = Math.max(maximumTotalPct, item.total.processValuePct);
       minimumInterfacePct = Math.min(minimumInterfacePct, item.interface.processValuePct);
       totalAbsoluteError += Math.abs(item.total.processValuePct - item.total.setpointPct);
       interfaceAbsoluteError += Math.abs(item.interface.processValuePct - item.interface.setpointPct);
       if (Math.abs(item.total.processValuePct - item.total.setpointPct) > DEFAULT_SIMULATION.totalTargetBandPct) totalOutsideS += DEFAULT_SIMULATION.chartSampleS;
       if (Math.abs(item.interface.processValuePct - item.interface.setpointPct) > DEFAULT_SIMULATION.interfaceTargetBandPct) interfaceOutsideS += DEFAULT_SIMULATION.chartSampleS;
-      const previous = simulation.samples[index - 1];
+      const previous = scored[index - 1];
       if (previous) {
         oilTravelPct += Math.abs(item.total.valvePositionPct - previous.total.valvePositionPct);
         waterTravelPct += Math.abs(item.interface.valvePositionPct - previous.interface.valvePositionPct);
       }
     }
-    const count = Math.max(1, simulation.samples.length);
+    const count = Math.max(1, scored.length);
     return {
       totalMaePct: totalAbsoluteError / count,
       interfaceMaePct: interfaceAbsoluteError / count,
@@ -270,6 +280,8 @@ export function GameDashboard() {
             sample={sample}
             speed={simulation.speed}
             status={simulation.status}
+            wellOpen={simulation.wellOpen}
+            onWellChange={simulation.setWell}
             onChange={setPid}
             onPause={simulation.pause}
             onReset={resetAttempt}

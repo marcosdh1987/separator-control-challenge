@@ -4,7 +4,6 @@ import {
   horizontalLevelFromVolume,
 } from "./geometry";
 import {
-  createEquilibriumSnapshot,
   safetyForLevels,
   safetyWithPressure,
   tripForLevels,
@@ -44,11 +43,11 @@ import type {
 const EPSILON = 1e-9;
 /**
  * A default-length run emits one sample per chart period plus the opening t=0
- * sample, so the buffer keeps 901 and no longer drops the first point of a
- * complete run. Longer or finer-grained runs still truncate here, which is what
- * bounds the memory the chart holds.
+ * sample: 300 s at 0.2 s is 1500 intervals, so the buffer keeps 1501 and a
+ * complete run retains its opening point. Longer or finer-grained runs still
+ * truncate here, which is what bounds the memory the chart holds.
  */
-const MAX_SAMPLES = 901;
+const MAX_SAMPLES = 1501;
 // Sanitized inputs expire at most five controller periods per physics step.
 // This higher ceiling only guards against manually forged EngineState values.
 const MAX_CLOCK_EXPIRATIONS_PER_STEP = 64;
@@ -78,6 +77,19 @@ export interface EngineState {
   interfaceLevelPct: number;
   oilLayerPct: number;
   flows: PhaseFlows;
+  /** Whether the operator wants the well flowing. Start opens it. */
+  wellOpen: boolean;
+  /**
+   * How far open the well actually is, 0..1. It ramps toward the target at the
+   * configured feed-ramp rate, because a choke is never a step in either direction.
+   */
+  wellFactor: number;
+  /**
+   * Low-side protection is bypassed until each signal has first risen into its
+   * normal range — the standard start-up practice. An empty vessel is below every
+   * low trip by definition, and tripping on that would make filling impossible.
+   */
+  armedLow: ArmedLowProtection;
   /** Present only when the configuration includes a gas cap. */
   gas?: GasState;
   gasFlows?: { inletSm3H: number; outletSm3H: number; gasVolumeM3: number };
@@ -86,6 +98,13 @@ export interface EngineState {
   samples: SimulationSample[];
   /** Full chart-resolution history used only for terminal metrics and scoring. */
   metricSamples: SimulationSample[];
+}
+
+export interface ArmedLowProtection {
+  total: boolean;
+  interface: boolean;
+  oilLayer: boolean;
+  pressure: boolean;
 }
 
 export interface CompletedRun {
@@ -132,11 +151,12 @@ function consumeClockPeriods(elapsedS: number, periodS: number): ClockConsumptio
   return { expirations, residualS };
 }
 
-function createController(measurementPct: number): ControllerRuntime {
+/** A controller as found at start-up: valve on its seat, nothing accumulated. */
+function createShutController(measurementPct = 0): ControllerRuntime {
   return {
     measuredValuePct: measurementPct,
-    commandPct: 50,
-    valvePositionPct: 50,
+    commandPct: 0,
+    valvePositionPct: 0,
     pidState: createPidState(),
     pidTerms: { proportional: 0, integral: 0, derivative: 0 },
     controllerElapsedS: 0,
@@ -154,10 +174,17 @@ function safetyFor(engine: EngineState): SafetyState {
     engine.oilLayerPct,
     engine.config,
     liquidTrip,
+    engine.armedLow,
   );
   const gasConfig = engine.config.gas;
   if (!gasConfig || engine.gasPressureBarG === undefined) return liquid;
-  return safetyWithPressure(liquid, engine.gasPressureBarG, gasConfig, engine.trip === "PRESSURE_HH" || engine.trip === "PRESSURE_LL" ? engine.trip : null);
+  return safetyWithPressure(
+    liquid,
+    engine.gasPressureBarG,
+    gasConfig,
+    engine.trip === "PRESSURE_HH" || engine.trip === "PRESSURE_LL" ? engine.trip : null,
+    engine.armedLow.pressure,
+  );
 }
 
 function makeLoopSample(
@@ -186,19 +213,14 @@ interface GasSeed {
 }
 
 /**
- * Place the gas cap at its stated operating pressure so a run starts in balance
- * rather than swinging while the cap fills.
+ * A shut-in, empty separator: the cap is the whole vessel, sitting at the
+ * downstream header pressure it was left blanketed at. Working pressure is
+ * something the run has to build, the same way it has to build level.
  */
-function seedGasCap(
-  config: SimulationConfig,
-  gas: GasConfig,
-  liquidVolumeM3: number,
-  oilInletM3H: number,
-): GasSeed {
-  const vesselVolumeM3 = fullCylinderVolume(config.diameterM, config.lengthM);
-  const gasVolumeM3 = Math.max(vesselVolumeM3 * 0.01, vesselVolumeM3 - liquidVolumeM3);
+function seedShutInGasCap(config: SimulationConfig, gas: GasConfig): GasSeed {
+  const gasVolumeM3 = fullCylinderVolume(config.diameterM, config.lengthM);
   const moles = molesForPressure(
-    gas.initialPressureBarA,
+    gas.downstreamPressureBarA,
     gasVolumeM3,
     gas.temperatureC,
     gas.gasGravity,
@@ -207,7 +229,7 @@ function seedGasCap(
   return {
     state: { moles },
     pressureBarG: barAToBarG(pressure.pressureBarA),
-    inletSm3H: Math.max(0, oilInletM3H) * gas.gorSm3M3,
+    inletSm3H: 0,
     gasVolumeM3,
   };
 }
@@ -343,49 +365,69 @@ export function createEngine(
     0,
     sanitizedConfig.actuatorTauS,
   );
-  const equilibrium = createEquilibriumSnapshot(sanitizedConfig, scenario);
+  // A run begins the way a real test does: vessel empty, well shut in, valves
+  // closed. Start opens the well; everything after that is physics. The old
+  // pre-balanced equilibrium start hid exactly the part of the job — establishing
+  // the process — that the course exists to teach.
   const controllers: EngineState["controllers"] = {
-    total: createController(equilibrium.totalLevelPct),
-    interface: createController(equilibrium.interfaceLevelPct),
+    total: createShutController(),
+    interface: createShutController(),
   };
   const gasSetup = sanitizedConfig.gas
-    ? seedGasCap(sanitizedConfig, sanitizedConfig.gas, equilibrium.oilVolumeM3 + equilibrium.waterVolumeM3, equilibrium.flows.oilInletM3H)
+    ? seedShutInGasCap(sanitizedConfig, sanitizedConfig.gas)
     : undefined;
-  if (gasSetup) controllers.pressure = createController(gasSetup.pressureBarG);
+  if (gasSetup) controllers.pressure = createShutController(gasSetup.pressureBarG);
+
+  const emptyFlows: PhaseFlows = {
+    totalInletM3H: 0,
+    waterCutFraction: scenario.waterCutFraction,
+    oilInletM3H: 0,
+    waterInletM3H: 0,
+    oilOutletM3H: 0,
+    waterOutletM3H: 0,
+  };
+
   const engine: EngineState = {
     config: sanitizedConfig,
     pidConfig: sanitizedPidConfig,
     scenarioId,
     rngState: seed >>> 0,
-    status: equilibrium.trip ? "tripped" : "running",
-    trip: equilibrium.trip,
+    status: "running",
+    trip: null,
     timeS: 0,
     controllers,
-    oilVolumeM3: equilibrium.oilVolumeM3,
-    waterVolumeM3: equilibrium.waterVolumeM3,
-    totalLevelPct: equilibrium.totalLevelPct,
-    interfaceLevelPct: equilibrium.interfaceLevelPct,
-    oilLayerPct: equilibrium.oilLayerPct,
-    flows: equilibrium.flows,
+    oilVolumeM3: 0,
+    waterVolumeM3: 0,
+    totalLevelPct: 0,
+    interfaceLevelPct: 0,
+    oilLayerPct: 0,
+    flows: emptyFlows,
+    wellOpen: true,
+    wellFactor: 0,
+    armedLow: { total: false, interface: false, oilLayer: false, pressure: false },
     gas: gasSetup?.state,
     gasPressureBarG: gasSetup?.pressureBarG,
     gasFlows: gasSetup
-      ? { inletSm3H: gasSetup.inletSm3H, outletSm3H: gasSetup.inletSm3H, gasVolumeM3: gasSetup.gasVolumeM3 }
+      ? { inletSm3H: 0, outletSm3H: 0, gasVolumeM3: gasSetup.gasVolumeM3 }
       : undefined,
     sampleElapsedS: 0,
     samples: [],
     metricSamples: [],
   };
 
-  const openingSample = gasSetup
-    ? makeSample(engine, scenario.disturbance)
-    : equilibrium.sample;
+  const openingSample = makeSample(engine, "well-opening");
 
   return {
     ...engine,
     samples: [openingSample],
     metricSamples: [openingSample],
   };
+}
+
+/** Toggle the well while a run is live. The change ramps; nothing jumps. */
+export function setWellOpen(engine: EngineState, open: boolean): EngineState {
+  if (engine.wellOpen === open) return engine;
+  return { ...engine, wellOpen: open };
 }
 
 interface GasStepContext {
@@ -458,7 +500,7 @@ function stepGas(
       outletSm3H: result.gasOutletSm3H,
       gasVolumeM3: result.gasVolumeM3,
     },
-    trip: tripForPressure(pressureBarG, gasConfig),
+    trip: tripForPressure(pressureBarG, gasConfig, engine.armedLow.pressure),
   };
 }
 
@@ -468,6 +510,13 @@ export function stepEngine(engine: EngineState): EngineState {
   const { config, pidConfig } = engine;
   const timeS = Number((engine.timeS + config.dtS).toFixed(8));
   const scenario = scenarioAt(engine.scenarioId, timeS, config.actuatorTauS);
+
+  // The well moves toward what the operator asked for at the choke-opening rate.
+  // With a zero ramp it is a switch, which the tests use for forced conditions.
+  const wellRate = config.feedRampS > 0 ? config.dtS / config.feedRampS : 1;
+  const wellFactor = engine.wellOpen
+    ? Math.min(1, engine.wellFactor + wellRate)
+    : Math.max(0, engine.wellFactor - wellRate);
 
   // When both sensor clocks expire in one physics step, consume every total
   // sample first and then every interface sample. This stable ordering keeps
@@ -532,7 +581,7 @@ export function stepEngine(engine: EngineState): EngineState {
   };
 
   const requestedInlet = splitFeed(
-    scenario.totalInletM3H,
+    scenario.totalInletM3H * wellFactor,
     scenario.waterCutFraction,
   );
   const requestedOutlet = calculatePhaseOutletFlows({
@@ -566,6 +615,18 @@ export function stepEngine(engine: EngineState): EngineState {
   );
   const oilLayerPct = Math.max(0, totalLevelPct - interfaceLevelPct);
 
+  // Low protection arms the first time each signal reaches its normal range, and
+  // stays armed: from then on a falling level is a real event, not start-up.
+  const armedLow: ArmedLowProtection = {
+    total: engine.armedLow.total || totalLevelPct >= config.totalLowAlarmPct,
+    interface: engine.armedLow.interface || interfaceLevelPct >= config.interfaceLowAlarmPct,
+    oilLayer: engine.armedLow.oilLayer || oilLayerPct >= config.oilLayerLowLowPct * 2,
+    pressure: engine.armedLow.pressure ||
+      (config.gas !== undefined &&
+        engine.gasPressureBarG !== undefined &&
+        engine.gasPressureBarG >= config.gas.lowAlarmBarG),
+  };
+
   // The gas cap runs after the liquid balance, because its volume is whatever the
   // liquid leaves behind. Draining liquid enlarges the cap and drops pressure:
   // that is the coupling between the level loops and the pressure loop.
@@ -575,7 +636,7 @@ export function stepEngine(engine: EngineState): EngineState {
     oilInletM3H: inventory.acceptedOilInletM3H,
   });
 
-  const trip = tripForLevels(totalLevelPct, interfaceLevelPct, oilLayerPct, config)
+  const trip = tripForLevels(totalLevelPct, interfaceLevelPct, oilLayerPct, config, armedLow)
     ?? gasStep?.trip
     ?? null;
   const status: SimulationStatus = trip
@@ -619,6 +680,8 @@ export function stepEngine(engine: EngineState): EngineState {
     interfaceLevelPct,
     oilLayerPct,
     flows,
+    wellFactor,
+    armedLow,
     gas: gasStep?.state ?? engine.gas,
     gasPressureBarG: gasStep?.pressureBarG ?? engine.gasPressureBarG,
     gasFlows: gasStep?.flows ?? engine.gasFlows,
@@ -627,8 +690,14 @@ export function stepEngine(engine: EngineState): EngineState {
     metricSamples,
   };
 
+  const shownDisturbance: DisturbanceId = !engine.wellOpen || wellFactor === 0
+    ? "well-shut-in"
+    : wellFactor < 1
+      ? "well-opening"
+      : scenario.disturbance;
+
   if (chartClock.expirations > 0 || status !== "running") {
-    const sample = makeSample(next, scenario.disturbance);
+    const sample = makeSample(next, shownDisturbance);
     samples = [...samples, sample].slice(-MAX_SAMPLES);
     metricSamples = [...metricSamples, sample];
   }

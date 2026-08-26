@@ -48,6 +48,8 @@ export interface LessonSuccessCriteria {
   /** Cap on total valve travel, which is what wear actually costs. */
   maximumValveTravelPct?: number;
   minimumScore?: number;
+  /** The offset must be gone: what integral action exists to do. */
+  maximumSteadyOffsetPct?: number;
   /**
    * A steady-state offset the trainee is meant to *observe*, not eliminate.
    * Lesson two teaches that proportional-only control always leaves one.
@@ -90,6 +92,7 @@ export type LessonCheckId =
   | "settling-time"
   | "valve-travel"
   | "score"
+  | "offset-removed"
   | "steady-state-offset";
 
 export interface LessonCheck {

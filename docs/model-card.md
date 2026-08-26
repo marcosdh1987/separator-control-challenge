@@ -33,14 +33,15 @@ field operation, equipment sizing, safety analysis, or controller commissioning.
 | Vessel geometry | Circular-segment volume of a horizontal cylinder, level recovered by bisection | Exact geometry | High |
 | Liquid inventories | Two immiscible incompressible phases, explicit mass balance at a fixed 0.05 s step | First principles | High |
 | Hydrostatic head | Per-phase head, with the water outlet carrying the oil column above it | First principles | High |
+| Cold start | Empty vessel, shut-in well, gradual feed ramp, low-protection arming during fill | Standard field practice | High |
 | Liquid valves | Opening-proportional flow with a square-root pressure-drop term | Simplified; not an ISA-75.01 Kv | Medium |
-| Actuators | First-order lag with a stroke rate limit | Standard model | Medium |
+| Actuators | First-order lag with a stroke rate limit, well factor ramp on opening/closing | Standard model | Medium |
 | Controllers | Parallel PID, conditional-integration anti-windup, derivative on a filtered measurement | Standard model | High |
 | Sensors | Sample-and-hold with seeded uniform noise | Simplified | Medium |
-| Gas cap pressure | Real-gas `P = nRTZ/V`, semi-implicit molar balance with sub-stepping | First principles | Medium-high |
+| Gas cap pressure | Real-gas `P = nRTZ/V`, semi-implicit molar balance with sub-stepping, blanket at header pressure on start | First principles | Medium-high |
 | Compressibility Z | Dranchuk & Abou-Kassem (1975), Sutton (1985) pseudo-criticals | Published correlation | High |
 | Gas valve | IEC 60534-2-1 compressible sizing, metric Kv, with choked flow | Standard | Medium-high |
-| Scoring | Weighted deduction model over tracking, stability, recovery, safety and valve effort | Invented for teaching | Not physical |
+| Scoring | Weighted deduction model over tracking, stability, recovery, safety and valve effort; window opens at establishment | Invented for teaching | Not physical |
 
 ## What this simulator does not model
 
@@ -74,9 +75,7 @@ Where a lesson mentions one, it is describing the world, not the model.
 
 A run is fully determined by its configuration, scenario and seed. The physics step
 is fixed at 0.05 s and playback speed changes only how fast the run is drawn, never
-the trajectory. Seven golden runs are checked into the repository and asserted on
-every test run; they are the contract that a change to the code did not silently
-change the physics.
+the trajectory. The well-opening ramp is deterministic: `wellFactor` advances at a fixed rate (`dtS / feedRampS` per step), so the same configuration, scenario, and seed always produce the same liquid level trajectory. Golden runs are checked into the repository and asserted on every test run; they are the contract that a change to the code did not silently change the physics.
 
 ## Where the numbers come from
 

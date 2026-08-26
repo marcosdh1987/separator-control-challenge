@@ -7,6 +7,7 @@ import {
   createEngine,
   finishEngine,
   runToEnd,
+  setWellOpen,
   stepEngine,
   type EngineState,
 } from "./engine";
@@ -97,7 +98,7 @@ function goldenSummary(scenario: ScenarioDefinition): GoldenRunSummary {
   const finalSample = run.samples.at(-1)!;
   const { metrics } = run.result;
 
-  expect(run.samples).toHaveLength(901);
+  expect(run.samples).toHaveLength(1501);
   expect(finalSample.timeS).toBe(DEFAULT_SIMULATION.durationS);
   expect(finalSample.oilVolumeM3).toBe(metrics.phaseTotals.finalOilVolumeM3);
   expect(finalSample.waterVolumeM3).toBe(metrics.phaseTotals.finalWaterVolumeM3);
@@ -165,6 +166,46 @@ function stepToTerminal(engine: EngineState): EngineState {
   return current;
 }
 
+/**
+ * The engine at its operating point: levels on their setpoints, valves at
+ * mid-travel, well fully open, every protection armed. Physics tests start here,
+ * because what they exercise is the behaviour of the established process; the
+ * fill that precedes it has its own tests.
+ */
+function establishedEngine(
+  config = DEFAULT_SIMULATION,
+  pid = DEFAULT_DUAL_PID,
+  scenarioId: Parameters<typeof createEngine>[2] = "normal",
+  seed = 1001,
+): EngineState {
+  const engine = createEngine(config, pid, scenarioId, seed);
+  const placed = withPhaseLevels(
+    engine,
+    engine.config.interfaceSetpointPct,
+    engine.config.totalSetpointPct,
+  );
+  return {
+    ...placed,
+    wellFactor: 1,
+    armedLow: { total: true, interface: true, oilLayer: true, pressure: true },
+    controllers: {
+      total: {
+        ...placed.controllers.total,
+        measuredValuePct: placed.totalLevelPct,
+        commandPct: 50,
+        valvePositionPct: 50,
+      },
+      interface: {
+        ...placed.controllers.interface,
+        measuredValuePct: placed.interfaceLevelPct,
+        commandPct: 50,
+        valvePositionPct: 50,
+      },
+      ...(placed.controllers.pressure ? { pressure: placed.controllers.pressure } : {}),
+    },
+  };
+}
+
 function withPhaseLevels(
   engine: EngineState,
   interfaceLevelPct: number,
@@ -192,7 +233,7 @@ function withPhaseLevels(
 }
 
 describe("fixed-step dual-inventory separator engine", () => {
-  it("initializes the approved phase equilibrium through the public sample shape", () => {
+  it("initializes empty and shut in, the way a real test begins", () => {
     const engine = createEngine(
       DEFAULT_SIMULATION,
       DEFAULT_DUAL_PID,
@@ -200,60 +241,71 @@ describe("fixed-step dual-inventory separator engine", () => {
       1001,
     );
     const sample = engine.samples[0];
-    const expectedWaterVolumeM3 = horizontalVolumeFromLevel(
-      20,
-      DEFAULT_SIMULATION.diameterM,
-      DEFAULT_SIMULATION.lengthM,
-    );
-    const expectedTotalVolumeM3 = horizontalVolumeFromLevel(
-      50,
-      DEFAULT_SIMULATION.diameterM,
-      DEFAULT_SIMULATION.lengthM,
-    );
 
-    expect(engine.waterVolumeM3).toBeCloseTo(expectedWaterVolumeM3, 14);
-    expect(engine.oilVolumeM3).toBeCloseTo(
-      expectedTotalVolumeM3 - expectedWaterVolumeM3,
-      14,
-    );
-    expect(engine.totalLevelPct).toBe(50);
-    expect(engine.interfaceLevelPct).toBe(20);
-    expect(engine.oilLayerPct).toBe(30);
-    expect(engine.controllers.total.measuredValuePct).toBe(50);
-    expect(engine.controllers.interface.measuredValuePct).toBe(20);
-    expect(engine.controllers.total.commandPct).toBe(50);
-    expect(engine.controllers.interface.commandPct).toBe(50);
-    expect(engine.controllers.total.valvePositionPct).toBe(50);
-    expect(engine.controllers.interface.valvePositionPct).toBe(50);
-    expect(engine.flows).toEqual({
-      totalInletM3H: 50,
-      waterCutFraction: 0.3,
-      oilInletM3H: 35,
-      waterInletM3H: 15,
-      oilOutletM3H: 35,
-      waterOutletM3H: 15,
+    expect(engine.oilVolumeM3).toBe(0);
+    expect(engine.waterVolumeM3).toBe(0);
+    expect(engine.totalLevelPct).toBe(0);
+    expect(engine.interfaceLevelPct).toBe(0);
+    expect(engine.wellOpen).toBe(true);
+    expect(engine.wellFactor).toBe(0);
+    expect(engine.armedLow).toEqual({
+      total: false,
+      interface: false,
+      oilLayer: false,
+      pressure: false,
     });
-    expect(sample.total.processValuePct).toBe(50);
-    expect(sample.interface.processValuePct).toBe(20);
-    expect(sample.oilVolumeM3).toBe(engine.oilVolumeM3);
-    expect(sample.waterVolumeM3).toBe(engine.waterVolumeM3);
-    expect(sample.oilLayerPct).toBe(30);
-    expect(sample.flows).toEqual(engine.flows);
-    expect(sample.safety).toEqual({
-      severity: "safe",
-      source: null,
-      condition: "normal",
-      trip: null,
-    });
+    // Valves on their seats: nothing has told them to move yet.
+    expect(engine.controllers.total.valvePositionPct).toBe(0);
+    expect(engine.controllers.interface.valvePositionPct).toBe(0);
+    expect(sample.flows.totalInletM3H).toBe(0);
+    expect(sample.disturbance).toBe("well-opening");
+    // Empty is below every low limit, but that is start-up, not an upset.
+    expect(sample.safety).toMatchObject({ severity: "safe", condition: "startup" });
+    expect(engine.status).toBe("running");
+    expect(engine.trip).toBeNull();
   });
 
-  it("holds the approved dual-inventory equilibrium", () => {
-    const initial = createEngine(
-      DEFAULT_SIMULATION,
-      DEFAULT_DUAL_PID,
-      "normal",
-      1001,
-    );
+  it("fills from empty, opens the valves near the setpoint, and establishes", () => {
+    let engine = createEngine(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "normal", 1001);
+    let valveStillShutAtPct = 0;
+    while (engine.status === "running") {
+      const next = stepEngine(engine);
+      if (engine.controllers.total.valvePositionPct < 0.5 && next.controllers.total.valvePositionPct >= 0.5) {
+        valveStillShutAtPct = next.totalLevelPct;
+      }
+      engine = next;
+    }
+
+    // The oil valve stays on its seat through most of the fill and only starts to
+    // open close to the setpoint — the behaviour the start-up lesson is about.
+    expect(valveStillShutAtPct).toBeGreaterThan(35);
+    expect(valveStillShutAtPct).toBeLessThan(50);
+    expect(engine.status).toBe("completed");
+    expect(engine.trip).toBeNull();
+    expect(engine.totalLevelPct).toBeGreaterThan(45);
+    expect(engine.totalLevelPct).toBeLessThan(58);
+    expect(engine.armedLow.total).toBe(true);
+    expect(engine.armedLow.interface).toBe(true);
+  });
+
+  it("drains toward the low protection when the well is shut in mid-run", () => {
+    let engine = createEngine(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "normal", 1001);
+    while (engine.status === "running" && engine.timeS < 200) engine = stepEngine(engine);
+    const levelAtShutIn = engine.totalLevelPct;
+
+    engine = setWellOpen(engine, false);
+    while (engine.status === "running" && engine.timeS < 300) engine = stepEngine(engine);
+
+    // The default tuning closes the valves in time: the level falls but the armed
+    // low-low protection does not fire.
+    expect(engine.totalLevelPct).toBeLessThan(levelAtShutIn);
+    expect(engine.trip).toBeNull();
+    expect(engine.controllers.total.valvePositionPct).toBeLessThan(5);
+    expect(engine.samples.at(-1)?.disturbance).toBe("well-shut-in");
+  });
+
+  it("holds the operating point once established", () => {
+    const initial = establishedEngine();
     const engine = stepTimes(initial, 2_000);
 
     expect(engine.totalLevelPct).toBeCloseTo(50, 8);
@@ -263,12 +315,7 @@ describe("fixed-step dual-inventory separator engine", () => {
   });
 
   it("couples water discharge into both interface and total level", () => {
-    const engine = createEngine(
-      DEFAULT_SIMULATION,
-      DEFAULT_DUAL_PID,
-      "normal",
-      1001,
-    );
+    const engine = establishedEngine();
     const disturbed: EngineState = {
       ...engine,
       controllers: {
@@ -329,29 +376,23 @@ describe("fixed-step dual-inventory separator engine", () => {
 
   it("samples both sensors independently with a deterministic total-then-interface PRNG order", () => {
     const seed = 1006;
-    const engine = stepTimes(
-      createEngine(
-        DEFAULT_SIMULATION,
-        DEFAULT_DUAL_PID,
-        "noisy-interface",
-        seed,
-      ),
-      10,
+    // Levels move while the vessel fills, so capture the state the tenth step's
+    // sensor pass will read: sampling uses the level at the start of the step.
+    const nine = stepTimes(
+      createEngine(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "noisy-interface", seed),
+      9,
     );
+    const engine = stepEngine(nine);
     const firstTotalDraw = nextRandom(seed);
     const secondTotalDraw = nextRandom(firstTotalDraw.state);
     const interfaceDraw = nextRandom(secondTotalDraw.state);
     const expectedInterfaceMeasurement = Math.max(
       0,
-      Math.min(100, 20 + (interfaceDraw.value * 2 - 1) * 1.5),
+      Math.min(100, nine.interfaceLevelPct + (interfaceDraw.value * 2 - 1) * 1.5),
     );
 
     expect(engine.timeS).toBe(0.5);
     expect(engine.rngState).toBe(interfaceDraw.state);
-    expect(engine.controllers.total.measuredValuePct).toBeCloseTo(
-      engine.totalLevelPct,
-      12,
-    );
     expect(engine.controllers.interface.measuredValuePct).toBeCloseTo(
       expectedInterfaceMeasurement,
       12,
@@ -461,11 +502,8 @@ describe("fixed-step dual-inventory separator engine", () => {
     trip: Exclude<TripKind, null>;
   }>)
     ("emits the exact $name trip identifier", ({ interfacePct, totalPct, trip }) => {
-      const engine = withPhaseLevels(
-        createEngine(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "normal", 1001),
-        interfacePct,
-        totalPct,
-      );
+      // Once armed, every protection fires exactly as before start-up existed.
+      const engine = withPhaseLevels(establishedEngine(), interfacePct, totalPct);
 
       const next = stepEngine(engine);
 
@@ -508,7 +546,10 @@ describe("fixed-step dual-inventory separator engine", () => {
     config: Partial<typeof DEFAULT_SIMULATION>;
     trip: Exclude<TripKind, null>;
   }>)
-    ("starts tripped for an unsafe sanitized $name equilibrium", ({ config, trip }) => {
+    ("starts running, empty and untripped even for the hostile $name setpoints", ({ config }) => {
+      // These configurations used to place the pre-balanced start inside a trip.
+      // A run now begins empty with the low side bypassed, so however unsafe the
+      // requested operating point is, the start itself is a safe shut-in vessel.
       const engine = createEngine(
         { ...DEFAULT_SIMULATION, ...config },
         DEFAULT_DUAL_PID,
@@ -516,72 +557,58 @@ describe("fixed-step dual-inventory separator engine", () => {
         1001,
       );
 
-      expect(engine.status).toBe("tripped");
-      expect(engine.trip).toBe(trip);
-      expect(engine.samples).toHaveLength(1);
-      expect(engine.samples[0].timeS).toBe(0);
-      expect(engine.samples[0].safety).toMatchObject({ severity: "trip", trip });
+      expect(engine.status).toBe("running");
+      expect(engine.trip).toBeNull();
+      expect(engine.totalLevelPct).toBe(0);
+      expect(engine.samples[0].safety.severity).toBe("safe");
     });
 
-  it("applies trip priority to simultaneous unsafe initial conditions", () => {
-    const totalBeforeInterface = createEngine(
-      {
-        ...DEFAULT_SIMULATION,
-        totalSetpointPct: 95,
-        interfaceSetpointPct: 50,
-      },
-      DEFAULT_DUAL_PID,
-      "normal",
-      1001,
-    );
-    const interfaceBeforeOilLayer = createEngine(
-      {
-        ...DEFAULT_SIMULATION,
-        totalSetpointPct: 6,
-        interfaceSetpointPct: 2,
-        totalLowLowPct: 0,
-        totalLowAlarmPct: 1,
-      },
-      DEFAULT_DUAL_PID,
-      "normal",
-      1001,
-    );
-
-    expect(totalBeforeInterface.trip).toBe("TOTAL_HH");
-    expect(interfaceBeforeOilLayer.trip).toBe("INTERFACE_LL");
-  });
-
-  it("runToEnd returns immediately when the sanitized initial state is tripped", () => {
+  it("trips on high-high during the fill: the high side is never bypassed", () => {
+    // A hostile high-high below the fill path must end the run mid-fill. Zero
+    // ramp makes the fill fast enough to keep the test quick.
     const run = runToEnd(
-      { ...DEFAULT_SIMULATION, totalSetpointPct: 95 },
+      {
+        ...DEFAULT_SIMULATION,
+        feedRampS: 0,
+        totalLowLowPct: 1,
+        totalLowAlarmPct: 2,
+        totalHighAlarmPct: 8,
+        totalHighHighPct: 10,
+      },
       DEFAULT_DUAL_PID,
       "normal",
       1001,
     );
 
     expect(run.status).toBe("tripped");
-    expect(run.samples).toHaveLength(1);
-    expect(run.samples[0].timeS).toBe(0);
     expect(run.result.metrics.trip).toBe("TOTAL_HH");
+    // It tripped early in the fill, long before the configured duration.
+    expect(run.samples.at(-1)!.timeS).toBeLessThan(60);
+  });
+
+  it("does not fire a low trip during the fill, and does fire it once armed", () => {
+    const config = { ...DEFAULT_SIMULATION, feedRampS: 0 };
+    let engine = createEngine(config, DEFAULT_DUAL_PID, "normal", 1001);
+    // The whole fill happens below the low-low limit without tripping.
+    while (engine.status === "running" && engine.totalLevelPct < config.totalLowAlarmPct) {
+      expect(engine.trip).toBeNull();
+      engine = stepEngine(engine);
+    }
+    expect(engine.armedLow.total).toBe(true);
+
+    // From an armed vessel, the same low level is now a real event.
+    const drained = stepEngine(withPhaseLevels(engine, 2, 5));
+    expect(drained.trip).toBe("TOTAL_LL");
   });
 
   it("evaluates simultaneous trips in the documented order", () => {
-    const totalFirst = stepEngine(withPhaseLevels(
-      createEngine(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "normal", 1001),
-      50,
-      95,
-    ));
+    const totalFirst = stepEngine(withPhaseLevels(establishedEngine(), 50, 95));
     const interfaceBeforeOilLayer = stepEngine(withPhaseLevels(
-      createEngine(
-        {
-          ...DEFAULT_SIMULATION,
-          totalLowLowPct: 0,
-          totalLowAlarmPct: 1,
-        },
-        DEFAULT_DUAL_PID,
-        "normal",
-        1001,
-      ),
+      establishedEngine({
+        ...DEFAULT_SIMULATION,
+        totalLowLowPct: 0,
+        totalLowAlarmPct: 1,
+      }),
       2,
       6,
     ));
@@ -592,12 +619,7 @@ describe("fixed-step dual-inventory separator engine", () => {
 
   it("reports alarm state from process truth rather than sensor measurement", () => {
     const engine = withPhaseLevels(
-      createEngine(
-        { ...DEFAULT_SIMULATION, chartSampleS: 0.05 },
-        DEFAULT_DUAL_PID,
-        "normal",
-        1001,
-      ),
+      establishedEngine({ ...DEFAULT_SIMULATION, chartSampleS: 0.05 }),
       20,
       80,
     );
@@ -624,10 +646,10 @@ describe("fixed-step dual-inventory separator engine", () => {
     ));
     const run = finishEngine(engine);
 
-    expect(run.samples).toHaveLength(901);
-    expect(engine.metricSamples).toHaveLength(901);
+    expect(run.samples).toHaveLength(1501);
+    expect(engine.metricSamples).toHaveLength(1501);
     expect(run.samples[0].timeS).toBe(0);
-    expect(run.samples.at(-1)?.timeS).toBe(180);
+    expect(run.samples.at(-1)?.timeS).toBe(300);
     expect(Math.max(...run.samples.map((sample) => sample.flows.totalInletM3H))).toBe(110);
   });
 
@@ -642,18 +664,18 @@ describe("fixed-step dual-inventory separator engine", () => {
     const secondEngine = runEngine();
     const first = finishEngine(firstEngine);
     const second = finishEngine(secondEngine);
-    const expectedTotalInletM3 = (
-      599 * 0.05 * 50 +
-      3_001 * 0.05 * 70
-    ) / 3600;
 
-    expect(firstEngine.metricSamples).toHaveLength(3_601);
-    expect(firstEngine.metricSamples[1].flows.totalInletM3H).toBe(50);
+    expect(firstEngine.metricSamples).toHaveLength(6_001);
+    // The feed ramps in from the shut-in start, then steps to 70 late in the run.
+    expect(firstEngine.metricSamples[1].flows.totalInletM3H).toBeGreaterThan(0);
+    expect(firstEngine.metricSamples[1].flows.totalInletM3H).toBeLessThan(1);
     expect(firstEngine.metricSamples.at(-1)?.flows.totalInletM3H).toBe(70);
-    expect(first.samples).toHaveLength(901);
-    expect(first.samples[0].flows.totalInletM3H).toBe(70);
-    expect(first.result.metrics.phaseTotals.oilInletM3 +
-      first.result.metrics.phaseTotals.waterInletM3).toBeCloseTo(expectedTotalInletM3, 10);
+    expect(first.samples).toHaveLength(1_501);
+    // With an empty start the run totals are a closed mass balance: whatever came
+    // in either left through a valve or is still in the vessel.
+    const totals = first.result.metrics.phaseTotals;
+    expect(totals.oilInletM3 - totals.oilOutletM3).toBeCloseTo(totals.finalOilVolumeM3, 6);
+    expect(totals.waterInletM3 - totals.waterOutletM3).toBeCloseTo(totals.finalWaterVolumeM3, 6);
     expect(second.result).toEqual(first.result);
     expect(second.samples).toEqual(first.samples);
     expect(first).not.toHaveProperty("metricSamples");
@@ -692,8 +714,9 @@ describe("fixed-step dual-inventory separator engine", () => {
   });
 
   it("bounds outlet flow at empty inventory and exposes the true low-low trip", () => {
+    // An armed vessel forced empty: outlets bound at zero and the protection fires.
     const engine: EngineState = {
-      ...createEngine(DEFAULT_SIMULATION, DEFAULT_DUAL_PID, "normal", 1001),
+      ...establishedEngine(),
       oilVolumeM3: 0,
       waterVolumeM3: 0,
       totalLevelPct: 0,
@@ -748,12 +771,7 @@ describe("fixed-step dual-inventory separator engine", () => {
   });
 
   it("never reports defensive normalization discard as valve outlet flow", () => {
-    const engine = createEngine(
-      DEFAULT_SIMULATION,
-      DEFAULT_DUAL_PID,
-      "normal",
-      1001,
-    );
+    const engine = establishedEngine();
     const fullVolumeM3 = fullCylinderVolume(
       DEFAULT_SIMULATION.diameterM,
       DEFAULT_SIMULATION.lengthM,
