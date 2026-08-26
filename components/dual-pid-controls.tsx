@@ -5,10 +5,15 @@ import type { ReactNode } from "react";
 
 import { PidControls } from "./pid-controls";
 import { PidPresetSelector } from "./pid-preset-selector";
-import type { DualPidConfig, LoopId, SimulationSample, SimulationStatus } from "@/lib/simulation/types";
+import type { GainForm } from "@/lib/education/gain-forms";
+import { useMessages } from "@/lib/i18n/provider";
+import type { DualPidConfig, LiquidLoopId, PidConfig, SimulationSample, SimulationStatus } from "@/lib/simulation/types";
 
 interface DualPidControlsProps {
   hero: ReactNode;
+  /** Gains a lesson holds fixed so attention stays on the one it is teaching. */
+  lockedGains?: readonly ("kp" | "ki" | "kd")[];
+  gainForm?: GainForm;
   config: DualPidConfig;
   sample: SimulationSample;
   locked: boolean;
@@ -24,38 +29,39 @@ interface DualPidControlsProps {
 }
 
 export function DualPidControls({
-  hero, config, sample, locked, ready, status, speed, onChange,
+  hero, config, sample, locked, lockedGains, gainForm, ready, status, speed, onChange,
   onStart, onPause, onResume, onReset, onSpeedChange,
 }: DualPidControlsProps) {
-  const updateLoop = (loop: LoopId, next: DualPidConfig[LoopId]) => {
+  const copy = useMessages().challenge.transport;
+  const updateLoop = (loop: LiquidLoopId, next: PidConfig) => {
     onChange({ ...config, [loop]: next });
   };
 
   return (
-    <section aria-label="Separator control deck" className="control-deck">
-      <div className="transport-bar" aria-label="Attempt transport controls">
+    <section aria-label={copy.deckLabel} className="control-deck">
+      <div className="transport-bar" aria-label={copy.transportLabel}>
         <div className="run-controls">
           {(status === "idle" || status === "completed" || status === "tripped") && (
             <button className="primary-button" data-tour="start-attempt" disabled={!ready} type="button" onClick={onStart}>
-              <Play aria-hidden="true" /> Start attempt
+              <Play aria-hidden="true" /> {copy.start}
             </button>
           )}
           {status === "running" && (
             <button className="secondary-button" type="button" onClick={onPause}>
-              <Pause aria-hidden="true" /> Pause attempt
+              <Pause aria-hidden="true" /> {copy.pause}
             </button>
           )}
           {status === "paused" && (
             <button className="primary-button" type="button" onClick={onResume}>
-              <Play aria-hidden="true" /> Resume attempt
+              <Play aria-hidden="true" /> {copy.resume}
             </button>
           )}
-          <button aria-label="Reset attempt" className="icon-button" type="button" onClick={onReset}>
-            <RotateCcw aria-hidden="true" /> Reset
+          <button aria-label={copy.reset} className="icon-button" type="button" onClick={onReset}>
+            <RotateCcw aria-hidden="true" /> {copy.reset}
           </button>
         </div>
         <fieldset className="speed-control">
-          <legend>Playback speed</legend>
+          <legend>{copy.speedLegend}</legend>
           {[0.5, 1, 2, 4].map((option) => (
             <button
               aria-label={`${option}× speed`}
@@ -73,13 +79,26 @@ export function DualPidControls({
 
       <div className="tuning-guidance" data-tour="manual-pid-tuning">
         <PidPresetSelector disabled={locked} onChange={onChange} />
-        <p>Configure both controllers before starting. Gains are locked during the attempt.</p>
+        <p>{copy.configureHint}</p>
       </div>
 
       <div className="process-bay">
         <div className="process-bay__hero" data-tour="process-view">{hero}</div>
-        <PidControls accent="oil" config={config.total} locked={locked} loopId="total" sample={sample.total} tag="LIC-101" title="Total level / oil valve" onChange={(next) => updateLoop("total", next)} />
-        <PidControls accent="water" config={config.interface} locked={locked} loopId="interface" sample={sample.interface} tag="IIC-101" title="Interface / water valve" onChange={(next) => updateLoop("interface", next)} />
+        <PidControls accent="oil" config={config.total} locked={locked} gainForm={gainForm} lockedGains={lockedGains} loopId="total" sample={sample.total} tag="LIC-101" onChange={(next) => updateLoop("total", next)} />
+        <PidControls accent="water" config={config.interface} locked={locked} gainForm={gainForm} lockedGains={lockedGains} loopId="interface" sample={sample.interface} tag="IIC-101" onChange={(next) => updateLoop("interface", next)} />
+        {config.pressure && sample.pressure ? (
+          <PidControls
+            accent="gas"
+            config={config.pressure}
+            locked={locked}
+            gainForm={gainForm}
+            lockedGains={lockedGains}
+            loopId="pressure"
+            sample={sample.pressure}
+            tag="PIC-101"
+            onChange={(next) => onChange({ ...config, pressure: next })}
+          />
+        ) : null}
       </div>
     </section>
   );

@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DualPidControls } from "./dual-pid-controls";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import { createEquilibriumSample } from "@/hooks/use-simulation";
 import { DEFAULT_DUAL_PID, type SimulationStatus } from "@/lib/simulation/types";
 
@@ -23,7 +24,7 @@ function renderDeck(status: SimulationStatus = "idle", ready = true) {
     speed: 1,
     status,
   };
-  render(<DualPidControls {...props} />);
+  renderWithLocale(<DualPidControls {...props} />);
   return props;
 }
 
@@ -34,7 +35,7 @@ describe("dual PID control deck", () => {
       const [config, setConfig] = useState(DEFAULT_DUAL_PID);
       return <DualPidControls config={config} hero={<div>Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={setConfig} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />;
     }
-    render(<ControlledDeck />);
+    renderWithLocale(<ControlledDeck />);
     const integral = screen.getByLabelText("Total level integral gain");
     await user.clear(integral);
     await user.type(integral, "0.12");
@@ -90,7 +91,7 @@ describe("dual PID control deck", () => {
   });
 
   it("places the future-safe hero first in DOM order, followed by total and interface docks", () => {
-    const { container } = render(<DualPidControls config={DEFAULT_DUAL_PID} hero={<div data-testid="separator-hero">Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={vi.fn()} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />);
+    const { container } = renderWithLocale(<DualPidControls config={DEFAULT_DUAL_PID} hero={<div data-testid="separator-hero">Separator hero</div>} locked={false} ready sample={createEquilibriumSample()} speed={1} status="idle" onChange={vi.fn()} onPause={vi.fn()} onReset={vi.fn()} onResume={vi.fn()} onSpeedChange={vi.fn()} onStart={vi.fn()} />);
     const bay = container.querySelector(".process-bay");
     expect(Array.from(bay?.children ?? []).map((child) => child.className)).toEqual([
       "process-bay__hero",

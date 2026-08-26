@@ -3,6 +3,7 @@
 import { AlertTriangle, Waves } from "lucide-react";
 import { useId } from "react";
 
+import { useMessages } from "@/lib/i18n/provider";
 import { createProcessSummary, createSceneModel, formatEngineeringValue, type FlowMotion } from "@/lib/visualization/scene-model";
 import type { SimulationSample, SimulationStatus } from "@/lib/simulation/types";
 
@@ -18,7 +19,7 @@ const LEVEL_HEIGHT = VIEW_BOTTOM - VIEW_TOP;
 const levelY = (levelPct: number) => VIEW_BOTTOM - Math.min(100, Math.max(0, Number.isFinite(levelPct) ? levelPct : 0)) / 100 * LEVEL_HEIGHT;
 const pct = (value: number) => formatEngineeringValue(value, { unit: "%", separator: "" });
 const flow = (value: number) => formatEngineeringValue(value, { unit: "m³/h" });
-const flowLabel = (value: number) => value === 0 ? `Stopped / ${flow(value)}` : flow(value);
+const flowLabel = (value: number, stopped: string) => value === 0 ? `${stopped} / ${flow(value)}` : flow(value);
 
 function FlowIndicator({ motion, markerId, name, path }: { motion: FlowMotion; markerId: string; name: string; path: string }) {
   const state = motion.direction > 0 ? "forward" : motion.direction < 0 ? "reverse" : "stopped";
@@ -45,8 +46,12 @@ export function ProcessVisualization({ sample, status, announceSafety = true }: 
   const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const id = (name: string) => `${name}-${reactId}`;
   const headingId = id("process-heading");
+  const messages = useMessages();
+  const copy = messages.challenge.mimic;
+  const safetyCondition = messages.simulation.safetyCondition[sample.safety.condition];
   const model = createSceneModel(sample);
-  const summary = createProcessSummary(sample);
+  const summary = createProcessSummary(sample, messages.challenge.processSummary, safetyCondition);
+  const flowText = (value: number) => flowLabel(value, copy.stopped);
   const totalY = levelY(sample.total.processValuePct);
   const interfaceY = levelY(sample.interface.processValuePct);
   const phaseInterfaceY = Math.max(totalY, interfaceY);
@@ -56,12 +61,12 @@ export function ProcessVisualization({ sample, status, announceSafety = true }: 
     <section aria-labelledby={headingId} className={`panel process-panel safety-${model.safety.severity}`}>
       <div className="panel-heading process-heading">
         <div>
-          <p className="eyebrow">SEP-101 · engineering fallback</p>
-          <h2 id={headingId}><Waves aria-hidden="true" /> Separator process cutaway</h2>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2 id={headingId}><Waves aria-hidden="true" /> {copy.heading}</h2>
         </div>
         <div aria-live={announceSafety ? "polite" : undefined} className={`alarm-badge ${model.safety.severity}`}>
           {model.safety.severity !== "safe" && <AlertTriangle aria-hidden="true" />}
-          {model.safety.label}
+          {safetyCondition}
         </div>
       </div>
 
@@ -124,45 +129,45 @@ export function ProcessVisualization({ sample, status, announceSafety = true }: 
           <path className="vessel-leg" d="M235 249 v42 h-36 M485 249 v42 h36" />
 
           <g className="phase-labels" textAnchor="middle">
-            <text x="360" y={Math.max(94, (VIEW_TOP + totalY) / 2)}>GAS SPACE</text>
-            <text x="360" y={Math.min(245, Math.max(102, (totalY + phaseInterfaceY) / 2 + 4))}>OIL INVENTORY</text>
-            <text x="360" y={Math.min(246, (phaseInterfaceY + VIEW_BOTTOM) / 2 + 4)}>WATER INVENTORY</text>
+            <text x="360" y={Math.max(94, (VIEW_TOP + totalY) / 2)}>{copy.gasSpace}</text>
+            <text x="360" y={Math.min(245, Math.max(102, (totalY + phaseInterfaceY) / 2 + 4))}>{copy.oilInventory}</text>
+            <text x="360" y={Math.min(246, (phaseInterfaceY + VIEW_BOTTOM) / 2 + 4)}>{copy.waterInventory}</text>
           </g>
           <g className="process-annotations">
-            <text x="20" y="99">TOTAL INLET · {flowLabel(sample.flows.totalInletM3H)}</text>
-            <text x="500" y="296">OIL OUTLET · {flowLabel(sample.flows.oilOutletM3H)}</text>
-            <text x="375" y="365">WATER OUTLET · {flowLabel(sample.flows.waterOutletM3H)}</text>
-            <text x="589" y={Math.max(85, totalY - 6)}>TOTAL TRUE {pct(sample.total.processValuePct)}</text>
-            <text x="589" y={Math.max(98, totalY + 8)}>MEASURED {pct(sample.total.measuredValuePct)}</text>
-            <text x="20" y={Math.min(248, interfaceY - 6)}>INTERFACE TRUE {pct(sample.interface.processValuePct)}</text>
-            <text x="20" y={Math.min(262, interfaceY + 8)}>MEASURED {pct(sample.interface.measuredValuePct)}</text>
+            <text x="20" y="99">{copy.totalInlet} · {flowText(sample.flows.totalInletM3H)}</text>
+            <text x="500" y="296">{copy.oilOutlet} · {flowText(sample.flows.oilOutletM3H)}</text>
+            <text x="375" y="365">{copy.waterOutlet} · {flowText(sample.flows.waterOutletM3H)}</text>
+            <text x="589" y={Math.max(85, totalY - 6)}>{copy.totalTrue} {pct(sample.total.processValuePct)}</text>
+            <text x="589" y={Math.max(98, totalY + 8)}>{copy.measured} {pct(sample.total.measuredValuePct)}</text>
+            <text x="20" y={Math.min(248, interfaceY - 6)}>{copy.interfaceTrue} {pct(sample.interface.processValuePct)}</text>
+            <text x="20" y={Math.min(262, interfaceY + 8)}>{copy.measured} {pct(sample.interface.measuredValuePct)}</text>
           </g>
-          <text className="equipment-tag" x="360" y="57">SEP-101 · THREE-PHASE INVENTORY</text>
+          <text className="equipment-tag" x="360" y="57">{copy.equipmentTag}</text>
         </svg>
 
       </div>
 
-      <dl aria-label="Critical separator instruments" className="process-instrument-grid" role="group">
-        <div><dt>Total true</dt><dd>{pct(sample.total.processValuePct)}</dd></div>
-        <div><dt>Total measured</dt><dd>{pct(sample.total.measuredValuePct)}</dd></div>
-        <div><dt>Total SP</dt><dd>{pct(sample.total.setpointPct)}</dd></div>
-        <div><dt>Interface true</dt><dd>{pct(sample.interface.processValuePct)}</dd></div>
-        <div><dt>Interface measured</dt><dd>{pct(sample.interface.measuredValuePct)}</dd></div>
-        <div><dt>Interface SP</dt><dd>{pct(sample.interface.setpointPct)}</dd></div>
-        <div><dt>Total inlet</dt><dd>{flowLabel(sample.flows.totalInletM3H)}</dd></div>
-        <div><dt>Oil outlet</dt><dd>{flowLabel(sample.flows.oilOutletM3H)}</dd></div>
-        <div><dt>Water outlet</dt><dd>{flowLabel(sample.flows.waterOutletM3H)}</dd></div>
-        <div><dt>Oil command</dt><dd>{pct(sample.total.valveCommandPct)}</dd></div>
-        <div><dt>Oil actual</dt><dd>{pct(sample.total.valvePositionPct)}</dd></div>
-        <div><dt>Water command</dt><dd>{pct(sample.interface.valveCommandPct)}</dd></div>
-        <div><dt>Water actual</dt><dd>{pct(sample.interface.valvePositionPct)}</dd></div>
-        <div className="instrument-safety"><dt>Active safety</dt><dd>{model.safety.label}</dd></div>
+      <dl aria-label={copy.instrumentsLabel} className="process-instrument-grid" role="group">
+        <div><dt>{copy.instruments.totalTrue}</dt><dd>{pct(sample.total.processValuePct)}</dd></div>
+        <div><dt>{copy.instruments.totalMeasured}</dt><dd>{pct(sample.total.measuredValuePct)}</dd></div>
+        <div><dt>{copy.instruments.totalSetpoint}</dt><dd>{pct(sample.total.setpointPct)}</dd></div>
+        <div><dt>{copy.instruments.interfaceTrue}</dt><dd>{pct(sample.interface.processValuePct)}</dd></div>
+        <div><dt>{copy.instruments.interfaceMeasured}</dt><dd>{pct(sample.interface.measuredValuePct)}</dd></div>
+        <div><dt>{copy.instruments.interfaceSetpoint}</dt><dd>{pct(sample.interface.setpointPct)}</dd></div>
+        <div><dt>{copy.instruments.totalInlet}</dt><dd>{flowText(sample.flows.totalInletM3H)}</dd></div>
+        <div><dt>{copy.instruments.oilOutlet}</dt><dd>{flowText(sample.flows.oilOutletM3H)}</dd></div>
+        <div><dt>{copy.instruments.waterOutlet}</dt><dd>{flowText(sample.flows.waterOutletM3H)}</dd></div>
+        <div><dt>{copy.instruments.oilCommand}</dt><dd>{pct(sample.total.valveCommandPct)}</dd></div>
+        <div><dt>{copy.instruments.oilActual}</dt><dd>{pct(sample.total.valvePositionPct)}</dd></div>
+        <div><dt>{copy.instruments.waterCommand}</dt><dd>{pct(sample.interface.valveCommandPct)}</dd></div>
+        <div><dt>{copy.instruments.waterActual}</dt><dd>{pct(sample.interface.valvePositionPct)}</dd></div>
+        <div className="instrument-safety"><dt>{copy.instruments.activeSafety}</dt><dd>{safetyCondition}</dd></div>
       </dl>
 
       <div className="process-footer">
         <span><i className={`status-dot ${status}`} /> {status.toUpperCase()}</span>
-        <span>Total SP <strong>{pct(sample.total.setpointPct)}</strong></span>
-        <span>Interface SP <strong>{pct(sample.interface.setpointPct)}</strong></span>
+        <span>{copy.instruments.totalSetpoint} <strong>{pct(sample.total.setpointPct)}</strong></span>
+        <span>{copy.instruments.interfaceSetpoint} <strong>{pct(sample.interface.setpointPct)}</strong></span>
       </div>
       <p className="fallback-note">2D engineering fallback · process values and safety logic remain fully active.</p>
     </section>

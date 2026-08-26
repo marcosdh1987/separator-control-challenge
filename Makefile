@@ -29,6 +29,13 @@ TEMPLATE_BRANCH ?= main
 # Declarative skills/adapters sync engine (replaces inline bash projection).
 SKILLS_SYNC = uv run python -m separator_control_challenge.skills_sync
 
+# Simulator development server. Always address it as localhost: serving on
+# localhost while the browser asks for 127.0.0.1 can leave the physics Worker
+# uninitialised. See memory/learnings.md.
+WEB_PORT ?= 3000
+WEB_URL = http://localhost:$(WEB_PORT)
+OPEN_CMD = $(shell command -v open >/dev/null 2>&1 && echo open || echo xdg-open)
+
 # =============================================================================
 # DEVELOPMENT ENVIRONMENT CONFIGURATION
 # =============================================================================
@@ -162,11 +169,24 @@ test-unit:
 # APPLICATION EXECUTION
 # =============================================================================
 
-# Start LangGraph development server
+# Start the simulator and open it in the default browser.
 run-dev:
-	@echo "🚀 Starting development server..."
-	@if [ ! -d .venv ]; then make install; fi
-	@. $(VENV_DIR)/bin/activate && langgraph dev
+	@echo "🚀 Starting the separator simulator on $(WEB_URL)..."
+	@test -d node_modules || npm ci
+	@( \
+	  waited=0; \
+	  until curl -sfo /dev/null $(WEB_URL); do \
+	    waited=$$((waited + 1)); \
+	    if [ $$waited -gt 120 ]; then \
+	      echo "⚠️  $(WEB_URL) did not come up; open it yourself once the server is ready."; \
+	      exit 0; \
+	    fi; \
+	    sleep 0.5; \
+	  done; \
+	  echo "🌐 Opening $(WEB_URL)"; \
+	  $(OPEN_CMD) $(WEB_URL) >/dev/null 2>&1 || true; \
+	) &
+	@npm run dev -- --port $(WEB_PORT)
 
 # Start FastAPI server
 run-api:
@@ -299,8 +319,7 @@ ci:
 	@echo "✅ CI pipeline completed successfully!"
 
 # Frontend development and test commands.
-web-dev:
-	@npm run dev
+web-dev: run-dev
 
 web-test:
 	@npm run test
@@ -499,14 +518,14 @@ help:
 	@echo "Testing:"
 	@echo "  make test                 Run all tests with coverage"
 	@echo "  make test-unit            Run unit tests only"
-	@echo "  make web-dev              Start the Next.js development server"
+	@echo "  make web-dev              Alias for make run-dev"
 	@echo "  make web-test             Run frontend unit and component tests"
 	@echo "  make web-e2e              Run Playwright desktop and mobile flows"
 	@echo "  make run-batch-test       Run batch tests against API (dataset v1)"
 	@echo "  make run-batch-test-custom Run batch tests with custom parameters"
 	@echo ""
 	@echo "Application Execution (Local):"
-	@echo "  make run-dev             Start LangGraph development server"
+	@echo "  make run-dev             Start the simulator and open it in the browser (WEB_PORT=3000)"
 	@echo "  make run-api             Start FastAPI server"
 	@echo "  make run-question        Test with a predefined question"
 	@echo "  make run-interactive     Start interactive CLI mode"

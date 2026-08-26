@@ -2,29 +2,42 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { createEngine } from "@/lib/simulation/engine";
 import { createEquilibriumSnapshot } from "@/lib/simulation/equilibrium";
 import { getScenario, scenarioAt } from "@/lib/simulation/scenarios";
 import { sanitizeDualPidConfig, sanitizeSimulationConfig } from "@/lib/simulation/validation";
 import {
+  DEFAULT_DUAL_PID,
   DEFAULT_SIMULATION,
+  WORKER_PROTOCOL_VERSION,
   type DualPidConfig,
   type RunResult,
   type ScenarioId,
   type SimulationSample,
+  type SimulationConfig,
   type SimulationStatus,
   type WorkerEvent,
   type WorkerRequest,
 } from "@/lib/simulation/types";
 
-export function createEquilibriumSample(): SimulationSample {
-  const config = sanitizeSimulationConfig(DEFAULT_SIMULATION);
+/**
+ * The state the dashboard shows before a run starts. With a gas cap the opening
+ * sample has to come from the engine, because seeding the cap at its operating
+ * pressure is part of building a run.
+ */
+export function createEquilibriumSample(
+  config: SimulationConfig = DEFAULT_SIMULATION,
+  pid: DualPidConfig = DEFAULT_DUAL_PID,
+): SimulationSample {
+  const sanitized = sanitizeSimulationConfig(config);
+  if (sanitized.gas) {
+    return createEngine(sanitized, pid, "normal", 1001).samples[0];
+  }
   return createEquilibriumSnapshot(
-    config,
-    scenarioAt("normal", 0, config.actuatorTauS),
+    sanitized,
+    scenarioAt("normal", 0, sanitized.actuatorTauS),
   ).sample;
 }
-
-const INITIAL_SAMPLE = createEquilibriumSample();
 
 export interface SimulationController {
   ready: boolean;
@@ -46,10 +59,12 @@ export interface SimulationController {
 export function useSimulation(
   pid: DualPidConfig,
   scenarioId: ScenarioId,
+  config: SimulationConfig = DEFAULT_SIMULATION,
 ): SimulationController {
   const workerRef = useRef<Worker | null>(null);
   const runIdRef = useRef("run-0");
   const sequenceRef = useRef(0);
+  const initialConfigRef = useRef(config);
   const initialPidRef = useRef(pid);
   const initialScenarioRef = useRef(scenarioId);
   const pendingStartRunIdRef = useRef<string | null>(null);
@@ -58,9 +73,11 @@ export function useSimulation(
   const skipInitialSettingsEffectRef = useRef(true);
   const initializedPidRef = useRef(pid);
   const initializedScenarioRef = useRef(scenarioId);
+  const initializedConfigRef = useRef(config);
   const [status, setStatus] = useState<SimulationStatus>("idle");
   const [ready, setReady] = useState(false);
-  const [samples, setSamples] = useState<SimulationSample[]>([INITIAL_SAMPLE]);
+  const idleSample = useMemo(() => createEquilibriumSample(config, pid), [config, pid]);
+  const [samples, setSamples] = useState<SimulationSample[]>([idleSample]);
   const [result, setResult] = useState<RunResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [speed, setSpeedState] = useState(1);
@@ -70,19 +87,20 @@ export function useSimulation(
     workerRef.current?.postMessage(request);
   }, []);
 
-  const initialize = useCallback((runId: string, nextPid = pid, nextScenario = scenarioId) => {
+  const initialize = useCallback((runId: string, nextPid = pid, nextScenario = scenarioId, nextConfig = config) => {
     if (!workerRef.current) return;
     const scenario = getScenario(nextScenario);
     failedRunIdRef.current = null;
     post({
       type: "initialize",
       runId,
-      config: sanitizeSimulationConfig(DEFAULT_SIMULATION),
+      config: sanitizeSimulationConfig(nextConfig),
+      protocolVersion: WORKER_PROTOCOL_VERSION,
       pid: sanitizeDualPidConfig(nextPid),
       scenarioId: nextScenario,
       seed: scenario.seed,
     });
-  }, [pid, post, scenarioId]);
+  }, [config, pid, post, scenarioId]);
 
   useEffect(() => {
     if (typeof Worker === "undefined") {
@@ -179,7 +197,8 @@ export function useSimulation(
     worker.postMessage({
       type: "initialize",
       runId: runIdRef.current,
-      config: sanitizeSimulationConfig(DEFAULT_SIMULATION),
+      config: sanitizeSimulationConfig(initialConfigRef.current),
+      protocolVersion: WORKER_PROTOCOL_VERSION,
       pid: sanitizeDualPidConfig(initialPidRef.current),
       scenarioId: initialScenario,
       seed: getScenario(initialScenario).seed,
@@ -199,22 +218,25 @@ export function useSimulation(
       !workerRef.current ||
       status !== "idle" ||
       (initializedPidRef.current === pid &&
-        initializedScenarioRef.current === scenarioId)
+        initializedScenarioRef.current === scenarioId &&
+        initializedConfigRef.current === config)
     ) return;
     sequenceRef.current += 1;
     const runId = `run-${sequenceRef.current}`;
     runIdRef.current = runId;
     initializedPidRef.current = pid;
     initializedScenarioRef.current = scenarioId;
+    initializedConfigRef.current = config;
     initialPidRef.current = pid;
     initialScenarioRef.current = scenarioId;
+    initialConfigRef.current = config;
     pendingStartRunIdRef.current = null;
     setReady(false);
-    setSamples([INITIAL_SAMPLE]);
+    setSamples([idleSample]);
     setResult(null);
     setError(null);
-    initialize(runId, pid, scenarioId);
-  }, [initialize, pid, scenarioId, status]);
+    initialize(runId, pid, scenarioId, config);
+  }, [config, idleSample, initialize, pid, scenarioId, status]);
 
   const start = useCallback(() => {
     if (!ready || status === "running" || status === "paused") return;
@@ -225,11 +247,11 @@ export function useSimulation(
     initializedScenarioRef.current = scenarioId;
     pendingStartRunIdRef.current = runId;
     setReady(false);
-    setSamples([INITIAL_SAMPLE]);
+    setSamples([idleSample]);
     setResult(null);
     setError(null);
     initialize(runId);
-  }, [initialize, pid, ready, scenarioId, status]);
+  }, [idleSample, initialize, pid, ready, scenarioId, status]);
 
   const pause = useCallback(() => {
     post({ type: "pause", runId: runIdRef.current });
@@ -248,11 +270,11 @@ export function useSimulation(
     initializedScenarioRef.current = scenarioId;
     pendingStartRunIdRef.current = null;
     setReady(false);
-    setSamples([INITIAL_SAMPLE]);
+    setSamples([idleSample]);
     setResult(null);
     setError(null);
     initialize(runId);
-  }, [initialize, pid, scenarioId]);
+  }, [idleSample, initialize, pid, scenarioId]);
 
   const setSpeed = useCallback((nextSpeed: number) => {
     const validSpeed = [0.5, 1, 2, 4].includes(nextSpeed) ? nextSpeed : 1;
@@ -267,23 +289,25 @@ export function useSimulation(
     runIdRef.current = runId;
     initializedPidRef.current = pid;
     initializedScenarioRef.current = scenarioId;
+    initializedConfigRef.current = config;
     initialPidRef.current = pid;
     initialScenarioRef.current = scenarioId;
+    initialConfigRef.current = config;
     pendingStartRunIdRef.current = null;
     failedRunIdRef.current = null;
     setReady(false);
     setStatus("idle");
-    setSamples([INITIAL_SAMPLE]);
+    setSamples([idleSample]);
     setResult(null);
     setError(null);
     setWorkerGeneration((generation) => generation + 1);
-  }, [pid, scenarioId]);
+  }, [config, idleSample, pid, scenarioId]);
 
   return useMemo(() => ({
     ready,
     status,
     samples,
-    currentSample: samples.at(-1) ?? INITIAL_SAMPLE,
+    currentSample: samples.at(-1) ?? idleSample,
     result,
     error,
     speed,
@@ -294,5 +318,5 @@ export function useSimulation(
     retryWorker,
     setSpeed,
     dismissResult: () => setResult(null),
-  }), [error, pause, ready, reset, result, resume, retryWorker, samples, setSpeed, speed, start, status]);
+  }), [error, idleSample, pause, ready, reset, result, resume, retryWorker, samples, setSpeed, speed, start, status]);
 }

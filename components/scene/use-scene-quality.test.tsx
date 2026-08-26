@@ -1,10 +1,13 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { selectSceneQuality, useSceneQuality } from "./use-scene-quality";
+import { RESIZE_SETTLE_MS, selectSceneQuality, useSceneQuality } from "./use-scene-quality";
 
 describe("scene quality policy", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   it.each([
     [{ width: 719, dpr: 1, reducedMotion: false }, "low", 1, false, false],
@@ -56,12 +59,20 @@ describe("scene quality policy", () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440, writable: true });
     Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2, writable: true });
 
+    vi.useFakeTimers();
     const { result, unmount } = renderHook(() => useSceneQuality());
     expect(result.current.tier).toBe("high");
 
+    // Resizing is debounced: a renderer reset is too costly to run on every event
+    // of a drag, so the tier only follows once the window stops moving.
     act(() => {
       window.innerWidth = 600;
       listeners.get("resize")?.(new Event("resize"));
+    });
+    expect(result.current.tier).toBe("high");
+
+    act(() => {
+      vi.advanceTimersByTime(RESIZE_SETTLE_MS);
     });
     expect(result.current.tier).toBe("low");
 

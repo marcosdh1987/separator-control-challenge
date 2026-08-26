@@ -154,5 +154,31 @@
       "finalWaterVolumeM3": 0.478452
     },
     "score": 94
+  },
+  "gor-surge": {
+    "scenarioId": "gor-surge",
+    "seed": 1007,
+    "finalTimeS": 180.000000,
+    "status": "completed",
+    "trip": null,
+    "finalTotalLevelPct": 50.000000,
+    "finalInterfaceLevelPct": 20.000000,
+    "finalOilValvePct": 50.000000,
+    "finalWaterValvePct": 50.000000,
+    "finalOilVolumeM3": 1.213381,
+    "finalWaterVolumeM3": 0.483079,
+    "totalMae": 0.000000,
+    "interfaceMae": 0.000000,
+    "oilValveTravelPct": 0.000000,
+    "waterValveTravelPct": 0.000000,
+    "phaseTotals": {
+      "oilInletM3": 1.750000,
+      "waterInletM3": 0.750000,
+      "oilOutletM3": 1.750000,
+      "waterOutletM3": 0.750000,
+      "finalOilVolumeM3": 1.213381,
+      "finalWaterVolumeM3": 0.483079
+    },
+    "score": 100
   }
 }

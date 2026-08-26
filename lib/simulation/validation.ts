@@ -1,7 +1,9 @@
 import {
+  DEFAULT_GAS,
   DEFAULT_PID,
   DEFAULT_SIMULATION,
   type DualPidConfig,
+  type GasConfig,
   type PidConfig,
   type SimulationConfig,
 } from "./types";
@@ -45,6 +47,36 @@ export function sanitizeDualPidConfig(config: DualPidConfig): DualPidConfig {
   return {
     total: sanitizePidConfig(config.total),
     interface: sanitizePidConfig(config.interface),
+    // Absent unless the run has a gas cap; carrying it through unconditionally
+    // would invent a third loop the physics does not have.
+    ...(config.pressure ? { pressure: sanitizePidConfig(config.pressure) } : {}),
+  };
+}
+
+/**
+ * Gas limits are clamped to a range a well-testing separator can plausibly see,
+ * and the alarm ladder is forced into order so a malformed configuration cannot
+ * produce a trip that fires below its own alarm.
+ */
+export function sanitizeGasConfig(gas: GasConfig): GasConfig {
+  const setpointBarG = clamp(gas.setpointBarG, 0.1, 200, DEFAULT_GAS.setpointBarG);
+  const lowLowBarG = clamp(gas.lowLowBarG, 0, 200, DEFAULT_GAS.lowLowBarG);
+  const highHighBarG = clamp(gas.highHighBarG, lowLowBarG + 0.1, 250, DEFAULT_GAS.highHighBarG);
+  const lowAlarmBarG = clamp(gas.lowAlarmBarG, lowLowBarG, highHighBarG, DEFAULT_GAS.lowAlarmBarG);
+  const highAlarmBarG = clamp(gas.highAlarmBarG, lowAlarmBarG, highHighBarG, DEFAULT_GAS.highAlarmBarG);
+  return {
+    gorSm3M3: clamp(gas.gorSm3M3, 0, 5000, DEFAULT_GAS.gorSm3M3),
+    gasGravity: clamp(gas.gasGravity, 0.55, 1.2, DEFAULT_GAS.gasGravity),
+    temperatureC: clamp(gas.temperatureC, -20, 200, DEFAULT_GAS.temperatureC),
+    initialPressureBarA: clamp(gas.initialPressureBarA, 1.02, 250, DEFAULT_GAS.initialPressureBarA),
+    setpointBarG,
+    valveKv: clamp(gas.valveKv, 0.01, 5000, DEFAULT_GAS.valveKv),
+    downstreamPressureBarA: clamp(gas.downstreamPressureBarA, 1, 200, DEFAULT_GAS.downstreamPressureBarA),
+    targetBandBarG: clamp(gas.targetBandBarG, 0.01, 50, DEFAULT_GAS.targetBandBarG),
+    lowLowBarG,
+    lowAlarmBarG,
+    highAlarmBarG,
+    highHighBarG,
   };
 }
 
@@ -204,5 +236,6 @@ export function sanitizeSimulationConfig(config: SimulationConfig): SimulationCo
       DEFAULT_SIMULATION.interfaceHighHighPct,
     ],
   );
+  if (config.gas) sanitized.gas = sanitizeGasConfig(config.gas);
   return sanitized;
 }

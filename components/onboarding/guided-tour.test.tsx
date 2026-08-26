@@ -1,7 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 
 import { GuidedTour, TOUR_STEPS } from "./guided-tour";
 
@@ -12,7 +14,7 @@ function renderTour(targets: readonly (typeof TOUR_STEPS)[number][], onComplete 
     fixture.dataset.tour = target;
     document.body.append(fixture);
   }
-  return { onComplete, onSkip, ...render(<GuidedTour active onComplete={onComplete} onSkip={onSkip} />) };
+  return { onComplete, onSkip, ...renderWithLocale(<GuidedTour active onComplete={onComplete} onSkip={onSkip} />) };
 }
 
 describe("GuidedTour", () => {
@@ -111,7 +113,7 @@ describe("GuidedTour", () => {
 
   it("traps focus and restores the trigger focus when skipped", async () => {
     const user = userEvent.setup();
-    render(<FocusHarness />);
+    renderWithLocale(<FocusHarness />);
 
     const trigger = screen.getByRole("button", { name: "Open guide" });
     await user.click(trigger);

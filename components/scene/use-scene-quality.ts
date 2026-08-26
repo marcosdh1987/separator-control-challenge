@@ -46,21 +46,30 @@ const browserInput = (): SceneQualityInput => {
   };
 };
 
+/** A resize drag fires continuously; renderer resets are too costly to run per event. */
+export const RESIZE_SETTLE_MS = 150;
+
 export function useSceneQuality(): SceneQuality {
   const [quality, setQuality] = useState(() => selectSceneQuality(browserInput()));
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let settleTimer: number | undefined;
     const update = () => setQuality(selectSceneQuality({
       width: window.innerWidth,
       dpr: window.devicePixelRatio,
       reducedMotion: media.matches,
     }));
+    const scheduleUpdate = () => {
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(update, RESIZE_SETTLE_MS);
+    };
     update();
-    window.addEventListener("resize", update);
+    window.addEventListener("resize", scheduleUpdate);
     media.addEventListener("change", update);
     return () => {
-      window.removeEventListener("resize", update);
+      window.clearTimeout(settleTimer);
+      window.removeEventListener("resize", scheduleUpdate);
       media.removeEventListener("change", update);
     };
   }, []);

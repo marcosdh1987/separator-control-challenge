@@ -6,16 +6,17 @@ import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { type ComponentRef, useEffect, useRef } from "react";
 import { ACESFilmicToneMapping, Color, PointLight, SRGBColorSpace } from "three";
 
-import { AlarmBeacon } from "./alarm-beacon";
+import { AlarmBeacon, alarmPulseFactor } from "./alarm-beacon";
 import { ControlValve } from "./control-valve";
 import { PhaseVolumes } from "./phase-volumes";
-import { ProcessPipe, type PipePoint } from "./process-pipe";
+import { ProcessPipe } from "./process-pipe";
 import { establishSceneReadiness } from "./scene-readiness";
 import { SeparatorVessel } from "./separator-vessel";
 import { selectScenePresentation, type ScenePresentationMode } from "./scene-presentation";
 import { useSceneQuality, type SceneQuality } from "./use-scene-quality";
+import { useMessages } from "@/lib/i18n/provider";
 import type { SimulationSample, SimulationStatus } from "@/lib/simulation/types";
-import { createSceneModel } from "@/lib/visualization/scene-model";
+import { createSceneModel, PIPE_PATHS, VALVE_POSITIONS } from "@/lib/visualization/scene-model";
 
 interface SeparatorSceneProps {
   sample: SimulationSample;
@@ -29,29 +30,19 @@ interface SeparatorSceneProps {
 export const DESIGNED_CAMERA_POSITION = [4.8, 2.4, 5.8] as const;
 export const DESIGNED_CAMERA_TARGET = [0, 0, 0] as const;
 
-const FEED_PATH = [
-  [-2.9, 1.38, -0.18],
-  [-2.15, 1.38, -0.18],
-  [-1.55, 1.2, -0.08],
-  [-0.95, 1.05, 0],
-] as const satisfies readonly PipePoint[];
-const OIL_PATH = [
-  [0.82, -1.05, 0],
-  [1.2, -1.2, 0.05],
-  [1.75, -1.2, 0.18],
-  [2.85, -1.2, 0.18],
-] as const satisfies readonly PipePoint[];
-const WATER_PATH = [
-  [-0.1, -1.05, 0],
-  [-0.42, -1.36, 0.12],
-  [-1.25, -1.42, 0.3],
-  [-2.72, -1.42, 0.3],
-] as const satisfies readonly PipePoint[];
-
 export function SeparatorScene({ sample, status, resetToken, mode = "dashboard", onReady, onSceneError }: SeparatorSceneProps) {
   const presentation = selectScenePresentation(mode, useSceneQuality());
   const quality = presentation.quality;
   const model = createSceneModel(sample);
+  // The Canvas mounts its own React reconciler, so context does not cross into it.
+  // Resolve every string here and hand them down as props instead.
+  const messages = useMessages();
+  const safetyText = {
+    condition: messages.simulation.safetyCondition[model.safety.condition],
+    severity: messages.challenge.status.severity[model.safety.severity].toLocaleUpperCase(),
+    safeBadge: messages.challenge.mimic.safeBadge,
+    accentLabel: messages.challenge.mimic.sceneAccentLabel,
+  };
   const processMotion = presentation.interactive && quality.animateAmbient && model.safety.motionEnabled && status === "running";
 
   return (
@@ -77,18 +68,18 @@ export function SeparatorScene({ sample, status, resetToken, mode = "dashboard",
       <SceneLights environment={presentation.environment} quality={quality} />
       {presentation.interactive ? <CameraRig resetToken={resetToken} /> : null}
       <group position={[0, 0.16, 0]}>
-        <ProcessPipe name="Feed" points={FEED_PATH} color="#6ce9db" motion={model.inletFlow} animate={processMotion} quality={quality.tier} />
-        <ProcessPipe name="Oil outlet" points={OIL_PATH} color="#f2ad4e" motion={model.oilFlow} animate={processMotion} quality={quality.tier} />
-        <ProcessPipe name="Water outlet" points={WATER_PATH} color="#3ecbe6" motion={model.waterFlow} animate={processMotion} quality={quality.tier} />
+        <ProcessPipe name="Feed" points={PIPE_PATHS.feed} color="#6ce9db" motion={model.inletFlow} animate={processMotion} quality={quality.tier} />
+        <ProcessPipe name="Oil outlet" points={PIPE_PATHS.oil} color="#f2ad4e" motion={model.oilFlow} animate={processMotion} quality={quality.tier} />
+        <ProcessPipe name="Water outlet" points={PIPE_PATHS.water} color="#3ecbe6" motion={model.waterFlow} animate={processMotion} quality={quality.tier} />
         <PhaseVolumes model={model} quality={quality} sample={sample} status={status} />
         <SeparatorVessel quality={quality} />
-        <ControlValve tag="LV-101" description="Oil outlet valve" openFraction={model.oilValve.openFraction} position={[2.05, -1.2, 0.18]} accent="#f2ad4e" compact={quality.tier === "low"} />
-        <ControlValve tag="WV-101" description="Water outlet valve" openFraction={model.waterValve.openFraction} position={[-1.55, -1.42, 0.3]} accent="#3ecbe6" compact={quality.tier === "low"} />
+        <ControlValve tag="LV-101" description="Oil outlet valve" openFraction={model.oilValve.openFraction} position={[...VALVE_POSITIONS.oil]} accent="#f2ad4e" compact={quality.tier === "low"} />
+        <ControlValve tag="WV-101" description="Water outlet valve" openFraction={model.waterValve.openFraction} position={[...VALVE_POSITIONS.water]} accent="#3ecbe6" compact={quality.tier === "low"} />
         <AlarmBeacon
           safety={model.safety}
           animate={processMotion}
         />
-        <SafetyAccent safety={model.safety} animate={processMotion} />
+        <SafetyAccent safety={model.safety} animate={processMotion} text={safetyText} />
       </group>
       <mesh position={[0, -1.14, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow={quality.shadows}>
         <planeGeometry args={[12, 9]} />
@@ -108,17 +99,28 @@ export function SeparatorScene({ sample, status, resetToken, mode = "dashboard",
   );
 }
 
-function SafetyAccent({ safety, animate }: { safety: ReturnType<typeof createSceneModel>["safety"]; animate: boolean }) {
+interface SafetyAccentText {
+  condition: string;
+  severity: string;
+  safeBadge: string;
+  accentLabel: (condition: string) => string;
+}
+
+function SafetyAccent({ safety, animate, text }: {
+  safety: ReturnType<typeof createSceneModel>["safety"];
+  animate: boolean;
+  text: SafetyAccentText;
+}) {
   const light = useRef<PointLight>(null);
   const phase = useRef(0);
   const color = safety.severity === "trip" ? "#ff4d5d" : safety.severity === "alarm" ? "#ffb04d" : "#2fd5d4";
   useFrame((_, delta) => {
     if (animate && safety.severity === "alarm") phase.current += delta * safety.pulseHz;
-    const wave = animate && safety.severity === "alarm" ? 0.84 + 0.16 * Math.sin(phase.current * Math.PI * 2) : 1;
+    const wave = animate && safety.severity === "alarm" ? alarmPulseFactor(phase.current) : 1;
     if (light.current) light.current.intensity = safety.rimIntensity * wave;
   });
   return (
-    <group name={`Safety accent: ${safety.label}`}>
+    <group name={text.accentLabel(text.condition)}>
       <pointLight ref={light} color={color} distance={7} decay={2} position={[2.45, 1.15, -1.9]} />
       {safety.markerY !== null ? (
         <group position={[0, safety.markerY, 0.7]}>
@@ -128,15 +130,15 @@ function SafetyAccent({ safety, animate }: { safety: ReturnType<typeof createSce
           </mesh>
           <Html center position={[0, 0.18, 0]} className="scene-html-anchor" zIndexRange={[18, 0]}>
             <div className={`scene-safety-label is-${safety.severity}`} data-pulsing={animate && safety.severity === "alarm" ? "true" : "false"}>
-              <strong>{safety.severity.toUpperCase()}</strong>
-              <span>{safety.label}</span>
+              <strong>{text.severity}</strong>
+              <span>{text.condition}</span>
             </div>
           </Html>
         </group>
       ) : (
         <Html center position={[0, 1.05, 0.72]} className="scene-html-anchor" zIndexRange={[18, 0]}>
           <div className="scene-safety-label is-safe" data-pulsing="false">
-            <strong>SAFE</strong><span>{safety.label}</span>
+            <strong>{text.safeBadge}</strong><span>{text.condition}</span>
           </div>
         </Html>
       )}

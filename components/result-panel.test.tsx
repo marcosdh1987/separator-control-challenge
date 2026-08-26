@@ -1,9 +1,10 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { ResultPanel } from "./result-panel";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import type { RunResult } from "@/lib/simulation/types";
 
 const result: RunResult = {
@@ -60,19 +61,18 @@ const result: RunResult = {
     valveEfficiency: 7,
     modifiers: [],
     total: 84,
-    rank: "Loop Tuning Specialist",
-    diagnosis: "Balanced loop response",
-    suggestion: "Try the next scenario.",
+    rank: "specialist",
+    feedback: { kind: "balanced" },
   },
 };
 
 describe("result panel", () => {
   it("presents score, rank, deterministic diagnosis, and retry action", () => {
-    render(<ResultPanel result={result} onClose={vi.fn()} onRetry={vi.fn()} />);
+    renderWithLocale(<ResultPanel result={result} onClose={vi.fn()} onRetry={vi.fn()} />);
 
     expect(screen.getByText("84")).toBeVisible();
     expect(screen.getByText("Loop Tuning Specialist")).toBeVisible();
-    expect(screen.getByText("Balanced loop response")).toBeVisible();
+    expect(screen.getByText("Balanced total level and interface response")).toBeVisible();
     expect(screen.getByRole("button", { name: /tune and retry/i })).toBeVisible();
     expect(within(screen.getByRole("heading", { name: "Total level loop" }).parentElement!).getAllByText("2.0%", { selector: "strong" })[0]).toBeVisible();
     expect(within(screen.getByRole("heading", { name: "Oil/water interface loop" }).parentElement!).getAllByText("1.0%", { selector: "strong" })[0]).toBeVisible();
@@ -80,7 +80,7 @@ describe("result panel", () => {
     expect(screen.getByText("80.0%", { selector: "strong" })).toBeVisible();
     expect(screen.getByText("No trip")).toBeVisible();
     expect(screen.getByText("No modifiers applied")).toBeVisible();
-    expect(screen.getByText("Try the next scenario.")).toBeVisible();
+    expect(screen.getByText(/Try a harder scenario/)).toBeVisible();
   });
 
   it("shows the exact trip and every applied modifier", () => {
@@ -88,20 +88,19 @@ describe("result panel", () => {
       metrics: { ...result.metrics, trip: "INTERFACE_HH" },
       score: {
         ...result.score,
-        diagnosis: "Interface / water valve recovery limits the joint response",
-        suggestion: "Retune the interface loop and water valve.",
+        feedback: { kind: "recovery", loop: "interface" },
         modifiers: [
-          { id: "trip", label: "Interface high-high trip cap", points: 0 },
-          { id: "water-saturation", label: "Water valve long saturation", points: -4 },
+          { id: "trip", trip: "INTERFACE_HH", points: 0 },
+          { id: "water-saturation", points: -4 },
         ],
       },
     };
-    render(<ResultPanel result={tripped} onClose={vi.fn()} onRetry={vi.fn()} />);
+    renderWithLocale(<ResultPanel result={tripped} onClose={vi.fn()} onRetry={vi.fn()} />);
     expect(screen.getByText("Interface high-high trip")).toBeVisible();
     expect(screen.getByText(/Interface \/ water valve recovery/)).toBeVisible();
     expect(screen.getByText("Interface high-high trip cap")).toBeVisible();
     expect(screen.getByText("Water valve long saturation")).toBeVisible();
-    expect(screen.getByText("Retune the interface loop and water valve.")).toBeVisible();
+    expect(screen.getByText(/Retune the Interface loop and water valve/)).toBeVisible();
   });
 
   it("traps focus, closes on Escape, and restores the trigger", async () => {
@@ -113,7 +112,7 @@ describe("result panel", () => {
         {open && <ResultPanel result={result} onClose={() => setOpen(false)} onRetry={vi.fn()} />}
       </>;
     }
-    render(<Harness />);
+    renderWithLocale(<Harness />);
 
     const trigger = screen.getByRole("button", { name: "Show results" });
     await user.click(trigger);

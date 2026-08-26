@@ -1,7 +1,61 @@
-import type { SafetyState, SimulationSample } from "@/lib/simulation/types";
+import { DEFAULT_SIMULATION, type SafetyState, type SimulationSample } from "@/lib/simulation/types";
 
-export const VESSEL_RADIUS_M = 0.6;
-export const VESSEL_DIAMETER_M = VESSEL_RADIUS_M * 2;
+/**
+ * Scene geometry derives from the simulated vessel so a change to the physical
+ * model cannot silently leave the rendered vessel behind.
+ */
+export const VESSEL_DIAMETER_M = DEFAULT_SIMULATION.diameterM;
+export const VESSEL_RADIUS_M = VESSEL_DIAMETER_M / 2;
+export const VESSEL_LENGTH_M = DEFAULT_SIMULATION.lengthM;
+
+/** Shell plate sits outside the modelled bore, so the drawn shell reads slightly wider. */
+export const SHELL_WALL_THICKNESS_M = 0.03;
+export const SHELL_RADIUS_M = VESSEL_RADIUS_M + SHELL_WALL_THICKNESS_M;
+
+/** Phase volumes stop short of both heads so the dished ends stay readable. */
+export const PHASE_END_INSET_M = 0.07;
+export const PHASE_LENGTH_M = VESSEL_LENGTH_M - 2 * PHASE_END_INSET_M;
+
+export type ScenePoint = readonly [number, number, number];
+
+/**
+ * Nozzle anchors are the single source of truth for where process lines meet the
+ * vessel: the vessel draws a nozzle at each anchor and every pipe path starts or
+ * ends on the same x, so the two can no longer drift apart by hand-editing.
+ */
+export const NOZZLE_ANCHORS = Object.freeze({
+  feed: Object.freeze({ x: -0.95, y: 0.72, rotationZ: 0 }),
+  oilOutlet: Object.freeze({ x: 0.82, y: -0.73, rotationZ: Math.PI }),
+  waterOutlet: Object.freeze({ x: -0.1, y: -0.73, rotationZ: Math.PI }),
+});
+
+export const PIPE_PATHS: Readonly<Record<"feed" | "oil" | "water", readonly ScenePoint[]>> =
+  Object.freeze({
+    feed: Object.freeze([
+      [-2.9, 1.38, -0.18],
+      [-2.15, 1.38, -0.18],
+      [-1.55, 1.2, -0.08],
+      [NOZZLE_ANCHORS.feed.x, 1.05, 0],
+    ]) as readonly ScenePoint[],
+    oil: Object.freeze([
+      [NOZZLE_ANCHORS.oilOutlet.x, -1.05, 0],
+      [1.2, -1.2, 0.05],
+      [1.75, -1.2, 0.18],
+      [2.85, -1.2, 0.18],
+    ]) as readonly ScenePoint[],
+    water: Object.freeze([
+      [NOZZLE_ANCHORS.waterOutlet.x, -1.05, 0],
+      [-0.42, -1.36, 0.12],
+      [-1.25, -1.42, 0.3],
+      [-2.72, -1.42, 0.3],
+    ]) as readonly ScenePoint[],
+  });
+
+/** Each control valve sits on its own outlet run, between the second and last elbow. */
+export const VALVE_POSITIONS: Readonly<Record<"oil" | "water", ScenePoint>> = Object.freeze({
+  oil: [2.05, PIPE_PATHS.oil[2][1], PIPE_PATHS.oil[2][2]],
+  water: [-1.55, PIPE_PATHS.water[2][1], PIPE_PATHS.water[2][2]],
+});
 
 export interface FlowMotion {
   direction: -1 | 0 | 1;
@@ -23,7 +77,7 @@ export interface SceneModel {
   waterFlow: FlowMotion;
   oilValve: { openFraction: number };
   waterValve: { openFraction: number };
-  safety: Pick<SafetyState, "severity" | "source" | "label"> & {
+  safety: Pick<SafetyState, "severity" | "source" | "condition"> & {
     motionEnabled: boolean;
     markerY: number | null;
     beaconIntensity: number;
@@ -62,14 +116,22 @@ interface EngineeringFormatOptions {
   digits?: number;
   separator?: string;
   invalid?: "dash" | "unavailable";
+  /** Spoken stand-in for a missing value; supplied by the message catalogue. */
+  unavailableText?: string;
 }
 
 export function formatEngineeringValue(
   value: number,
-  { unit = "", digits = 1, separator = unit ? " " : "", invalid = "dash" }: EngineeringFormatOptions = {},
+  {
+    unit = "",
+    digits = 1,
+    separator = unit ? " " : "",
+    invalid = "dash",
+    unavailableText = "unavailable",
+  }: EngineeringFormatOptions = {},
 ): string {
   if (!Number.isFinite(value)) {
-    return invalid === "unavailable" ? "unavailable" : `—${unit ? `${separator}${unit}` : ""}`;
+    return invalid === "unavailable" ? unavailableText : `—${unit ? `${separator}${unit}` : ""}`;
   }
   return `${value.toFixed(digits)}${unit ? `${separator}${unit}` : ""}`;
 }
@@ -111,7 +173,7 @@ export function createSceneModel(sample: SimulationSample): SceneModel {
     safety: {
       severity: sample.safety.severity,
       source: sample.safety.source,
-      label: sample.safety.label,
+      condition: sample.safety.condition,
       motionEnabled: sample.safety.severity !== "trip",
       markerY,
       ...safetyPresentation,
@@ -119,13 +181,36 @@ export function createSceneModel(sample: SimulationSample): SceneModel {
   };
 }
 
-export function createProcessSummary(sample: SimulationSample): string {
+export interface ProcessSummaryCopy {
+  vessel: string;
+  levels: (trueTotal: string, measuredTotal: string) => string;
+  interface: (trueInterface: string, measuredInterface: string) => string;
+  flows: (inlet: string, oilOutlet: string, waterOutlet: string) => string;
+  valves: (oil: string, water: string) => string;
+  safety: (condition: string) => string;
+  units: { percent: string; cubicMetresPerHour: string; unavailable: string };
+}
+
+/**
+ * The spoken description a screen reader announces. Wording arrives from the
+ * message catalogue so this stays a layout of numbers rather than English prose.
+ */
+export function createProcessSummary(
+  sample: SimulationSample,
+  copy: ProcessSummaryCopy,
+  safetyCondition: string,
+): string {
+  const percent = (value: number) =>
+    formatEngineeringValue(value, { unit: copy.units.percent, invalid: "unavailable", unavailableText: copy.units.unavailable });
+  const flow = (value: number) =>
+    formatEngineeringValue(value, { unit: copy.units.cubicMetresPerHour, invalid: "unavailable", unavailableText: copy.units.unavailable });
+
   return [
-    "SEP-101 horizontal separator with gas, oil, and water.",
-    `True total level ${formatEngineeringValue(sample.total.processValuePct, { unit: "percent", invalid: "unavailable" })}; measured total level ${formatEngineeringValue(sample.total.measuredValuePct, { unit: "percent", invalid: "unavailable" })}.`,
-    `True interface ${formatEngineeringValue(sample.interface.processValuePct, { unit: "percent", invalid: "unavailable" })}; measured interface ${formatEngineeringValue(sample.interface.measuredValuePct, { unit: "percent", invalid: "unavailable" })}.`,
-    `Total inlet ${formatEngineeringValue(sample.flows.totalInletM3H, { unit: "cubic metres per hour", invalid: "unavailable" })}; oil outlet ${formatEngineeringValue(sample.flows.oilOutletM3H, { unit: "cubic metres per hour", invalid: "unavailable" })}; water outlet ${formatEngineeringValue(sample.flows.waterOutletM3H, { unit: "cubic metres per hour", invalid: "unavailable" })}.`,
-    `Actual oil valve ${formatEngineeringValue(sample.total.valvePositionPct, { unit: "percent", invalid: "unavailable" })}; actual water valve ${formatEngineeringValue(sample.interface.valvePositionPct, { unit: "percent", invalid: "unavailable" })}.`,
-    `Safety: ${sample.safety.label}.`,
+    copy.vessel,
+    copy.levels(percent(sample.total.processValuePct), percent(sample.total.measuredValuePct)),
+    copy.interface(percent(sample.interface.processValuePct), percent(sample.interface.measuredValuePct)),
+    copy.flows(flow(sample.flows.totalInletM3H), flow(sample.flows.oilOutletM3H), flow(sample.flows.waterOutletM3H)),
+    copy.valves(percent(sample.total.valvePositionPct), percent(sample.interface.valvePositionPct)),
+    copy.safety(safetyCondition),
   ].join(" ");
 }

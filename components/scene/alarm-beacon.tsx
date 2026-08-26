@@ -19,10 +19,18 @@ export function beaconPresentation(severity: SceneModel["safety"]["severity"]) {
   return { intensity: 0.34, pulseHz: 0, animated: false } as const;
 }
 
+/**
+ * The one alarm cadence in the scene. The beacon lens and the rim accent light both
+ * read from it so they cannot drift into two slightly different pulses.
+ */
+export function alarmPulseFactor(phase: number): number {
+  return 0.82 + 0.18 * Math.sin(phase * Math.PI * 2);
+}
+
 export function beaconPulse(severity: SceneModel["safety"]["severity"], phase: number, animate: boolean): number {
   const presentation = beaconPresentation(severity);
   if (!animate || !presentation.animated) return presentation.intensity;
-  return presentation.intensity * (0.82 + 0.18 * Math.sin(phase * Math.PI * 2));
+  return presentation.intensity * alarmPulseFactor(phase);
 }
 
 export function beaconFramePresentation(
@@ -46,7 +54,6 @@ export function AlarmBeacon({ safety, animate }: AlarmBeaconProps) {
   useFrame((_, delta) => {
     if (animate && safety.severity === "alarm") phase.current += delta * safety.pulseHz;
     const frame = beaconFramePresentation(safety.severity, phase.current, animate);
-    if (lens.current) lens.current.scale.y = 1;
     if (lens.current) lens.current.material.emissiveIntensity = frame.lensEmissiveIntensity;
     if (light.current) light.current.intensity = frame.lightIntensity;
   });

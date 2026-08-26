@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
+import { useMessages } from "@/lib/i18n/provider";
+
 import { MissionSummary } from "./mission-summary";
 
 interface QuickStartModalProps {
@@ -10,6 +12,7 @@ interface QuickStartModalProps {
 }
 
 export function QuickStartModal({ onDismiss, onStartGuidedTour }: QuickStartModalProps) {
+  const { quickStart } = useMessages().onboarding;
   const scrimRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -94,13 +97,13 @@ export function QuickStartModal({ onDismiss, onStartGuidedTour }: QuickStartModa
         ref={dialogRef}
         role="dialog"
       >
-        <p className="eyebrow">First control-room visit</p>
-        <h2 id="quick-start-title">Your mission</h2>
+        <p className="eyebrow">{quickStart.eyebrow}</p>
+        <h2 id="quick-start-title">{quickStart.title}</h2>
         <MissionSummary />
         <div className="quick-start-actions">
-          <button className="primary-button" type="button" onClick={startGuidedTour}>Start guided tour</button>
-          <button className="secondary-button" type="button" onClick={() => close(false)}>Skip and play</button>
-          <button className="secondary-button" type="button" onClick={() => close(true)}>Don&apos;t show again</button>
+          <button className="primary-button" type="button" onClick={startGuidedTour}>{quickStart.startGuidedTour}</button>
+          <button className="secondary-button" type="button" onClick={() => close(false)}>{quickStart.skipAndPlay}</button>
+          <button className="secondary-button" type="button" onClick={() => close(true)}>{quickStart.dontShowAgain}</button>
         </div>
       </div>
     </div>

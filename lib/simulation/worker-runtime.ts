@@ -1,4 +1,5 @@
 import { createEngine, finishEngine, stepEngine, type EngineState } from "./engine";
+import { WORKER_PROTOCOL_VERSION } from "./types";
 import type { SimulationStatus, WorkerEvent, WorkerRequest } from "./types";
 
 type Emit = (event: WorkerEvent) => void;
@@ -56,6 +57,16 @@ export class SimulationRuntime {
 
   handle(request: WorkerRequest): void {
     if (request.type === "initialize") {
+      // A client built against a different protocol would be misread rather than
+      // rejected, so refuse anything this runtime does not recognise.
+      if (
+        request.protocolVersion !== undefined &&
+        request.protocolVersion !== WORKER_PROTOCOL_VERSION
+      ) {
+        throw new Error(
+          `Unsupported worker protocol ${request.protocolVersion}; this runtime speaks ${WORKER_PROTOCOL_VERSION}`,
+        );
+      }
       const engine = createEngine(
         request.config,
         request.pid,

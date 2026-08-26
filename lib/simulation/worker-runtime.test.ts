@@ -199,7 +199,7 @@ describe("simulation worker runtime", () => {
 
     expect(JSON.stringify(events)).not.toContain("metricSamples");
     const sampleEvents = events.filter((event) => event.type === "samples");
-    expect(sampleEvents.flatMap((event) => event.samples)).toHaveLength(900);
+    expect(sampleEvents.flatMap((event) => event.samples)).toHaveLength(901);
   });
 
   it("publishes an initially unsafe run as one immediate terminal result", () => {

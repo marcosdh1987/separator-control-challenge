@@ -8,6 +8,8 @@ import {
   PHASE_RADIUS_M,
   phaseSurfaceTransforms,
   phaseVolumeShaderSource,
+  shaderCacheKey,
+  SURFACE_SHADER_PATCHES,
 } from "./phase-geometry";
 
 const sampleAt = (totalPct: number, interfacePct: number) => {
@@ -65,9 +67,29 @@ describe("phase depth coloring", () => {
 
   it("mixes depth colors from world Y without changing vertex positions", () => {
     const shader = phaseVolumeShaderSource(PHASE_DEPTH_PALETTES.water);
-    expect(shader.vertex).toContain("vPhaseWorldY = (modelMatrix * vec4(transformed, 1.0)).y");
-    expect(shader.fragment).toContain("mix");
-    expect(shader.vertex).not.toContain("transformed +=");
-    expect(shader.vertex).not.toContain("transformed.y =");
+    expect(shader.vertexWorldpos).toContain("vPhaseWorldY = (modelMatrix * vec4(transformed, 1.0)).y");
+    expect(shader.fragmentColor).toContain("mix");
+    const vertex = `${shader.vertexCommon}\n${shader.vertexWorldpos}`;
+    expect(vertex).not.toContain("transformed +=");
+    expect(vertex).not.toContain("transformed.y =");
+  });
+
+  it("declares the varying it reads in both shader stages", () => {
+    const shader = phaseVolumeShaderSource(PHASE_DEPTH_PALETTES.oil);
+    expect(shader.vertexCommon).toContain("varying float vPhaseWorldY;");
+    expect(shader.fragmentCommon).toContain("varying float vPhaseWorldY;");
+    // The declaration belongs in the <common> blocks; repeating it beside the body
+    // that uses it would fail to compile.
+    expect(shader.vertexWorldpos).not.toContain("varying");
+    expect(shader.fragmentColor).not.toContain("varying");
+  });
+
+  it("changes the program cache key whenever the injected source changes", () => {
+    const water = phaseVolumeShaderSource(PHASE_DEPTH_PALETTES.water);
+    const oil = phaseVolumeShaderSource(PHASE_DEPTH_PALETTES.oil);
+    expect(shaderCacheKey("phase", water)).toBe(shaderCacheKey("phase", water));
+    expect(shaderCacheKey("phase", water)).not.toBe(shaderCacheKey("phase", oil));
+    expect(shaderCacheKey("phase", water)).not.toBe(shaderCacheKey("surface", water));
+    expect(shaderCacheKey("surface", SURFACE_SHADER_PATCHES)).toMatch(/^surface-[0-9a-z]+$/);
   });
 });

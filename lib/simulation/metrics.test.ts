@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { calculateMetrics } from "./metrics";
 import {
   DEFAULT_SIMULATION,
-  type LoopId,
+  type LiquidLoopId,
   type SimulationSample,
 } from "./types";
 
@@ -77,14 +77,14 @@ const sample = (timeS: number, options: SampleOptions = {}): SimulationSample =>
     safety: {
       severity: "safe",
       source: null,
-      label: "Test sample",
+      condition: "normal",
       trip: null,
     },
-    disturbance: "Test",
+    disturbance: "steady",
   };
 };
 
-const limits: Record<LoopId, number> = { total: 10, interface: 20 };
+const limits: Record<LiquidLoopId, number> = { total: 10, interface: 20 };
 
 describe("dual-loop run metrics", () => {
   it("rejects an empty sample history", () => {

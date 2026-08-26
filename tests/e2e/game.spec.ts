@@ -60,14 +60,42 @@ async function expectResetLevels(page: Page) {
   await expect(page.getByRole("group", { name: "Interface live values" })).toContainText("20.0%");
 }
 
+/**
+ * The quick-start modal covers the dashboard on a first visit and would intercept
+ * every click. Seeding the dismissal reproduces a returning visitor, which is the
+ * state these flows are about.
+ */
+async function skipFirstRunModal(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "separator-control-onboarding-v1",
+      JSON.stringify({ quickStartDismissed: true, guidedTourDismissed: true }),
+    );
+  });
+}
+
+/**
+ * Start is disabled until the Worker reports ready. Clicking earlier is silently
+ * ignored, so every flow waits for it rather than racing the handshake.
+ */
+async function startAttempt(page: Page) {
+  const start = page.getByRole("button", { name: "Start attempt" });
+  await expect(start).toBeEnabled();
+  await start.click();
+}
+
 test.describe("separator control challenge", () => {
+  test.beforeEach(async ({ page }) => {
+    await skipFirstRunModal(page);
+  });
+
   test("starts, pauses, resumes, and resets an attempt", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/challenge");
 
     await expect(page.getByRole("heading", { name: "Separator Control Challenge" })).toBeVisible();
-    await expect(page.locator('input[value="water-rich-slug"]')).toBeChecked();
+    await expect(page.locator('input[value="feed-step"]')).toBeChecked();
 
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     await expect(page.getByRole("spinbutton", { name: "Total level proportional gain" })).toBeDisabled();
     await page.getByRole("button", { name: "Pause attempt" }).click();
     await expect(page.getByRole("button", { name: "Resume attempt" })).toBeVisible();
@@ -80,9 +108,14 @@ test.describe("separator control challenge", () => {
   });
 
   test("runs the primary dual-loop workflow without changing simulation semantics", async ({ page }) => {
-    // Leave enough physical time to exercise pause/resume before the 4× finish.
-    await interceptSimulationConfig(page, { durationS: 8 });
-    await page.goto("/");
+    // Loads a real scene and then walks the whole transport sequence, so it needs
+    // the same budget as the other scene-backed flows.
+    test.setTimeout(90_000);
+    // Long enough that the run cannot end while transport is being exercised; the
+    // modal result panel would otherwise cover the controls. Reaching the results
+    // screen is covered by the accelerated attempt test.
+    await interceptSimulationConfig(page, { durationS: 600 });
+    await page.goto("/challenge");
 
     await page.getByRole("radio", { name: /Water-rich (liquid )?slug/ }).check();
     await page.getByRole("spinbutton", { name: "Total level proportional gain" }).fill("5");
@@ -90,13 +123,20 @@ test.describe("separator control challenge", () => {
     await expect(page.getByRole("spinbutton", { name: "Total level proportional gain" })).toHaveValue("5");
     await expect(page.getByRole("spinbutton", { name: "Interface proportional gain" })).toHaveValue("3");
 
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     await expectLockedPids(page);
     await page.getByRole("button", { name: "Pause attempt" }).click();
+    await expect(page.getByRole("button", { name: "Resume attempt" })).toBeVisible();
+    // A tick already in flight when Pause was clicked still lands, so wait for the
+    // clock to settle before asserting that it stays put.
+    await expect.poll(async () => {
+      const before = await readRemainingSeconds(page);
+      await page.waitForTimeout(250);
+      return (await readRemainingSeconds(page)) === before;
+    }).toBe(true);
     const pausedAt = await readRemainingSeconds(page);
     await page.waitForTimeout(500);
     expect(await readRemainingSeconds(page)).toBe(pausedAt);
-    await page.getByRole("button", { name: "4× speed" }).click();
     await page.getByRole("button", { name: "Resume attempt" }).click();
     await expect.poll(() => readRemainingSeconds(page)).toBeLessThan(pausedAt);
 
@@ -104,34 +144,35 @@ test.describe("separator control challenge", () => {
     await expect(page.getByRole("button", { name: "Start attempt" })).toBeVisible();
     await expectResetLevels(page);
 
-    await page.getByRole("button", { name: "Start attempt" }).click();
-    const results = page.getByRole("dialog", { name: "Attempt results" });
-    await expect(results).toBeVisible({ timeout: 15_000 });
-    await expect(results.getByRole("heading", { name: "Total level loop" })).toBeVisible();
-    await expect(results.getByRole("heading", { name: "Oil/water interface loop" })).toBeVisible();
+    await expect(page.getByRole("spinbutton", { name: "Total level proportional gain" })).toBeEnabled();
+    await expect(page.getByRole("spinbutton", { name: "Interface proportional gain" })).toBeEnabled();
   });
 
   test("selects a deterministic scenario before gains lock", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/challenge");
 
     await page.getByRole("radio", { name: /Noisy interface sensor/ }).check();
     await expect(page.locator('input[value="noisy-interface"]')).toBeChecked();
+    // The seed is engineering detail, tucked behind a disclosure.
+    await page.getByText("Run details", { exact: true }).click();
     await expect(page.getByText("1006", { exact: true })).toBeVisible();
 
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     await expect(page.locator('input[value="noisy-interface"]')).toBeDisabled();
   });
 
   test("completes an accelerated deterministic attempt and shows results", async ({ page }) => {
     await interceptSimulationConfig(page, { durationS: 1 });
-    await page.goto("/");
+    await page.goto("/challenge");
 
     await page.getByRole("button", { name: "4× speed" }).click();
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
 
     const results = page.getByRole("dialog", { name: "Attempt results" });
     await expect(results).toBeVisible({ timeout: 15_000 });
     await expect(results.getByText("FINAL SCORE")).toBeVisible();
+    await expect(results.getByRole("heading", { name: "Total level loop" })).toBeVisible();
+    await expect(results.getByRole("heading", { name: "Oil/water interface loop" })).toBeVisible();
     await expect(results.getByRole("button", { name: "Tune and retry" })).toBeVisible();
   });
 
@@ -143,7 +184,7 @@ test.describe("separator control challenge", () => {
       totalHighAlarmPct: 40,
       totalHighHighPct: 49.99,
     });
-    await page.goto("/");
+    await page.goto("/challenge");
 
     const results = page.getByRole("dialog", { name: "Attempt results" });
     await expect(results).toBeVisible({ timeout: 15_000 });
@@ -164,20 +205,22 @@ test.describe("separator control challenge", () => {
       interfaceHighAlarmPct: 19,
       interfaceHighHighPct: 19.99,
     });
-    await page.goto("/");
+    await page.goto("/challenge");
 
     const results = page.getByRole("dialog", { name: "Attempt results" });
     await expect(results).toBeVisible({ timeout: 15_000 });
-    await expect(results.getByText("Interface high-high trip", { exact: false })).toBeVisible();
+    await expect(results.getByText("Interface high-high trip", { exact: true }).first()).toBeVisible();
     await expect(results.getByRole("listitem")).toContainText("Interface high-high trip cap");
     const score = await results.locator(".score-ring strong").textContent();
     expect(Number(score)).toBeLessThanOrEqual(35);
-    await expect(page.locator(".scene-safety-label.is-trip")).toContainText("Interface high-high trip");
+    await expect(
+      page.locator(".scene-safety-label.is-trip").or(page.locator(".alarm-badge.trip")),
+    ).toContainText("Interface high-high trip");
   });
 
   test("keeps the mobile dashboard inside the viewport", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile", "Mobile layout assertion");
-    await page.goto("/");
+    await page.goto("/challenge");
 
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
@@ -199,7 +242,7 @@ test.describe("separator control challenge", () => {
   });
 
   test("keeps the hero first in reading order and PID targets readable at rest and locked", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/challenge");
     const bayOrder = await page.locator(".process-bay").evaluate((bay) =>
       Array.from(bay.children).map((child) => child.className),
     );
@@ -214,7 +257,7 @@ test.describe("separator control challenge", () => {
       const box = await sliders.nth(index).boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     const lockedStyle = await page.locator(".gain-control").first().evaluate((element) => ({
       opacity: getComputedStyle(element).opacity,
       helperSize: getComputedStyle(element.querySelector(".gain-hint")!).fontSize,
@@ -232,7 +275,7 @@ test.describe("separator control challenge", () => {
     page.on("console", (message) => {
       if (message.type() === "error") runtimeErrors.push(message.text());
     });
-    await page.goto("/");
+    await page.goto("/challenge");
 
     const resetView = page.getByRole("button", { name: "Reset 3D view" });
     await expect(resetView).toBeVisible({ timeout: 30_000 });
@@ -270,39 +313,49 @@ test.describe("separator control challenge", () => {
   test("freezes real 3D flow phase while paused and resumes continuously", async ({ page }, testInfo) => {
     test.setTimeout(90_000);
     test.skip(testInfo.project.name === "mobile", "Desktop Chromium is the required real-WebGL gate");
-    await page.goto("/");
+    await page.goto("/challenge");
     await expect(page.getByRole("button", { name: "Reset 3D view" })).toBeVisible({ timeout: 30_000 });
     const feed = page.locator('[data-flow-name="Feed"]');
-    await page.getByRole("button", { name: "Start attempt" }).click();
-    await expect(feed).toHaveAttribute("data-motion", "moving");
-    await expect.poll(() => feed.getAttribute("data-phase")).not.toBe("0.18000");
+    await startAttempt(page);
+    // Scene state reaches the DOM through the R3F reconciler and a rendered frame.
+    // Shader compilation is GPU-serialised across the suite, so this needs more than
+    // the default assertion window when other specs have just built a scene.
+    const sceneSettle = { timeout: 20_000 };
+    await expect(feed).toHaveAttribute("data-motion", "moving", sceneSettle);
+    await expect.poll(() => feed.getAttribute("data-phase"), sceneSettle).not.toBe("0.18000");
     await page.getByRole("button", { name: "Pause attempt" }).click();
-    await expect(feed).toHaveAttribute("data-motion", "frozen");
+    await expect(feed).toHaveAttribute("data-motion", "frozen", sceneSettle);
     const frozenPhase = await feed.getAttribute("data-phase");
     await page.waitForTimeout(500);
     expect(await feed.getAttribute("data-phase")).toBe(frozenPhase);
     await page.getByRole("button", { name: "Resume attempt" }).click();
-    await expect(feed).toHaveAttribute("data-motion", "moving");
-    await expect.poll(() => feed.getAttribute("data-phase")).not.toBe(frozenPhase);
+    await expect(feed).toHaveAttribute("data-motion", "moving", sceneSettle);
+    await expect.poll(() => feed.getAttribute("data-phase"), sceneSettle).not.toBe(frozenPhase);
   });
 
   test("keeps process state visible but motion static with reduced motion", async ({ page }, testInfo) => {
     test.setTimeout(90_000);
     test.skip(testInfo.project.name === "mobile", "Desktop Chromium is the required real-WebGL gate");
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/");
+    await page.goto("/challenge");
     await expect(page.getByRole("button", { name: "Reset 3D view" })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-valve-tag="LV-101"]')).toBeVisible();
+    // The slug moves the level far enough to prove the readout is still live while
+    // the scene itself stays frozen.
+    await page.getByRole("radio", { name: /Water-rich (liquid )?slug/ }).check();
     await page.getByRole("button", { name: "4× speed" }).click();
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     await expect(page.locator('[data-flow-name="Feed"]')).toHaveAttribute("data-motion", "frozen");
     const reducedPhase = await page.locator('[data-flow-name="Feed"]').getAttribute("data-phase");
     await page.waitForTimeout(500);
     expect(await page.locator('[data-flow-name="Feed"]').getAttribute("data-phase")).toBe(reducedPhase);
-    await expect.poll(
-      () => page.getByRole("group", { name: "Total level live values" }).textContent(),
-      { timeout: 15_000 },
-    ).not.toContain("50.0%");
+    const totalProcessValue = page
+      .getByRole("group", { name: "Total level live values" })
+      .locator("div")
+      .filter({ has: page.getByText("Total level process value", { exact: true }) })
+      .locator("dd");
+    await expect.poll(() => totalProcessValue.textContent(), { timeout: 15_000 })
+      .not.toBe("50.0%");
     await expect(page.locator(".scene-safety-label")).toContainText("Normal operating envelope");
   });
 
@@ -314,12 +367,12 @@ test.describe("separator control challenge", () => {
         return original.call(this, type, options);
       } as typeof original;
     });
-    await page.goto("/");
+    await page.goto("/challenge");
 
     await expect(page.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
     await expect(page.locator(".separator-canvas canvas")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Reset 3D view" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     await expect(page.getByRole("button", { name: "Pause attempt" })).toBeVisible();
 
     const widths = await page.evaluate(() => ({
@@ -334,10 +387,10 @@ test.describe("separator control challenge", () => {
   test("keeps HUD and Worker time usable through a desktop WebGL context loss", async ({ page }, testInfo) => {
     test.setTimeout(90_000);
     test.skip(testInfo.project.name === "mobile", "Desktop Chromium owns the WebGL context-loss gate");
-    await page.goto("/");
+    await page.goto("/challenge");
     await expect(page.getByRole("button", { name: "Reset 3D view" })).toBeVisible({ timeout: 30_000 });
     await page.getByRole("button", { name: "4× speed" }).click();
-    await page.getByRole("button", { name: "Start attempt" }).click();
+    await startAttempt(page);
     await expect.poll(() => readRemainingSeconds(page)).toBeLessThan(180);
     const beforeLoss = await readRemainingSeconds(page);
 

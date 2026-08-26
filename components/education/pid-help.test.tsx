@@ -1,13 +1,15 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 
 import { PidHelp } from "./pid-help";
 
 describe("PidHelp", () => {
   it("opens gain guidance with the friendly name before the technical term", async () => {
     const user = userEvent.setup();
-    render(<PidHelp gain="kp" />);
+    renderWithLocale(<PidHelp gain="kp" />);
 
     await user.click(screen.getByRole("button", { name: "Help with Response strength" }));
 
@@ -19,7 +21,7 @@ describe("PidHelp", () => {
   it("supports keyboard dismissal of a mobile help drawer", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
-    render(<PidHelp gain="ki" />);
+    renderWithLocale(<PidHelp gain="ki" />);
 
     await user.click(screen.getByRole("button", { name: "Help with Offset removal" }));
     expect(screen.getByRole("dialog", { name: "Offset removal" })).toBeVisible();

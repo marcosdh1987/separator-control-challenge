@@ -1,8 +1,8 @@
 import type { SceneModel } from "@/lib/visualization/scene-model";
-import { VESSEL_RADIUS_M } from "@/lib/visualization/scene-model";
+import { PHASE_LENGTH_M as VESSEL_PHASE_LENGTH_M, VESSEL_RADIUS_M } from "@/lib/visualization/scene-model";
 
 export const PHASE_RADIUS_M = VESSEL_RADIUS_M;
-export const PHASE_LENGTH_M = 2.86;
+export const PHASE_LENGTH_M = VESSEL_PHASE_LENGTH_M;
 
 export interface PhaseSurfaceTransform {
   y: number;
@@ -63,12 +63,46 @@ const glslColor = (hex: string) => {
   return `vec3(${component(16).toFixed(6)}, ${component(8).toFixed(6)}, ${component(0).toFixed(6)})`;
 };
 
-export function phaseVolumeShaderSource(palette: PhaseDepthPalette) {
+/**
+ * Each field is injected after the `#include` chunk its name refers to. Naming the
+ * blocks keeps the patches independent of how the source happens to be line-wrapped.
+ */
+export type PhaseVolumeShaderPatches = {
+  vertexCommon: string;
+  vertexWorldpos: string;
+  fragmentCommon: string;
+  fragmentColor: string;
+};
+
+export function phaseVolumeShaderSource(palette: PhaseDepthPalette): PhaseVolumeShaderPatches {
   return {
-    vertex: `varying float vPhaseWorldY;\nvPhaseWorldY = (modelMatrix * vec4(transformed, 1.0)).y;`,
-    fragment: `varying float vPhaseWorldY;
-      float phaseHeight = clamp((vPhaseWorldY + ${PHASE_RADIUS_M.toFixed(6)}) / ${(2 * PHASE_RADIUS_M).toFixed(6)}, 0.0, 1.0);
+    vertexCommon: `varying float vPhaseWorldY;`,
+    vertexWorldpos: `vPhaseWorldY = (modelMatrix * vec4(transformed, 1.0)).y;`,
+    fragmentCommon: `varying float vPhaseWorldY;`,
+    fragmentColor: `float phaseHeight = clamp((vPhaseWorldY + ${PHASE_RADIUS_M.toFixed(6)}) / ${(2 * PHASE_RADIUS_M).toFixed(6)}, 0.0, 1.0);
       vec3 phaseDeep = mix(${glslColor(palette.depth)}, ${glslColor(palette.base)}, smoothstep(0.0, 0.72, phaseHeight));
       diffuseColor.rgb = mix(phaseDeep, ${glslColor(palette.top)}, smoothstep(0.72, 1.0, phaseHeight));`,
   };
+}
+
+export const SURFACE_SHADER_PATCHES = Object.freeze({
+  fragmentCommon: `uniform float uSurfaceTime;\nuniform float uSurfaceAmplitude;`,
+  fragmentNormal: `float surfaceWave = sin(vViewPosition.x * 15.0 + uSurfaceTime * 2.3) *
+          cos(vViewPosition.z * 18.0 - uSurfaceTime * 1.7);
+        normal = normalize(normal + vec3(surfaceWave, 0.0, surfaceWave * 0.55) * uSurfaceAmplitude * 0.11);`,
+});
+
+/**
+ * Three.js caches compiled programs by this key, so it must change whenever the
+ * injected source does. Deriving it from the source itself removes the manual
+ * version suffix that could be forgotten while editing a shader.
+ */
+export function shaderCacheKey(prefix: string, patches: Readonly<Record<string, string>>): string {
+  let hash = 0x811c9dc5;
+  for (const source of Object.values(patches)) {
+    for (let index = 0; index < source.length; index += 1) {
+      hash = Math.imul(hash ^ source.charCodeAt(index), 0x01000193);
+    }
+  }
+  return `${prefix}-${(hash >>> 0).toString(36)}`;
 }

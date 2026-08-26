@@ -4,7 +4,9 @@ import {
 } from "./geometry";
 import { calculatePhaseOutletFlows, splitFeed } from "./phase-hydraulics";
 import type {
+  GasConfig,
   PhaseFlows,
+  SafetyConditionId,
   SafetyState,
   ScenarioState,
   SimulationConfig,
@@ -23,6 +25,17 @@ export interface EquilibriumSnapshot {
   sample: SimulationSample;
 }
 
+/** The safety condition each trip corresponds to, for naming a finished run's outcome. */
+export const TRIP_CONDITIONS: Record<Exclude<TripKind, null>, SafetyConditionId> = Object.freeze({
+  TOTAL_LL: "total-low-low",
+  TOTAL_HH: "total-high-high",
+  INTERFACE_LL: "interface-low-low",
+  INTERFACE_HH: "interface-high-high",
+  OIL_LAYER_LL: "oil-layer-low-low",
+  PRESSURE_LL: "pressure-low-low",
+  PRESSURE_HH: "pressure-high-high",
+});
+
 export function tripForLevels(
   totalLevelPct: number,
   interfaceLevelPct: number,
@@ -37,6 +50,40 @@ export function tripForLevels(
   return null;
 }
 
+/** Pressure protection, in the same gauge units the operator reads. */
+export function tripForPressure(pressureBarG: number, gas: GasConfig): TripKind {
+  if (!Number.isFinite(pressureBarG)) return null;
+  if (pressureBarG >= gas.highHighBarG) return "PRESSURE_HH";
+  if (pressureBarG <= gas.lowLowBarG) return "PRESSURE_LL";
+  return null;
+}
+
+/**
+ * Pressure alarms only outrank a calm liquid state: a level alarm already in
+ * progress stays the headline, because it is the slower and more damaging one.
+ */
+export function safetyWithPressure(
+  liquidSafety: SafetyState,
+  pressureBarG: number,
+  gas: GasConfig,
+  trip = tripForPressure(pressureBarG, gas),
+): SafetyState {
+  if (trip === "PRESSURE_HH") {
+    return { severity: "trip", source: "pressure", condition: "pressure-high-high", trip };
+  }
+  if (trip === "PRESSURE_LL") {
+    return { severity: "trip", source: "pressure", condition: "pressure-low-low", trip };
+  }
+  if (liquidSafety.severity !== "safe") return liquidSafety;
+  if (pressureBarG >= gas.highAlarmBarG) {
+    return { severity: "alarm", source: "pressure", condition: "pressure-high", trip: null };
+  }
+  if (pressureBarG <= gas.lowAlarmBarG) {
+    return { severity: "alarm", source: "pressure", condition: "pressure-low", trip: null };
+  }
+  return liquidSafety;
+}
+
 export function safetyForLevels(
   totalLevelPct: number,
   interfaceLevelPct: number,
@@ -47,61 +94,61 @@ export function safetyForLevels(
   if (trip === "TOTAL_HH") return {
     severity: "trip",
     source: "total",
-    label: "Total level high-high trip",
+    condition: "total-high-high",
     trip,
   };
   if (trip === "TOTAL_LL") return {
     severity: "trip",
     source: "total",
-    label: "Total level low-low trip",
+    condition: "total-low-low",
     trip,
   };
   if (trip === "INTERFACE_HH") return {
     severity: "trip",
     source: "interface",
-    label: "Interface high-high trip",
+    condition: "interface-high-high",
     trip,
   };
   if (trip === "INTERFACE_LL") return {
     severity: "trip",
     source: "interface",
-    label: "Interface low-low trip",
+    condition: "interface-low-low",
     trip,
   };
   if (trip === "OIL_LAYER_LL") return {
     severity: "trip",
     source: "oil-layer",
-    label: "Oil layer low-low trip",
+    condition: "oil-layer-low-low",
     trip,
   };
   if (totalLevelPct >= config.totalHighAlarmPct) return {
     severity: "alarm",
     source: "total",
-    label: "Total level high alarm",
+    condition: "total-high",
     trip: null,
   };
   if (totalLevelPct <= config.totalLowAlarmPct) return {
     severity: "alarm",
     source: "total",
-    label: "Total level low alarm",
+    condition: "total-low",
     trip: null,
   };
   if (interfaceLevelPct >= config.interfaceHighAlarmPct) return {
     severity: "alarm",
     source: "interface",
-    label: "Interface high alarm",
+    condition: "interface-high",
     trip: null,
   };
   if (interfaceLevelPct <= config.interfaceLowAlarmPct) return {
     severity: "alarm",
     source: "interface",
-    label: "Interface low alarm",
+    condition: "interface-low",
     trip: null,
   };
   return {
     severity: "safe",
     source: null,
-    label: "Normal operating envelope",
+    condition: "normal",
     trip: null,
   };
 }

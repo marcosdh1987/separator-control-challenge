@@ -1,18 +1,19 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { PidControls } from "./pid-controls";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import { createEquilibriumSample } from "@/hooks/use-simulation";
 import { DEFAULT_PID } from "@/lib/simulation/types";
 
 describe("PID instrument dock", () => {
   it.each([
-    ["total", "oil", "Total level", "Oil", "LIC-101", "Total level / oil valve"],
-    ["interface", "water", "Interface", "Water", "IIC-101", "Interface / water valve"],
-  ] as const)("separates true, measured, command, and position readouts for %s", (loopId, accent, loopName, phaseName, tag, title) => {
+    ["total", "oil", "Total level", "Oil", "LIC-101"],
+    ["interface", "water", "Interface", "Water", "IIC-101"],
+  ] as const)("separates true, measured, command, and position readouts for %s", (loopId, accent, loopName, phaseName, tag) => {
     const base = createEquilibriumSample()[loopId];
-    render(
+    renderWithLocale(
       <PidControls
         accent={accent}
         config={DEFAULT_PID}
@@ -20,7 +21,6 @@ describe("PID instrument dock", () => {
         loopId={loopId}
         sample={{ ...base, processValuePct: 47.2, measuredValuePct: 48.4, valveCommandPct: 62.5, valvePositionPct: 58.1 }}
         tag={tag}
-        title={title}
         onChange={vi.fn()}
       />,
     );
@@ -32,8 +32,8 @@ describe("PID instrument dock", () => {
   });
 
   it("keeps process and measured values distinct when their values are equal", () => {
-    render(
-      <PidControls accent="oil" config={DEFAULT_PID} locked={false} loopId="total" sample={createEquilibriumSample().total} tag="LIC-101" title="Total level / oil valve" onChange={vi.fn()} />,
+    renderWithLocale(
+      <PidControls accent="oil" config={DEFAULT_PID} locked={false} loopId="total" sample={createEquilibriumSample().total} tag="LIC-101" onChange={vi.fn()} />,
     );
     expect(screen.getByText("Total level process value")).toBeVisible();
     expect(screen.getByText("Total level measured value")).toBeVisible();
@@ -42,7 +42,7 @@ describe("PID instrument dock", () => {
 
   it("creates unique control and helper ids across multiple dock instances", () => {
     const sample = createEquilibriumSample().total;
-    render(<><PidControls accent="oil" config={DEFAULT_PID} locked={false} loopId="total" sample={sample} tag="LIC-101A" title="Total A" onChange={vi.fn()} /><PidControls accent="oil" config={DEFAULT_PID} locked={false} loopId="total" sample={sample} tag="LIC-101B" title="Total B" onChange={vi.fn()} /></>);
+    renderWithLocale(<><PidControls accent="oil" config={DEFAULT_PID} locked={false} loopId="total" sample={sample} tag="LIC-101A" onChange={vi.fn()} /><PidControls accent="oil" config={DEFAULT_PID} locked={false} loopId="total" sample={sample} tag="LIC-101B" onChange={vi.fn()} /></>);
     const controls = screen.getAllByLabelText("Total level proportional gain");
     expect(controls[0].id).not.toBe(controls[1].id);
     expect(controls[0].getAttribute("aria-describedby")).not.toBe(controls[1].getAttribute("aria-describedby"));
@@ -50,7 +50,7 @@ describe("PID instrument dock", () => {
   });
 
   it("exposes loop-specific labels, units, ranges, values, and PID terms", () => {
-    render(
+    renderWithLocale(
       <PidControls
         accent="oil"
         config={DEFAULT_PID}
@@ -58,7 +58,6 @@ describe("PID instrument dock", () => {
         loopId="total"
         sample={createEquilibriumSample().total}
         tag="LIC-101"
-        title="Total level / oil valve"
         onChange={vi.fn()}
       />,
     );
@@ -85,7 +84,7 @@ describe("PID instrument dock", () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     const original = { ...DEFAULT_PID };
-    render(
+    renderWithLocale(
       <PidControls
         accent="water"
         config={original}
@@ -93,7 +92,6 @@ describe("PID instrument dock", () => {
         loopId="interface"
         sample={createEquilibriumSample().interface}
         tag="IIC-101"
-        title="Interface / water valve"
         onChange={onChange}
       />,
     );
@@ -107,7 +105,7 @@ describe("PID instrument dock", () => {
 
   it("locks primary and advanced settings with an explicit state message", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithLocale(
       <PidControls
         accent="oil"
         config={DEFAULT_PID}
@@ -115,7 +113,6 @@ describe("PID instrument dock", () => {
         loopId="total"
         sample={createEquilibriumSample().total}
         tag="LIC-101"
-        title="Total level / oil valve"
         onChange={vi.fn()}
       />,
     );

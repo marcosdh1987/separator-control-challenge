@@ -3,30 +3,31 @@
 import { Gauge, LockKeyhole, SlidersHorizontal } from "lucide-react";
 import { useId, useState } from "react";
 
+import { formatStandardValue, toStandardForm, type GainForm } from "@/lib/education/gain-forms";
+import { useMessages } from "@/lib/i18n/provider";
 import type { LoopId, LoopSample, PidConfig } from "@/lib/simulation/types";
 import { sanitizePidConfig } from "@/lib/simulation/validation";
 import { PidHelp } from "./education/pid-help";
 
 export interface PidControlsProps {
   loopId: LoopId;
-  title: string;
   tag: string;
-  accent: "oil" | "water";
+  accent: "oil" | "water" | "gas";
   config: PidConfig;
   sample: LoopSample;
   locked: boolean;
+  /** Gains held fixed for this exercise, on top of the run-wide lock. */
+  lockedGains?: readonly ("kp" | "ki" | "kd")[];
+  /** Which notation to show the gains in. The engine always runs the parallel form. */
+  gainForm?: GainForm;
   onChange: (config: PidConfig) => void;
 }
 
-const LOOP_NAMES: Record<LoopId, string> = {
-  total: "Total level",
-  interface: "Interface",
-};
-
+/** Numeric ranges and symbols are the same in every language; only the names differ. */
 const GAIN_FIELDS = [
-  { key: "kp", name: "proportional", symbol: "Kp", unit: "dimensionless", max: 10, step: 0.1, purpose: "Response strength" },
-  { key: "ki", name: "integral", symbol: "Ki", unit: "s⁻¹", max: 0.3, step: 0.01, purpose: "Offset removal" },
-  { key: "kd", name: "derivative", symbol: "Kd", unit: "s", max: 30, step: 0.5, purpose: "Damping and anticipation" },
+  { key: "kp", copyKey: "proportional", symbol: "Kp", max: 10, step: 0.1 },
+  { key: "ki", copyKey: "integral", symbol: "Ki", max: 0.3, step: 0.01 },
+  { key: "kd", copyKey: "derivative", symbol: "Kd", max: 30, step: 0.5 },
 ] as const;
 
 function finiteNumber(raw: string, fallback = 0): number {
@@ -76,16 +77,29 @@ function GainNumber({ describedBy, disabled, id, maximum, step, value, onValue }
 
 export function PidControls({
   loopId,
-  title,
   tag,
   accent,
   config,
   sample,
   locked,
+  lockedGains,
+  gainForm = "parallel",
   onChange,
 }: PidControlsProps) {
-  const loopName = LOOP_NAMES[loopId];
-  const phaseName = accent === "oil" ? "Oil" : "Water";
+  const messages = useMessages();
+  const copy = messages.challenge.controller;
+  const loopName = messages.simulation.loop[loopId];
+  const phaseName = messages.simulation.phase[accent === "gas" ? "oil" : accent];
+  const title = loopId === "total"
+    ? copy.totalTitle
+    : loopId === "interface"
+      ? copy.interfaceTitle
+      : messages.challenge.transport.pressureTitle;
+  // Level loops read in percent of vessel height; the pressure loop reads in
+  // bar gauge, which is what the field gauge shows.
+  const readoutUnit = loopId === "pressure" ? " barg" : "%";
+  const readoutDecimals = loopId === "pressure" ? 2 : 1;
+  const standard = toStandardForm(config);
   const instanceId = useId().replaceAll(":", "");
   const headingId = `${instanceId}-${loopId}-controller-heading`;
   const update = (key: keyof PidConfig, raw: string) => {
@@ -97,7 +111,7 @@ export function PidControls({
     <section
       aria-labelledby={headingId}
       className={`instrument-dock instrument-dock--${accent}`}
-      data-tour={loopId === "total" ? "total-pid" : "interface-pid"}
+      data-tour={loopId === "total" ? "total-pid" : loopId === "interface" ? "interface-pid" : "pressure-pid"}
     >
       <header className="instrument-header">
         <div>
@@ -106,30 +120,53 @@ export function PidControls({
         </div>
         <span className={`lock-state ${locked ? "is-locked" : ""}`}>
           {locked ? <LockKeyhole aria-hidden="true" /> : null}
-          {locked ? "Locked for this attempt" : "Ready to tune"}
+          {locked ? copy.locked : copy.ready}
         </span>
       </header>
-      <p className="pid-causal-label">{loopId === "total" ? "More valve opening → more oil out → lower total level" : "More valve opening → more water out → lower interface"}</p>
+      <p className="pid-causal-label">{copy.causal[loopId]}</p>
 
-      <dl className="loop-readout" aria-label={`${loopName} live values`}>
-        <div><dt>{loopName} process value</dt><dd>{sample.processValuePct.toFixed(1)}%</dd></div>
-        <div><dt>{loopName} measured value</dt><dd>{sample.measuredValuePct.toFixed(1)}%</dd></div>
-        <div><dt>{loopName} setpoint</dt><dd>{sample.setpointPct.toFixed(1)}%</dd></div>
-        <div><dt>{phaseName} valve command</dt><dd>{sample.valveCommandPct.toFixed(1)}%</dd></div>
-        <div><dt>{phaseName} valve actual position</dt><dd>{sample.valvePositionPct.toFixed(1)}%</dd></div>
+      {/* A definition list maps to `list`, not `group`; the explicit role keeps these
+          labelled readouts addressable as one named unit. */}
+      <dl className="loop-readout" aria-label={copy.liveValues(loopName)} role="group">
+        <div><dt>{copy.processValue(loopName)}</dt><dd>{sample.processValuePct.toFixed(readoutDecimals)}{readoutUnit}</dd></div>
+        <div><dt>{copy.measuredValue(loopName)}</dt><dd>{sample.measuredValuePct.toFixed(readoutDecimals)}{readoutUnit}</dd></div>
+        <div><dt>{copy.setpoint(loopName)}</dt><dd>{sample.setpointPct.toFixed(readoutDecimals)}{readoutUnit}</dd></div>
+        <div><dt>{copy.valveCommand(phaseName)}</dt><dd>{sample.valveCommandPct.toFixed(1)}%</dd></div>
+        <div><dt>{copy.valvePosition(phaseName)}</dt><dd>{sample.valvePositionPct.toFixed(1)}%</dd></div>
         <div className="pid-term-readout">
-          <dt>P / I / D</dt>
+          <dt>{copy.termReadout}</dt>
           <dd>{sample.proportionalTerm.toFixed(1)} / {sample.integralTerm.toFixed(1)} / {sample.derivativeTerm.toFixed(1)}</dd>
         </div>
       </dl>
 
       <fieldset className="gain-stack">
-        <legend>{loopName} primary gains</legend>
+        <legend>{copy.gainsLegend(loopName)}</legend>
+        {gainForm === "standard" ? (
+          // The same controller, read the way a field panel presents it. Editing
+          // still happens in the parallel form below, so one notation stays the
+          // source of truth and the two can never disagree.
+          <dl className="standard-form-readout" aria-label={copy.gainFormStandard} role="group">
+            <div>
+              <dt>{copy.standardBand(loopName)}</dt>
+              <dd>{formatStandardValue(standard.proportionalBandPct)} {copy.unitPercentBand}</dd>
+            </div>
+            <div>
+              <dt>{copy.standardIntegralTime(loopName)}</dt>
+              <dd>{formatStandardValue(standard.integralTimeS)} {copy.unitSecondsPerRepeat}</dd>
+            </div>
+            <div>
+              <dt>{copy.standardDerivativeTime(loopName)}</dt>
+              <dd>{formatStandardValue(standard.derivativeTimeS)} {copy.unitSeconds}</dd>
+            </div>
+          </dl>
+        ) : null}
         {GAIN_FIELDS.map((field) => {
           const numberId = `${instanceId}-${loopId}-${field.key}`;
           const sliderId = `${instanceId}-${loopId}-${field.key}-slider`;
           const helpId = `${numberId}-help`;
-          const label = `${loopName} ${field.name} gain`;
+          const label = copy.gainLabel(loopName, copy.gain[field.copyKey]);
+          const unit = copy.gainUnit[field.copyKey];
+          const fieldLocked = locked || (lockedGains?.includes(field.key) ?? false);
           return (
             <div className="gain-control" key={field.key}>
               <div className="gain-label">
@@ -139,20 +176,20 @@ export function PidControls({
               <div className="gain-entry">
                 <GainNumber
                   describedBy={helpId}
-                  disabled={locked}
+                  disabled={fieldLocked}
                   id={numberId}
                   maximum={field.max}
                   step={field.step}
                   value={config[field.key]}
                   onValue={(raw) => update(field.key, raw)}
                 />
-                <span aria-hidden="true" className="gain-unit">{field.symbol} · {field.unit}</span>
+                <span aria-hidden="true" className="gain-unit">{field.symbol} · {unit}</span>
               </div>
-              <label className="sr-only" htmlFor={sliderId}>{label} slider</label>
+              <label className="sr-only" htmlFor={sliderId}>{copy.gainSlider(label)}</label>
               <input
                 aria-describedby={helpId}
                 className="gain-slider"
-                disabled={locked}
+                disabled={fieldLocked}
                 id={sliderId}
                 max={field.max}
                 min={0}
@@ -161,22 +198,22 @@ export function PidControls({
                 value={config[field.key]}
                 onChange={(event) => update(field.key, event.target.value)}
               />
-              <p className="gain-hint" id={helpId}>{field.purpose}. Range 0–{field.max} {field.unit}.</p>
+              <p className="gain-hint" id={helpId}>{copy.gainHint(copy.gainPurpose[field.copyKey], field.max, unit)}</p>
             </div>
           );
         })}
       </fieldset>
 
       <details className="advanced-controls">
-        <summary><SlidersHorizontal aria-hidden="true" /> Advanced settings</summary>
+        <summary><SlidersHorizontal aria-hidden="true" /> {copy.advancedSummary}</summary>
         <fieldset className="advanced-grid">
-          <legend>{loopName} advanced settings</legend>
-          <label htmlFor={`${instanceId}-${loopId}-sample-time`}>{loopName} sample time <span>s</span></label>
-          <input aria-label={`${loopName} sample time`} disabled={locked} id={`${instanceId}-${loopId}-sample-time`} max={1} min={0.1} step={0.1} type="number" value={config.sampleTimeS} onChange={(event) => update("sampleTimeS", event.target.value)} />
-          <label htmlFor={`${instanceId}-${loopId}-integral-limit`}>{loopName} integral limit <span>% output</span></label>
-          <input aria-label={`${loopName} integral limit`} disabled={locked} id={`${instanceId}-${loopId}-integral-limit`} max={40} min={0} step={1} type="number" value={config.integralLimit} onChange={(event) => update("integralLimit", event.target.value)} />
-          <label htmlFor={`${instanceId}-${loopId}-derivative-filter`}>{loopName} derivative filter <span>s</span></label>
-          <input aria-label={`${loopName} derivative filter`} disabled={locked} id={`${instanceId}-${loopId}-derivative-filter`} max={5} min={0} step={0.1} type="number" value={config.derivativeFilterTauS} onChange={(event) => update("derivativeFilterTauS", event.target.value)} />
+          <legend>{copy.advancedLegend(loopName)}</legend>
+          <label htmlFor={`${instanceId}-${loopId}-sample-time`}>{copy.sampleTime(loopName)} <span>{copy.unitSeconds}</span></label>
+          <input aria-label={copy.sampleTime(loopName)} disabled={locked} id={`${instanceId}-${loopId}-sample-time`} max={1} min={0.1} step={0.1} type="number" value={config.sampleTimeS} onChange={(event) => update("sampleTimeS", event.target.value)} />
+          <label htmlFor={`${instanceId}-${loopId}-integral-limit`}>{copy.integralLimit(loopName)} <span>{copy.unitPercentOutput}</span></label>
+          <input aria-label={copy.integralLimit(loopName)} disabled={locked} id={`${instanceId}-${loopId}-integral-limit`} max={40} min={0} step={1} type="number" value={config.integralLimit} onChange={(event) => update("integralLimit", event.target.value)} />
+          <label htmlFor={`${instanceId}-${loopId}-derivative-filter`}>{copy.derivativeFilter(loopName)} <span>{copy.unitSeconds}</span></label>
+          <input aria-label={copy.derivativeFilter(loopName)} disabled={locked} id={`${instanceId}-${loopId}-derivative-filter`} max={5} min={0} step={0.1} type="number" value={config.derivativeFilterTauS} onChange={(event) => update("derivativeFilterTauS", event.target.value)} />
         </fieldset>
       </details>
     </section>

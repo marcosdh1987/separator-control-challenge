@@ -6,8 +6,11 @@ import {
 import {
   createEquilibriumSnapshot,
   safetyForLevels,
+  safetyWithPressure,
   tripForLevels,
+  tripForPressure,
 } from "./equilibrium";
+import { barAToBarG, gasCapPressureBarA, molesForPressure, stepGasCap, type GasState } from "./gas";
 import { calculateMetrics } from "./metrics";
 import {
   calculatePhaseOutletFlows,
@@ -20,8 +23,10 @@ import { getScenario, scenarioAt } from "./scenarios";
 import { calculateScore } from "./scoring";
 import { sanitizeDualPidConfig, sanitizeSimulationConfig } from "./validation";
 import type {
+  DisturbanceId,
   DualPidConfig,
-  LoopId,
+  GasConfig,
+  LiquidLoopId,
   LoopSample,
   PhaseFlows,
   PidConfig,
@@ -29,6 +34,7 @@ import type {
   RunResult,
   SafetyState,
   ScenarioId,
+  ScenarioState,
   SimulationConfig,
   SimulationSample,
   SimulationStatus,
@@ -36,7 +42,13 @@ import type {
 } from "./types";
 
 const EPSILON = 1e-9;
-const MAX_SAMPLES = 900;
+/**
+ * A default-length run emits one sample per chart period plus the opening t=0
+ * sample, so the buffer keeps 901 and no longer drops the first point of a
+ * complete run. Longer or finer-grained runs still truncate here, which is what
+ * bounds the memory the chart holds.
+ */
+const MAX_SAMPLES = 901;
 // Sanitized inputs expire at most five controller periods per physics step.
 // This higher ceiling only guards against manually forged EngineState values.
 const MAX_CLOCK_EXPIRATIONS_PER_STEP = 64;
@@ -59,13 +71,17 @@ export interface EngineState {
   status: SimulationStatus;
   trip: TripKind;
   timeS: number;
-  controllers: Record<LoopId, ControllerRuntime>;
+  controllers: Record<LiquidLoopId, ControllerRuntime> & { pressure?: ControllerRuntime };
   oilVolumeM3: number;
   waterVolumeM3: number;
   totalLevelPct: number;
   interfaceLevelPct: number;
   oilLayerPct: number;
   flows: PhaseFlows;
+  /** Present only when the configuration includes a gas cap. */
+  gas?: GasState;
+  gasFlows?: { inletSm3H: number; outletSm3H: number; gasVolumeM3: number };
+  gasPressureBarG?: number;
   sampleElapsedS: number;
   samples: SimulationSample[];
   /** Full chart-resolution history used only for terminal metrics and scoring. */
@@ -129,13 +145,19 @@ function createController(measurementPct: number): ControllerRuntime {
 }
 
 function safetyFor(engine: EngineState): SafetyState {
-  return safetyForLevels(
+  const liquidTrip = engine.trip === "PRESSURE_HH" || engine.trip === "PRESSURE_LL"
+    ? null
+    : engine.trip;
+  const liquid = safetyForLevels(
     engine.totalLevelPct,
     engine.interfaceLevelPct,
     engine.oilLayerPct,
     engine.config,
-    engine.trip,
+    liquidTrip,
   );
+  const gasConfig = engine.config.gas;
+  if (!gasConfig || engine.gasPressureBarG === undefined) return liquid;
+  return safetyWithPressure(liquid, engine.gasPressureBarG, gasConfig, engine.trip === "PRESSURE_HH" || engine.trip === "PRESSURE_LL" ? engine.trip : null);
 }
 
 function makeLoopSample(
@@ -156,7 +178,41 @@ function makeLoopSample(
   };
 }
 
-function makeSample(engine: EngineState, disturbance: string): SimulationSample {
+interface GasSeed {
+  state: GasState;
+  pressureBarG: number;
+  inletSm3H: number;
+  gasVolumeM3: number;
+}
+
+/**
+ * Place the gas cap at its stated operating pressure so a run starts in balance
+ * rather than swinging while the cap fills.
+ */
+function seedGasCap(
+  config: SimulationConfig,
+  gas: GasConfig,
+  liquidVolumeM3: number,
+  oilInletM3H: number,
+): GasSeed {
+  const vesselVolumeM3 = fullCylinderVolume(config.diameterM, config.lengthM);
+  const gasVolumeM3 = Math.max(vesselVolumeM3 * 0.01, vesselVolumeM3 - liquidVolumeM3);
+  const moles = molesForPressure(
+    gas.initialPressureBarA,
+    gasVolumeM3,
+    gas.temperatureC,
+    gas.gasGravity,
+  );
+  const pressure = gasCapPressureBarA(moles, gasVolumeM3, gas.temperatureC, gas.gasGravity);
+  return {
+    state: { moles },
+    pressureBarG: barAToBarG(pressure.pressureBarA),
+    inletSm3H: Math.max(0, oilInletM3H) * gas.gorSm3M3,
+    gasVolumeM3,
+  };
+}
+
+function makeSample(engine: EngineState, disturbance: DisturbanceId): SimulationSample {
   const total = makeLoopSample(
     engine.controllers.total,
     engine.totalLevelPct,
@@ -168,10 +224,28 @@ function makeSample(engine: EngineState, disturbance: string): SimulationSample 
     engine.config.interfaceSetpointPct,
   );
 
+  const gasConfig = engine.config.gas;
+  const pressureRuntime = engine.controllers.pressure;
+  const pressure = gasConfig && pressureRuntime && engine.gasPressureBarG !== undefined
+    ? makeLoopSample(pressureRuntime, engine.gasPressureBarG, gasConfig.setpointBarG)
+    : undefined;
+  const gas = gasConfig && engine.gasFlows && engine.gasPressureBarG !== undefined
+    ? {
+        pressureBarG: engine.gasPressureBarG,
+        measuredPressureBarG: pressureRuntime?.measuredValuePct ?? engine.gasPressureBarG,
+        setpointBarG: gasConfig.setpointBarG,
+        inletSm3H: engine.gasFlows.inletSm3H,
+        outletSm3H: engine.gasFlows.outletSm3H,
+        gasVolumeM3: engine.gasFlows.gasVolumeM3,
+      }
+    : undefined;
+
   return {
     timeS: Number(engine.timeS.toFixed(5)),
     total,
     interface: interfaceLoop,
+    ...(pressure ? { pressure } : {}),
+    ...(gas ? { gas } : {}),
     oilVolumeM3: engine.oilVolumeM3,
     waterVolumeM3: engine.waterVolumeM3,
     oilLayerPct: engine.oilLayerPct,
@@ -270,10 +344,14 @@ export function createEngine(
     sanitizedConfig.actuatorTauS,
   );
   const equilibrium = createEquilibriumSnapshot(sanitizedConfig, scenario);
-  const controllers: Record<LoopId, ControllerRuntime> = {
+  const controllers: EngineState["controllers"] = {
     total: createController(equilibrium.totalLevelPct),
     interface: createController(equilibrium.interfaceLevelPct),
   };
+  const gasSetup = sanitizedConfig.gas
+    ? seedGasCap(sanitizedConfig, sanitizedConfig.gas, equilibrium.oilVolumeM3 + equilibrium.waterVolumeM3, equilibrium.flows.oilInletM3H)
+    : undefined;
+  if (gasSetup) controllers.pressure = createController(gasSetup.pressureBarG);
   const engine: EngineState = {
     config: sanitizedConfig,
     pidConfig: sanitizedPidConfig,
@@ -289,15 +367,98 @@ export function createEngine(
     interfaceLevelPct: equilibrium.interfaceLevelPct,
     oilLayerPct: equilibrium.oilLayerPct,
     flows: equilibrium.flows,
+    gas: gasSetup?.state,
+    gasPressureBarG: gasSetup?.pressureBarG,
+    gasFlows: gasSetup
+      ? { inletSm3H: gasSetup.inletSm3H, outletSm3H: gasSetup.inletSm3H, gasVolumeM3: gasSetup.gasVolumeM3 }
+      : undefined,
     sampleElapsedS: 0,
     samples: [],
     metricSamples: [],
   };
 
+  const openingSample = gasSetup
+    ? makeSample(engine, scenario.disturbance)
+    : equilibrium.sample;
+
   return {
     ...engine,
-    samples: [equilibrium.sample],
-    metricSamples: [equilibrium.sample],
+    samples: [openingSample],
+    metricSamples: [openingSample],
+  };
+}
+
+interface GasStepContext {
+  liquidVolumeBeforeM3: number;
+  liquidVolumeAfterM3: number;
+  oilInletM3H: number;
+}
+
+interface GasStepOutcome {
+  controller: ControllerRuntime;
+  state: GasState;
+  pressureBarG: number;
+  flows: { inletSm3H: number; outletSm3H: number; gasVolumeM3: number };
+  trip: TripKind;
+}
+
+/**
+ * Advance the pressure loop and the gas cap. Returns undefined when the run has
+ * no gas configured, which is what keeps the two-loop model untouched.
+ */
+function stepGas(
+  engine: EngineState,
+  config: SimulationConfig,
+  scenario: ScenarioState,
+  context: GasStepContext,
+): GasStepOutcome | undefined {
+  const gasConfig = config.gas;
+  const runtime = engine.controllers.pressure;
+  const state = engine.gas;
+  const pidConfig = engine.pidConfig.pressure;
+  if (!gasConfig || !runtime || !state || !pidConfig) return undefined;
+
+  const measuredBarG = engine.gasPressureBarG ?? 0;
+  let controller = stepController(
+    { ...runtime, measuredValuePct: measuredBarG },
+    pidConfig,
+    gasConfig.setpointBarG,
+    config.dtS,
+  );
+  controller = {
+    ...controller,
+    valvePositionPct: stepActuator(
+      runtime.valvePositionPct,
+      controller.commandPct,
+      config.dtS,
+      scenario.oilActuatorTauS,
+      config.actuatorStrokeRatePctS,
+    ),
+  };
+
+  const inletSm3H = Math.max(0, context.oilInletM3H) * gasConfig.gorSm3M3 * scenario.gorFactor;
+  const result = stepGasCap({
+    state,
+    config: gasConfig,
+    liquidVolumeM3: context.liquidVolumeBeforeM3,
+    nextLiquidVolumeM3: context.liquidVolumeAfterM3,
+    vesselVolumeM3: fullCylinderVolume(config.diameterM, config.lengthM),
+    gasInletSm3H: inletSm3H,
+    valveOpenFraction: controller.valvePositionPct / 100,
+    dtS: config.dtS,
+  });
+
+  const pressureBarG = barAToBarG(result.pressureBarA);
+  return {
+    controller,
+    state: result.state,
+    pressureBarG,
+    flows: {
+      inletSm3H,
+      outletSm3H: result.gasOutletSm3H,
+      gasVolumeM3: result.gasVolumeM3,
+    },
+    trip: tripForPressure(pressureBarG, gasConfig),
   };
 }
 
@@ -404,7 +565,19 @@ export function stepEngine(engine: EngineState): EngineState {
     config.lengthM,
   );
   const oilLayerPct = Math.max(0, totalLevelPct - interfaceLevelPct);
-  const trip = tripForLevels(totalLevelPct, interfaceLevelPct, oilLayerPct, config);
+
+  // The gas cap runs after the liquid balance, because its volume is whatever the
+  // liquid leaves behind. Draining liquid enlarges the cap and drops pressure:
+  // that is the coupling between the level loops and the pressure loop.
+  const gasStep = stepGas(engine, config, scenario, {
+    liquidVolumeBeforeM3: engine.oilVolumeM3 + engine.waterVolumeM3,
+    liquidVolumeAfterM3: oilVolumeM3 + waterVolumeM3,
+    oilInletM3H: inventory.acceptedOilInletM3H,
+  });
+
+  const trip = tripForLevels(totalLevelPct, interfaceLevelPct, oilLayerPct, config)
+    ?? gasStep?.trip
+    ?? null;
   const status: SimulationStatus = trip
     ? "tripped"
     : timeS + EPSILON >= config.durationS
@@ -438,6 +611,7 @@ export function stepEngine(engine: EngineState): EngineState {
     controllers: {
       total: totalController,
       interface: interfaceController,
+      ...(gasStep ? { pressure: gasStep.controller } : {}),
     },
     oilVolumeM3,
     waterVolumeM3,
@@ -445,6 +619,9 @@ export function stepEngine(engine: EngineState): EngineState {
     interfaceLevelPct,
     oilLayerPct,
     flows,
+    gas: gasStep?.state ?? engine.gas,
+    gasPressureBarG: gasStep?.pressureBarG ?? engine.gasPressureBarG,
+    gasFlows: gasStep?.flows ?? engine.gasFlows,
     sampleElapsedS,
     samples,
     metricSamples,
@@ -472,6 +649,9 @@ export function finishEngine(engine: EngineState): CompletedRun {
     {
       total: engine.pidConfig.total.integralLimit,
       interface: engine.pidConfig.interface.integralLimit,
+      ...(engine.pidConfig.pressure
+        ? { pressure: engine.pidConfig.pressure.integralLimit }
+        : {}),
     },
   );
   return {

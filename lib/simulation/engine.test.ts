@@ -97,7 +97,7 @@ function goldenSummary(scenario: ScenarioDefinition): GoldenRunSummary {
   const finalSample = run.samples.at(-1)!;
   const { metrics } = run.result;
 
-  expect(run.samples).toHaveLength(900);
+  expect(run.samples).toHaveLength(901);
   expect(finalSample.timeS).toBe(DEFAULT_SIMULATION.durationS);
   expect(finalSample.oilVolumeM3).toBe(metrics.phaseTotals.finalOilVolumeM3);
   expect(finalSample.waterVolumeM3).toBe(metrics.phaseTotals.finalWaterVolumeM3);
@@ -242,7 +242,7 @@ describe("fixed-step dual-inventory separator engine", () => {
     expect(sample.safety).toEqual({
       severity: "safe",
       source: null,
-      label: "Normal operating envelope",
+      condition: "normal",
       trip: null,
     });
   });
@@ -615,7 +615,7 @@ describe("fixed-step dual-inventory separator engine", () => {
     });
   });
 
-  it("retains at most 900 samples and preserves the terminal duration sample", () => {
+  it("retains a complete default run including its opening and terminal samples", () => {
     const engine = stepToTerminal(createEngine(
       DEFAULT_SIMULATION,
       DEFAULT_DUAL_PID,
@@ -624,9 +624,9 @@ describe("fixed-step dual-inventory separator engine", () => {
     ));
     const run = finishEngine(engine);
 
-    expect(run.samples).toHaveLength(900);
+    expect(run.samples).toHaveLength(901);
     expect(engine.metricSamples).toHaveLength(901);
-    expect(run.samples[0].timeS).toBeGreaterThan(0);
+    expect(run.samples[0].timeS).toBe(0);
     expect(run.samples.at(-1)?.timeS).toBe(180);
     expect(Math.max(...run.samples.map((sample) => sample.flows.totalInletM3H))).toBe(110);
   });
@@ -650,7 +650,7 @@ describe("fixed-step dual-inventory separator engine", () => {
     expect(firstEngine.metricSamples).toHaveLength(3_601);
     expect(firstEngine.metricSamples[1].flows.totalInletM3H).toBe(50);
     expect(firstEngine.metricSamples.at(-1)?.flows.totalInletM3H).toBe(70);
-    expect(first.samples).toHaveLength(900);
+    expect(first.samples).toHaveLength(901);
     expect(first.samples[0].flows.totalInletM3H).toBe(70);
     expect(first.result.metrics.phaseTotals.oilInletM3 +
       first.result.metrics.phaseTotals.waterInletM3).toBeCloseTo(expectedTotalInletM3, 10);

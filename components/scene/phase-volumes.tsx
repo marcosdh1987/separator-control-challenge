@@ -21,6 +21,8 @@ import {
   PHASE_RADIUS_M,
   phaseSurfaceTransforms,
   phaseVolumeShaderSource,
+  shaderCacheKey,
+  SURFACE_SHADER_PATCHES,
   type PhaseDepthPalette,
 } from "./phase-geometry";
 import type { SimulationSample, SimulationStatus } from "@/lib/simulation/types";
@@ -76,19 +78,13 @@ function createSurfaceMaterial(color: string, emissive: string) {
     shader.uniforms.uSurfaceTime = uniforms.uSurfaceTime;
     shader.uniforms.uSurfaceAmplitude = uniforms.uSurfaceAmplitude;
     shader.fragmentShader = shader.fragmentShader
-      .replace(
-        "#include <common>",
-        `#include <common>\nuniform float uSurfaceTime;\nuniform float uSurfaceAmplitude;`,
-      )
+      .replace("#include <common>", `#include <common>\n${SURFACE_SHADER_PATCHES.fragmentCommon}`)
       .replace(
         "#include <normal_fragment_begin>",
-        `#include <normal_fragment_begin>
-        float surfaceWave = sin(vViewPosition.x * 15.0 + uSurfaceTime * 2.3) *
-          cos(vViewPosition.z * 18.0 - uSurfaceTime * 1.7);
-        normal = normalize(normal + vec3(surfaceWave, 0.0, surfaceWave * 0.55) * uSurfaceAmplitude * 0.11);`,
+        `#include <normal_fragment_begin>\n${SURFACE_SHADER_PATCHES.fragmentNormal}`,
       );
   };
-  material.customProgramCacheKey = () => "separator-surface-normal-v1";
+  material.customProgramCacheKey = () => shaderCacheKey("separator-surface-normal", SURFACE_SHADER_PATCHES);
   return { material, uniforms };
 }
 
@@ -120,13 +116,13 @@ function createPhaseVolumeMaterial(
   const patches = phaseVolumeShaderSource(palette);
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", `#include <common>\n${patches.vertex.split("\n")[0]}`)
-      .replace("#include <worldpos_vertex>", `#include <worldpos_vertex>\n${patches.vertex.split("\n")[1]}`);
+      .replace("#include <common>", `#include <common>\n${patches.vertexCommon}`)
+      .replace("#include <worldpos_vertex>", `#include <worldpos_vertex>\n${patches.vertexWorldpos}`);
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\n${patches.fragment.split("\n")[0]}`)
-      .replace("#include <color_fragment>", `#include <color_fragment>\n${patches.fragment.split("\n").slice(1).join("\n")}`);
+      .replace("#include <common>", `#include <common>\n${patches.fragmentCommon}`)
+      .replace("#include <color_fragment>", `#include <color_fragment>\n${patches.fragmentColor}`);
   };
-  material.customProgramCacheKey = () => `separator-phase-depth-${kind}-v1`;
+  material.customProgramCacheKey = () => shaderCacheKey(`separator-phase-depth-${kind}`, patches);
   return material;
 }
 

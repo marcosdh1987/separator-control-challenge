@@ -1,50 +1,17 @@
 import type {
-  LoopId,
+  FeedbackCode,
+  LiquidLoopId,
   PhaseId,
+  RankId,
   RunMetrics,
   ScoreBreakdown,
   ScoreModifier,
-  ScoreModifierId,
-  TripKind,
 } from "./types";
 
 interface LossCandidate {
-  id: "safety" | "tracking" | "stability" | "recovery" | "valve";
+  id: "safety" | "tracking" | "stability" | "recovery" | "valve" | "pressure";
   value: number;
 }
-
-interface Feedback {
-  diagnosis: string;
-  suggestion: string;
-}
-
-const TRIP_FEEDBACK: Record<Exclude<TripKind, null>, Feedback & { label: string }> = {
-  TOTAL_LL: {
-    label: "Total level low-low trip cap",
-    diagnosis: "Total level low-low trip",
-    suggestion: "Retune the total level loop so the oil valve closes sooner without oscillating.",
-  },
-  TOTAL_HH: {
-    label: "Total level high-high trip cap",
-    diagnosis: "Total level high-high trip",
-    suggestion: "Retune the total level loop so the oil valve opens sooner and preserves margin.",
-  },
-  INTERFACE_LL: {
-    label: "Interface low-low trip cap",
-    diagnosis: "Interface low-low trip",
-    suggestion: "Retune the interface loop so the water valve closes sooner without windup.",
-  },
-  INTERFACE_HH: {
-    label: "Interface high-high trip cap",
-    diagnosis: "Interface high-high trip",
-    suggestion: "Retune the interface loop so the water valve opens sooner and restores margin.",
-  },
-  OIL_LAYER_LL: {
-    label: "Oil-layer low-low trip cap",
-    diagnosis: "Oil-layer low-low trip",
-    suggestion: "Use the interface loop and water valve to lower the interface before the oil layer collapses.",
-  },
-};
 
 function finiteNonnegative(value: number): number {
   if (Number.isNaN(value) || value <= 0) return 0;
@@ -61,15 +28,15 @@ const normalized = (value: number, threshold: number): number =>
 const points = (maximum: number, lossRatio: number): number =>
   maximum * (1 - clamp01(lossRatio));
 
-export function rankForScore(score: number): string {
-  if (score >= 90) return "Separator Control Master";
-  if (score >= 75) return "Loop Tuning Specialist";
-  if (score >= 60) return "Process Engineer";
-  if (score >= 40) return "Control Technician";
-  return "Trainee Operator";
+export function rankForScore(score: number): RankId {
+  if (score >= 90) return "master";
+  if (score >= 75) return "specialist";
+  if (score >= 60) return "engineer";
+  if (score >= 40) return "technician";
+  return "trainee";
 }
 
-function isOscillating(metrics: RunMetrics, loop: LoopId): boolean {
+function isOscillating(metrics: RunMetrics, loop: LiquidLoopId): boolean {
   const threshold = loop === "total" ? 8 : 6;
   const loopMetrics = metrics.loops[loop];
   return loopMetrics.oscillationCrossings >= 6 &&
@@ -80,102 +47,54 @@ function collectModifiers(metrics: RunMetrics): ScoreModifier[] {
   const modifiers: ScoreModifier[] = [];
 
   if (metrics.trip) {
-    modifiers.push({ id: "trip", label: TRIP_FEEDBACK[metrics.trip].label, points: 0 });
+    modifiers.push({ id: "trip", trip: metrics.trip, points: 0 });
   }
   if (isOscillating(metrics, "total")) {
-    modifiers.push({
-      id: "total-oscillation",
-      label: "Total level sustained oscillation",
-      points: -5,
-    });
+    modifiers.push({ id: "total-oscillation", points: -5 });
   }
   if (isOscillating(metrics, "interface")) {
-    modifiers.push({
-      id: "interface-oscillation",
-      label: "Interface sustained oscillation",
-      points: -5,
-    });
+    modifiers.push({ id: "interface-oscillation", points: -5 });
   }
   if (metrics.actuators.oil.saturationTimeS > 30) {
-    modifiers.push({ id: "oil-saturation", label: "Oil valve long saturation", points: -4 });
+    modifiers.push({ id: "oil-saturation", points: -4 });
   }
   if (metrics.actuators.water.saturationTimeS > 30) {
-    modifiers.push({ id: "water-saturation", label: "Water valve long saturation", points: -4 });
+    modifiers.push({ id: "water-saturation", points: -4 });
   }
   if (metrics.actuators.oil.travelPct > 300) {
-    modifiers.push({ id: "oil-travel", label: "Excessive oil valve travel", points: -2.5 });
+    modifiers.push({ id: "oil-travel", points: -2.5 });
   }
   if (metrics.actuators.water.travelPct > 300) {
-    modifiers.push({ id: "water-travel", label: "Excessive water valve travel", points: -2.5 });
+    modifiers.push({ id: "water-travel", points: -2.5 });
   }
   if (metrics.actuators.oil.integralLimitTimeS > 10) {
-    modifiers.push({ id: "total-windup", label: "Total level integral limit", points: -2.5 });
+    modifiers.push({ id: "total-windup", points: -2.5 });
   }
   if (metrics.actuators.water.integralLimitTimeS > 10) {
-    modifiers.push({ id: "interface-windup", label: "Interface integral limit", points: -2.5 });
+    modifiers.push({ id: "interface-windup", points: -2.5 });
   }
 
-  return modifiers;
-}
+  // The pressure loop only earns or loses points when the gas cap is in play.
+  const pressure = metrics.pressureLoop;
+  const gas = metrics.gasActuator;
+  if (pressure && pressure.oscillationCrossings >= 6 && pressure.oscillationPeakToPeakPct >= 4) {
+    modifiers.push({ id: "pressure-oscillation", points: -5 });
+  }
+  if (gas && gas.saturationTimeS > 30) modifiers.push({ id: "gas-saturation", points: -4 });
+  if (gas && gas.travelPct > 300) modifiers.push({ id: "gas-travel", points: -2.5 });
+  if (gas && gas.integralLimitTimeS > 10) modifiers.push({ id: "pressure-windup", points: -2.5 });
 
-function modifierFeedback(id: Exclude<ScoreModifierId, "trip">): Feedback {
-  const feedback: Record<Exclude<ScoreModifierId, "trip">, Feedback> = {
-    "total-oscillation": {
-      diagnosis: "Total level sustained oscillation",
-      suggestion: "Reduce Kp or Ki in the total level loop before adding filtered derivative action.",
-    },
-    "interface-oscillation": {
-      diagnosis: "Interface sustained oscillation",
-      suggestion: "Reduce Kp or Ki in the interface loop and keep the water valve response smooth.",
-    },
-    "oil-saturation": {
-      diagnosis: "Oil valve prolonged saturation",
-      suggestion: "Retune the total level loop so the oil valve stays within usable authority.",
-    },
-    "water-saturation": {
-      diagnosis: "Water valve prolonged saturation",
-      suggestion: "Retune the interface loop so the water valve stays within usable authority.",
-    },
-    "oil-travel": {
-      diagnosis: "Oil valve excessive travel",
-      suggestion: "Reduce total level loop aggression to lower oil valve wear without losing safety.",
-    },
-    "water-travel": {
-      diagnosis: "Water valve excessive travel",
-      suggestion: "Reduce interface loop aggression to lower water valve wear without losing safety.",
-    },
-    "total-windup": {
-      diagnosis: "Total level integral action is pinned",
-      suggestion: "Reduce Ki in the total level loop and confirm the oil valve has enough authority.",
-    },
-    "interface-windup": {
-      diagnosis: "Interface integral action is pinned",
-      suggestion: "Reduce Ki in the interface loop and confirm the water valve has enough authority.",
-    },
-  };
-  return feedback[id];
+  return modifiers;
 }
 
 function responsibleLoop(
   totalLoss: number,
   interfaceLoss: number,
-): LoopId {
+): LiquidLoopId {
   return interfaceLoss > totalLoss ? "interface" : "total";
 }
 
-function loopName(loop: LoopId): string {
-  return loop === "total" ? "Total level" : "Interface";
-}
-
-function loopNameLower(loop: LoopId): string {
-  return loop === "total" ? "total level" : "interface";
-}
-
-function actuatorName(loop: LoopId): "oil valve" | "water valve" {
-  return loop === "total" ? "oil valve" : "water valve";
-}
-
-function responsibleRecoveryLoop(metrics: RunMetrics): LoopId {
+function responsibleRecoveryLoop(metrics: RunMetrics): LiquidLoopId {
   const total = metrics.loops.total;
   const interfaceLoop = metrics.loops.interface;
   if (total.settled !== interfaceLoop.settled) {
@@ -204,72 +123,59 @@ function responsibleValve(metrics: RunMetrics): { phase: PhaseId; effort: "trave
   );
 }
 
-function baseFeedback(metrics: RunMetrics, losses: LossCandidate[]): Feedback {
+function baseFeedback(metrics: RunMetrics, losses: LossCandidate[]): FeedbackCode {
   const largest = losses.reduce((current, candidate) =>
     candidate.value > current.value ? candidate : current
   );
-  if (largest.value === 0) return {
-    diagnosis: "Balanced total level and interface response",
-    suggestion: "Try a harder scenario or trim oil and water valve travel without sacrificing safety.",
-  };
+  if (largest.value === 0) return { kind: "balanced" };
 
   if (largest.id === "safety") {
-    const loop = responsibleLoop(
-      metrics.loops.total.alarmTimeS,
-      metrics.loops.interface.alarmTimeS,
-    );
-    const actuator = actuatorName(loop);
     return {
-      diagnosis: `${loopName(loop)} / ${actuator} alarm exposure dominates the score`,
-      suggestion: `Retune the ${loopName(loop)} loop and ${actuator} to restore safety margin first.`,
+      kind: "safety",
+      loop: responsibleLoop(
+        metrics.loops.total.alarmTimeS,
+        metrics.loops.interface.alarmTimeS,
+      ),
     };
   }
   if (largest.id === "tracking") {
-    const loop = responsibleLoop(
-      normalized(metrics.loops.total.mae, 15),
-      normalized(metrics.loops.interface.mae, 10),
-    );
     return {
-      diagnosis: `${loopName(loop)} tracking error dominates the score`,
-      suggestion: `Increase Kp gradually in the ${loopNameLower(loop)} loop, then add modest Ki for offset.`,
+      kind: "tracking",
+      loop: responsibleLoop(
+        normalized(metrics.loops.total.mae, 15),
+        normalized(metrics.loops.interface.mae, 10),
+      ),
     };
   }
   if (largest.id === "stability") {
-    const loop = responsibleLoop(
-      normalized(metrics.loops.total.stabilityStdDev, 8),
-      normalized(metrics.loops.interface.stabilityStdDev, 5),
-    );
     return {
-      diagnosis: `${loopName(loop)} variability dominates the score`,
-      suggestion: `Reduce Kp or Ki in the ${loopNameLower(loop)} loop and add derivative only with clean measurement.`,
+      kind: "stability",
+      loop: responsibleLoop(
+        normalized(metrics.loops.total.stabilityStdDev, 8),
+        normalized(metrics.loops.interface.stabilityStdDev, 5),
+      ),
     };
   }
   if (largest.id === "recovery") {
-    const loop = responsibleRecoveryLoop(metrics);
-    const actuator = actuatorName(loop);
-    return {
-      diagnosis: `${loopName(loop)} / ${actuator} recovery limits the joint response`,
-      suggestion: `Retune the ${loopName(loop)} loop and ${actuator} to recover sooner without losing stability.`,
-    };
+    return { kind: "recovery", loop: responsibleRecoveryLoop(metrics) };
   }
 
+  if (largest.id === "pressure") return { kind: "pressure" };
+
   const responsible = responsibleValve(metrics);
-  const phaseName = responsible.phase === "oil" ? "Oil" : "Water";
-  const loop = responsible.phase === "oil" ? "total level" : "interface";
-  return {
-    diagnosis: `${phaseName} valve ${responsible.effort} dominates the score`,
-    suggestion: `Retune the ${loop} loop to reduce ${responsible.phase} valve ${responsible.effort}.`,
-  };
+  return { kind: "valve", phase: responsible.phase, effort: responsible.effort };
 }
 
 function feedback(
   metrics: RunMetrics,
   modifiers: ScoreModifier[],
   losses: LossCandidate[],
-): Feedback {
-  if (metrics.trip) return TRIP_FEEDBACK[metrics.trip];
+): FeedbackCode {
+  if (metrics.trip) return { kind: "trip", trip: metrics.trip };
   const firstModifier = modifiers[0];
-  if (firstModifier && firstModifier.id !== "trip") return modifierFeedback(firstModifier.id);
+  if (firstModifier && firstModifier.id !== "trip") {
+    return { kind: "modifier", modifier: firstModifier.id };
+  }
   return baseFeedback(metrics, losses);
 }
 
@@ -288,11 +194,20 @@ export function calculateScore(metrics: RunMetrics): ScoreBreakdown {
     normalized(metrics.actuators.oil.saturationTimeS, 45) +
     normalized(metrics.actuators.water.saturationTimeS, 45)
   );
+  // With a gas cap the pressure loop shares the tracking and stability budget:
+  // holding level while pressure swings is not control, it is luck.
+  const pressureLoop = metrics.pressureLoop;
+  const pressureTrackingLoss = pressureLoop ? normalized(pressureLoop.mae, 1.5) : 0;
+  const pressureStabilityLoss = pressureLoop ? normalized(pressureLoop.stabilityStdDev, 1) : 0;
   const alarmLoss = normalized(metrics.alarmTimeS, 45);
   const recoveryLoss = normalized(metrics.recoveryTimeS, 90);
   const safety = metrics.trip ? 0 : points(35, alarmLoss);
-  const tracking = points(25, trackingLoss);
-  const stability = points(15, stabilityLoss);
+  const tracking = points(25, pressureLoop
+    ? (2 * trackingLoss + pressureTrackingLoss) / 3
+    : trackingLoss);
+  const stability = points(15, pressureLoop
+    ? (2 * stabilityLoss + pressureStabilityLoss) / 3
+    : stabilityLoss);
   const recovery = points(15, recoveryLoss);
   const valveEfficiency = points(6, travelLoss) + points(4, saturationLoss);
   const modifiers = collectModifiers(metrics);
@@ -306,6 +221,7 @@ export function calculateScore(metrics: RunMetrics): ScoreBreakdown {
     { id: "stability", value: stabilityLoss },
     { id: "recovery", value: recoveryLoss },
     { id: "valve", value: 0.6 * travelLoss + 0.4 * saturationLoss },
+    { id: "pressure", value: 0.6 * pressureTrackingLoss + 0.4 * pressureStabilityLoss },
   ];
 
   return {
@@ -317,6 +233,6 @@ export function calculateScore(metrics: RunMetrics): ScoreBreakdown {
     modifiers,
     total,
     rank: rankForScore(total),
-    ...feedback(metrics, modifiers, losses),
+    feedback: feedback(metrics, modifiers, losses),
   };
 }

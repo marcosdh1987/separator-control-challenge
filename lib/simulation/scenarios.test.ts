@@ -1,26 +1,36 @@
 import { describe, expect, it } from "vitest";
 
+import { MESSAGES } from "@/lib/i18n/messages";
+
 import goldenRuns from "./__fixtures__/golden-runs.json";
 import { DUAL_SCENARIOS, getScenario, SCENARIOS, scenarioAt } from "./scenarios";
 
 const PUBLIC_IDS = [
   "normal", "feed-step", "water-rich-slug", "oil-outlet-restriction",
-  "slow-water-dump", "noisy-interface",
+  "slow-water-dump", "noisy-interface", "gor-surge",
 ] as const;
 
 describe("canonical scenario catalogue", () => {
-  it("contains one six-scenario catalogue with stable seeds and golden keys", () => {
+  it("contains one catalogue with stable seeds and golden keys", () => {
     expect(SCENARIOS.map(({ id }) => id)).toEqual(PUBLIC_IDS);
     expect(DUAL_SCENARIOS).toBe(SCENARIOS);
-    expect(SCENARIOS.map(({ seed }) => seed)).toEqual([1001, 1002, 1003, 1004, 1005, 1006]);
+    expect(SCENARIOS.map(({ seed }) => seed)).toEqual([1001, 1002, 1003, 1004, 1005, 1006, 1007]);
     expect(Object.keys(goldenRuns)).toEqual(PUBLIC_IDS);
     expect(PUBLIC_IDS.map((id) => getScenario(id).id)).toEqual(PUBLIC_IDS);
   });
 
-  it("describes the affected feed, phase, sensor, or actuator", () => {
-    expect(SCENARIOS.map(({ description }) => description).join(" ")).toMatch(
+  it("describes the affected feed, phase, sensor, or actuator in the catalogue", () => {
+    // Scenario prose moved to the message catalogue when the engine was made
+    // language-neutral; the catalogue is what a reader actually sees.
+    const descriptions = SCENARIOS.map(({ id }) => MESSAGES.en.simulation.scenario[id].description);
+    expect(descriptions.join(" ")).toMatch(
       /oil.*water.*feed.*water fraction.*oil dump-valve.*water valve.*interface sensor/i,
     );
+    for (const locale of ["en", "es"] as const) {
+      for (const { id } of SCENARIOS) {
+        expect(MESSAGES[locale].simulation.scenario[id].name.length).toBeGreaterThan(0);
+      }
+    }
   });
 });
 

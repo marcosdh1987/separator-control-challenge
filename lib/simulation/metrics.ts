@@ -1,5 +1,6 @@
 import type {
   ActuatorMetrics,
+  LiquidLoopId,
   LoopId,
   LoopMetrics,
   LoopSample,
@@ -16,7 +17,7 @@ const UNSETTLED_RECOVERY_S = 90;
 const SATURATION_MARGIN_PCT = 0.5;
 const CLOCK_EPSILON_S = 1e-9;
 
-type IntegralLimits = Record<LoopId, number>;
+type IntegralLimits = Record<LiquidLoopId, number> & { pressure?: number };
 
 interface LoopMetricInputs {
   id: LoopId;
@@ -36,8 +37,12 @@ function finiteNonnegative(value: number): number {
   return Math.max(0, finiteOrZero(value));
 }
 
+/**
+ * The pressure loop only exists while the gas cap is enabled, so a sample without
+ * one falls back to its total-level loop rather than crashing a shared helper.
+ */
 function loopAt(sample: SimulationSample, id: LoopId): LoopSample {
-  return sample[id];
+  return sample[id] ?? sample.total;
 }
 
 /**
@@ -393,6 +398,24 @@ export function calculateMetrics(
       integralLimits.interface,
     ),
   };
+  // The pressure loop is scored only when the run actually had one.
+  const gas = config.gas;
+  const hasPressure = Boolean(gas) && metricSamples.every((sample) => sample.pressure);
+  const pressureLoop = gas && hasPressure
+    ? calculateLoopMetrics({
+        id: "pressure",
+        samples: metricSamples,
+        durationsS,
+        targetBandPct: gas.targetBandBarG,
+        lowAlarmPct: gas.lowAlarmBarG,
+        highAlarmPct: gas.highAlarmBarG,
+        disturbanceEndS,
+      })
+    : undefined;
+  const gasActuator = hasPressure
+    ? actuatorMetrics(metricSamples, durationsS, "pressure", integralLimits.pressure ?? 0)
+    : undefined;
+
   const alarmTimeS = metricSamples.reduce((total, sample, index) =>
     total + (isAlarm(sample, config) ? durationsS[index] : 0), 0);
   const minimumOilLayerPct = metricSamples.reduce((minimum, sample) =>
@@ -405,7 +428,9 @@ export function calculateMetrics(
     ...recovery,
     minimumOilLayerPct: Number.isFinite(minimumOilLayerPct) ? minimumOilLayerPct : 0,
     loops,
+    ...(pressureLoop ? { pressureLoop } : {}),
     actuators,
+    ...(gasActuator ? { gasActuator } : {}),
     phaseTotals: calculatePhaseTotals(metricSamples, durationsS),
     trip,
   };

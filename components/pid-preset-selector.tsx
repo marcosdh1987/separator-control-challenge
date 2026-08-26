@@ -1,5 +1,6 @@
 "use client";
 
+import { useMessages } from "@/lib/i18n/provider";
 import { PID_PRESETS } from "@/lib/onboarding/presets";
 import type { DualPidConfig } from "@/lib/simulation/types";
 
@@ -9,15 +10,26 @@ interface PidPresetSelectorProps {
 }
 
 export function PidPresetSelector({ disabled, onChange }: PidPresetSelectorProps) {
+  const messages = useMessages();
+  const copy = messages.onboarding;
   return (
     <fieldset className="pid-preset-selector" disabled={disabled}>
-      <legend>PID presets</legend>
+      <legend>{messages.challenge.transport.presetLegend}</legend>
       <div>
-        {PID_PRESETS.map((preset) => (
-          <button aria-label={`${preset.name} preset`} className="preset-button" key={preset.id} type="button" onClick={() => onChange(preset.config)}>
-            <strong>{preset.label}</strong><span>{preset.guidance}</span>
-          </button>
-        ))}
+        {PID_PRESETS.map((preset) => {
+          const presetCopy = copy.preset[preset.id];
+          return (
+            <button
+              aria-label={copy.presetOptionLabel(presetCopy.label)}
+              className="preset-button"
+              key={preset.id}
+              type="button"
+              onClick={() => onChange(preset.config)}
+            >
+              <strong>{presetCopy.label}</strong><span>{presetCopy.guidance}</span>
+            </button>
+          );
+        })}
       </div>
     </fieldset>
   );

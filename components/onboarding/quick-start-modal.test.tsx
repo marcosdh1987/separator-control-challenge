@@ -1,13 +1,15 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 
 import { QuickStartModal } from "./quick-start-modal";
 
 describe("QuickStartModal", () => {
   it("explains the mission and offers the three first-visit actions", () => {
-    render(<QuickStartModal onDismiss={vi.fn()} onStartGuidedTour={vi.fn()} />);
+    renderWithLocale(<QuickStartModal onDismiss={vi.fn()} onStartGuidedTour={vi.fn()} />);
 
     expect(screen.getByRole("dialog", { name: "Your mission" })).toBeVisible();
     expect(screen.getByText(/total level near 50%/i)).toBeVisible();
@@ -25,7 +27,7 @@ describe("QuickStartModal", () => {
     const user = userEvent.setup();
     const onDismiss = vi.fn();
     const onStartGuidedTour = vi.fn();
-    render(<QuickStartModal onDismiss={onDismiss} onStartGuidedTour={onStartGuidedTour} />);
+    renderWithLocale(<QuickStartModal onDismiss={onDismiss} onStartGuidedTour={onStartGuidedTour} />);
 
     await user.click(screen.getByRole("button", { name: "Skip and play" }));
     expect(onDismiss).toHaveBeenCalledWith(false);
@@ -39,7 +41,7 @@ describe("QuickStartModal", () => {
 
   it("closes on Escape and restores focus to its opener", async () => {
     const user = userEvent.setup();
-    render(<ModalHarness />);
+    renderWithLocale(<ModalHarness />);
 
     const opener = screen.getByRole("button", { name: "Open quick start" });
     await user.click(opener);
@@ -52,7 +54,7 @@ describe("QuickStartModal", () => {
 
   it("isolates the background and traps focus until it closes", async () => {
     const user = userEvent.setup();
-    render(<AccessibilityHarness />);
+    renderWithLocale(<AccessibilityHarness />);
 
     const background = screen.getByText("Background control");
     const first = screen.getByRole("button", { name: "Start guided tour" });
@@ -88,7 +90,7 @@ describe("QuickStartModal", () => {
       if (this.textContent === "Open quick start") openerFocusInertStates.push(Boolean(this.inert));
       originalFocus.call(this, options);
     });
-    render(<ModalHarness />);
+    renderWithLocale(<ModalHarness />);
 
     await user.click(screen.getByRole("button", { name: "Open quick start" }));
     openerFocusInertStates.length = 0;
@@ -106,7 +108,7 @@ describe("QuickStartModal", () => {
       if (this.textContent === "Remove on close") openerFocuses.push(this);
       originalFocus.call(this, options);
     });
-    render(<DetachedOpenerHarness />);
+    renderWithLocale(<DetachedOpenerHarness />);
 
     await user.click(screen.getByRole("button", { name: "Remove on close" }));
     openerFocuses.length = 0;

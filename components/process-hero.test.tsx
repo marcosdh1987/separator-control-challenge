@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -30,6 +30,7 @@ vi.mock("./scene/separator-scene", () => ({
 }));
 
 import { ProcessHero } from "./process-hero";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import { createEquilibriumSample } from "@/hooks/use-simulation";
 
 describe("process hero", () => {
@@ -39,20 +40,21 @@ describe("process hero", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does not inspect canvas at module load and renders the full fallback without WebGL", async () => {
+  it("does not inspect canvas at module load and never mounts a scene without WebGL", async () => {
     vi.stubGlobal("WebGLRenderingContext", class WebGLRenderingContext {});
     const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     expect(getContext).not.toHaveBeenCalled();
-    render(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
     await waitFor(() => expect(getContext).toHaveBeenCalled());
-    expect(screen.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
+    // Without WebGL the hero shows the diagram; either way it must not mount a scene.
     expect(screen.queryByTestId("three-separator-scene")).not.toBeInTheDocument();
+    expect(screen.getByTestId("pid-mimic")).toBeInTheDocument();
   });
 
   it("keeps the fallback until a rendered scene frame and then exposes reset view", async () => {
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation((contextId) => contextId === "webgl2" ? ({} as WebGL2RenderingContext) : null);
-    render(<ProcessHero sample={createEquilibriumSample()} status="running" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="running" />);
     expect(screen.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
     expect(await screen.findByTestId("three-separator-scene")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Reset 3D view" })).toBeVisible();
@@ -62,7 +64,7 @@ describe("process hero", () => {
   it("propagates the low-cost presentation profile and removes the interactive reset", async () => {
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
-    render(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
 
     expect((await screen.findByTestId("three-separator-scene"))).toHaveAttribute("data-mode", "presentation");
     expect(screen.queryByRole("button", { name: "Reset 3D view" })).not.toBeInTheDocument();
@@ -71,7 +73,7 @@ describe("process hero", () => {
   it("returns to the SVG fallback after a ready presentation canvas loses its WebGL context", async () => {
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
-    render(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
 
     await waitFor(() => expect(screen.queryByRole("region", { name: /separator process cutaway/i })).not.toBeInTheDocument());
     const canvas = screen.getByTestId("three-canvas");
@@ -84,7 +86,7 @@ describe("process hero", () => {
   it("returns the dashboard to its SVG fallback after a ready canvas loses its WebGL context", async () => {
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
-    render(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
 
     expect(await screen.findByRole("button", { name: "Reset 3D view" })).toBeVisible();
     screen.getByTestId("three-canvas").dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
@@ -96,7 +98,7 @@ describe("process hero", () => {
 
   it("marks the presentation wrapper so its canvas can preserve vertical touch scrolling", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
-    render(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero mode="presentation" sample={createEquilibriumSample()} status="idle" />);
 
     expect(document.querySelector(".process-hero-presentation")).toHaveAttribute("data-presentation-mode", "true");
   });
@@ -105,7 +107,7 @@ describe("process hero", () => {
     sceneMock.mode = "pending";
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
-    render(<ProcessHero sample={createEquilibriumSample()} status="running" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="running" />);
     expect(await screen.findByTestId("three-separator-scene")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Reset 3D view" })).not.toBeInTheDocument();
@@ -115,7 +117,7 @@ describe("process hero", () => {
     sceneMock.mode = "failure";
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
-    render(<ProcessHero sample={createEquilibriumSample()} status="running" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="running" />);
     await waitFor(() => expect(screen.queryByTestId("three-separator-scene")).not.toBeInTheDocument());
     expect(screen.getByRole("region", { name: /separator process cutaway/i })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Reset 3D view" })).not.toBeInTheDocument();
@@ -125,7 +127,7 @@ describe("process hero", () => {
     const user = userEvent.setup();
     vi.stubGlobal("WebGL2RenderingContext", class WebGL2RenderingContext {});
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as WebGL2RenderingContext);
-    render(<ProcessHero sample={createEquilibriumSample()} status="running" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="running" />);
     const scene = await screen.findByTestId("three-separator-scene");
     expect(scene).toHaveAttribute("data-reset-token", "0");
     await user.click(await screen.findByRole("button", { name: "Reset 3D view" }));
@@ -137,7 +139,7 @@ describe("process hero", () => {
     const loseContext = vi.fn();
     const getExtension = vi.fn(() => ({ loseContext }));
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ getExtension } as unknown as WebGLRenderingContext);
-    render(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
     await waitFor(() => expect(loseContext).toHaveBeenCalledOnce());
     expect(getExtension).toHaveBeenCalledWith("WEBGL_lose_context");
   });
@@ -146,7 +148,7 @@ describe("process hero", () => {
     vi.stubGlobal("WebGLRenderingContext", class WebGLRenderingContext {});
     const getExtension = vi.fn(() => { throw new Error("extension unavailable"); });
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ getExtension } as unknown as WebGLRenderingContext);
-    render(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<ProcessHero sample={createEquilibriumSample()} status="idle" />);
     expect(await screen.findByTestId("three-separator-scene")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Reset 3D view" })).toBeVisible();
   });
@@ -154,8 +156,8 @@ describe("process hero", () => {
   it("keeps a non-live engineering summary outside the visual boundary", async () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     const sample = createEquilibriumSample();
-    sample.safety = { severity: "alarm", source: "interface", label: "Interface high alarm", trip: null };
-    render(<ProcessHero sample={sample} status="running" />);
+    sample.safety = { severity: "alarm", source: "interface", condition: "interface-high", trip: null };
+    renderWithLocale(<ProcessHero sample={sample} status="running" />);
     const summary = screen.getByText(/SEP-101 horizontal separator with gas, oil, and water/i);
     expect(summary).toHaveAttribute("aria-live", "off");
     expect(summary).toHaveTextContent("Interface high alarm");

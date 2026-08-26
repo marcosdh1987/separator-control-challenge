@@ -3,12 +3,11 @@
 import { CircleHelp, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 
-import { PID_EDUCATION_CONTENT } from "@/lib/education/pid-content";
-
-type GainKey = keyof typeof PID_EDUCATION_CONTENT.gains;
+import type { GainId } from "@/lib/education/pid-content";
+import { useMessages } from "@/lib/i18n/provider";
 
 interface PidHelpProps {
-  gain: GainKey;
+  gain: GainId;
 }
 
 function isNarrowViewport(): boolean {
@@ -18,7 +17,8 @@ function isNarrowViewport(): boolean {
 export function PidHelp({ gain }: PidHelpProps) {
   const [open, setOpen] = useState(false);
   const [drawer, setDrawer] = useState(false);
-  const content = PID_EDUCATION_CONTENT.gains[gain];
+  const { gain: gainCopy, gainHelp } = useMessages().education;
+  const content = gainCopy[gain];
   const contentId = useId();
 
   useEffect(() => {
@@ -46,14 +46,14 @@ export function PidHelp({ gain }: PidHelpProps) {
           <h3 id={`${contentId}-title`}>{content.friendlyName}</h3>
           <p>{content.technicalName}</p>
         </div>
-        {drawer ? <button aria-label={`Close ${content.friendlyName} help`} className="pid-help__close" type="button" onClick={closeHelp}><X aria-hidden="true" /></button> : null}
+        {drawer ? <button aria-label={gainHelp.close(content.friendlyName)} className="pid-help__close" type="button" onClick={closeHelp}><X aria-hidden="true" /></button> : null}
       </div>
       <p className="pid-help__summary">{content.summary}</p>
       <p>{content.description}</p>
       <div className="pid-help__grid">
-        <section><h4>Increase when</h4><ul>{content.increaseWhen.map((item) => <li key={item}>{item}</li>)}</ul></section>
-        <section><h4>Too much can cause</h4><ul>{content.tooMuchCanCause.map((item) => <li key={item}>{item}</li>)}</ul></section>
-        <section><h4>Reduce when</h4><ul>{content.reduceWhen.map((item) => <li key={item}>{item}</li>)}</ul></section>
+        <section><h4>{gainHelp.increaseWhen}</h4><ul>{content.increaseWhen.map((item) => <li key={item}>{item}</li>)}</ul></section>
+        <section><h4>{gainHelp.tooMuchCanCause}</h4><ul>{content.tooMuchCanCause.map((item) => <li key={item}>{item}</li>)}</ul></section>
+        <section><h4>{gainHelp.reduceWhen}</h4><ul>{content.reduceWhen.map((item) => <li key={item}>{item}</li>)}</ul></section>
       </div>
       <p className="pid-help__note">{content.importantNote}</p>
     </>
@@ -61,7 +61,7 @@ export function PidHelp({ gain }: PidHelpProps) {
 
   return (
     <div className="pid-help">
-      <button aria-controls={contentId} aria-expanded={open} aria-label={`Help with ${content.friendlyName}`} className="pid-help__trigger" type="button" onClick={openHelp}>
+      <button aria-controls={contentId} aria-expanded={open} aria-label={gainHelp.trigger(content.friendlyName)} className="pid-help__trigger" type="button" onClick={openHelp}>
         <CircleHelp aria-hidden="true" /> <span>{content.friendlyName}</span>
       </button>
       {open && drawer ? (

@@ -1,5 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 
 const processHeroMock = vi.hoisted(() => vi.fn(() => <div data-testid="presentation-hero" />));
 
@@ -11,7 +13,7 @@ import { LandingPage } from "./landing-page";
 
 describe("landing page", () => {
   it("introduces the challenge and directs new operators to training or the control room", () => {
-    render(<LandingPage />);
+    renderWithLocale(<LandingPage />);
 
     expect(screen.getByRole("heading", { name: "Separator Control Challenge" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Can you keep a three-phase separator stable?" })).toBeVisible();
@@ -21,7 +23,7 @@ describe("landing page", () => {
   });
 
   it("explains the two valve relationships, operating goals, and educational boundary", () => {
-    render(<LandingPage />);
+    renderWithLocale(<LandingPage />);
 
     expect(screen.getByText("Oil outlet valve controls total liquid level.")).toBeVisible();
     expect(screen.getByText("Water outlet valve controls oil/water interface.")).toBeVisible();
@@ -31,7 +33,7 @@ describe("landing page", () => {
   });
 
   it("passes a static equilibrium sample to the hero's explicit presentation mode", () => {
-    render(<LandingPage />);
+    renderWithLocale(<LandingPage />);
 
     expect(processHeroMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -45,5 +47,13 @@ describe("landing page", () => {
       }),
       undefined,
     );
+  });
+
+  it("renders the mission, call to action, and control note in Spanish", () => {
+    renderWithLocale(<LandingPage />, { locale: "es" });
+
+    expect(screen.getByRole("heading", { name: "¿Podés mantener estable un separador trifásico?" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Empezar el entrenamiento guiado" })).toHaveAttribute("href", "/training");
+    expect(screen.getByText("La válvula de salida de agua controla la interfase petróleo/agua.")).toBeVisible();
   });
 });

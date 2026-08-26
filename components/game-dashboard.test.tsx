@@ -1,8 +1,9 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { GameDashboard } from "./game-dashboard";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import { TOUR_STEPS } from "./onboarding/guided-tour";
 import type {
   RunResult,
@@ -12,7 +13,7 @@ import type {
 } from "@/lib/simulation/types";
 
 const finishedResult = {
-  score: { safety: 35, tracking: 25, stability: 15, recovery: 15, valveEfficiency: 10, modifiers: [], total: 100, rank: "Excellent", diagnosis: "Stable", suggestion: "Keep tuning." },
+  score: { safety: 35, tracking: 25, stability: 15, recovery: 15, valveEfficiency: 10, modifiers: [], total: 100, rank: "master", feedback: { kind: "balanced" } },
   metrics: {
     trip: null, settled: true, recoveryTimeS: 1, minimumOilLayerPct: 20, alarmTimeS: 0,
     loops: { total: { mae: 1, stabilityStdDev: 1, maximumPct: 51, minimumPct: 49, targetBandTimeOutsideS: 0, oscillationCrossings: 0, oscillationPeakToPeakPct: 0, recoveryTimeS: 1, settled: true, alarmTimeS: 0 }, interface: { mae: 1, stabilityStdDev: 1, maximumPct: 21, minimumPct: 19, targetBandTimeOutsideS: 0, oscillationCrossings: 0, oscillationPeakToPeakPct: 0, recoveryTimeS: 1, settled: true, alarmTimeS: 0 } },
@@ -59,10 +60,10 @@ const initialSample = {
   safety: {
     severity: "safe",
     source: null,
-    label: "Normal operating envelope",
+    condition: "normal",
     trip: null,
   },
-  disturbance: "Steady oil/water feed",
+  disturbance: "steady",
 } satisfies SimulationSample;
 
 class FakeWorker {
@@ -128,12 +129,14 @@ describe("game dashboard", () => {
     Object.defineProperty(globalThis, "Worker", { configurable: true, value: FakeWorker });
   });
 
-  it("starts the default slug challenge and locks the controller", async () => {
+  it("starts on the first scored scenario and locks the controller", async () => {
     const user = userEvent.setup();
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
 
     expect(screen.getByRole("heading", { name: "Separator Control Challenge" })).toBeVisible();
-    expect(screen.getByRole("radio", { name: /water-rich liquid slug/i })).toBeChecked();
+    // A first-time visitor should land on the scenario the guided tour recommends,
+    // not on the hardest one in the catalogue.
+    expect(screen.getByRole("radio", { name: /oil\/water feed step/i })).toBeChecked();
     expect(screen.getByText(/educational simulator/i)).toBeVisible();
 
     await waitFor(() => {
@@ -149,7 +152,7 @@ describe("game dashboard", () => {
   });
 
   it("exposes both loops, both valves, safety feedback, transport, and four trends", async () => {
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     expect(screen.getByText("Total level", { selector: ".metrics-grid span" })).toBeVisible();
     expect(screen.getByText("Oil/water interface", { selector: ".metrics-grid span" })).toBeVisible();
@@ -165,7 +168,7 @@ describe("game dashboard", () => {
   });
 
   it("announces each safety severity transition once and ignores same-severity detail changes", async () => {
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     const worker = FakeWorker.instances[0];
     const initialize = worker.messages.find(
@@ -186,21 +189,21 @@ describe("game dashboard", () => {
       } as MessageEvent<WorkerEvent>);
     });
 
-    sendSafety({ severity: "alarm", source: "total", label: "Total level high alarm", trip: null });
+    sendSafety({ severity: "alarm", source: "total", condition: "total-high", trip: null });
     await waitFor(() => expect(announcer).toHaveTextContent("Safety changed to alarm: Total level high alarm"));
 
-    sendSafety({ severity: "alarm", source: "interface", label: "Interface high alarm", trip: null });
+    sendSafety({ severity: "alarm", source: "interface", condition: "interface-high", trip: null });
     expect(announcer).toHaveTextContent("Safety changed to alarm: Total level high alarm");
     expect(announcer).not.toHaveTextContent("Interface high alarm");
 
-    sendSafety({ severity: "trip", source: "interface", label: "Interface high-high trip", trip: "INTERFACE_HH" });
+    sendSafety({ severity: "trip", source: "interface", condition: "interface-high-high", trip: "INTERFACE_HH" });
     await waitFor(() => expect(announcer).toHaveTextContent("Safety changed to trip: Interface high-high trip"));
     expect(document.querySelectorAll("[aria-live]:not([aria-live='off'])")).toHaveLength(1);
   });
 
   it("posts both PID loops while independently editing total gain", async () => {
     const user = userEvent.setup();
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled();
     });
@@ -233,7 +236,7 @@ describe("game dashboard", () => {
 
   it("posts an interface gain edit while preserving total tuning", async () => {
     const user = userEvent.setup();
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     const kp = screen.getByRole("spinbutton", { name: "Interface proportional gain" });
     await user.clear(kp);
@@ -252,7 +255,7 @@ describe("game dashboard", () => {
   it("offers actionable recovery after Worker construction failure", async () => {
     const user = userEvent.setup();
     Object.defineProperty(globalThis, "Worker", { configurable: true, value: RecoverableDashboardWorker });
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     const retry = await screen.findByRole("button", { name: "Retry simulation worker" });
     expect(screen.getByRole("alert")).toHaveTextContent(/worker unavailable.*could not be created/i);
     await user.click(retry);
@@ -262,13 +265,13 @@ describe("game dashboard", () => {
 
   it("does not start before the simulation worker is ready", () => {
     Object.defineProperty(globalThis, "Worker", { configurable: true, value: DelayedWorker });
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
 
     expect(screen.getByRole("button", { name: /start attempt/i })).toBeDisabled();
   });
 
   it("states score availability truthfully and exposes stable tour anchors", async () => {
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
 
     expect(screen.getByText("Not started")).toBeVisible();
@@ -281,27 +284,27 @@ describe("game dashboard", () => {
   it("shows the quick start after hydration, keeps Skip session-only, and persists Don't show again", async () => {
     const user = userEvent.setup();
     window.localStorage.clear();
-    const first = render(<GameDashboard />);
+    const first = renderWithLocale(<GameDashboard />);
 
     expect(await screen.findByRole("dialog", { name: "Your mission" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Skip and play" }));
     expect(screen.queryByRole("dialog", { name: "Your mission" })).not.toBeInTheDocument();
 
     first.unmount();
-    const second = render(<GameDashboard />);
+    const second = renderWithLocale(<GameDashboard />);
     expect(await screen.findByRole("dialog", { name: "Your mission" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Don't show again" }));
     expect(window.localStorage.getItem("separator-control-onboarding-v1")).toContain('"quickStartDismissed":true');
 
     second.unmount();
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Your mission" })).not.toBeInTheDocument());
   });
 
   it("launches the guided tour from quick start and persists its dismissal", async () => {
     const user = userEvent.setup();
     window.localStorage.clear();
-    const first = render(<GameDashboard />);
+    const first = renderWithLocale(<GameDashboard />);
 
     await user.click(await screen.findByRole("button", { name: "Start guided tour" }));
     expect(screen.getByRole("dialog", { name: "Scenario selector" })).toBeVisible();
@@ -313,13 +316,13 @@ describe("game dashboard", () => {
     expect(window.localStorage.getItem("separator-control-onboarding-v1")).toContain('"guidedTourDismissed":true');
 
     first.unmount();
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Scenario selector" })).not.toBeInTheDocument());
   });
 
   it("reports a closed final score after dismissing a completed result", async () => {
     const user = userEvent.setup();
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     const initialize = FakeWorker.instances[0].messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
 
@@ -335,7 +338,7 @@ describe("game dashboard", () => {
   });
 
   it.each(["completed", "tripped"] as const)("reports a calculation in progress for %s attempts before the final result arrives", async (status) => {
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     const initialize = FakeWorker.instances[0].messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
     act(() => FakeWorker.instances[0].onmessage?.({ data: { type: "status", runId: initialize.runId, status } } as MessageEvent<WorkerEvent>));
@@ -346,7 +349,7 @@ describe("game dashboard", () => {
   it.each(["completed", "tripped"] as const)("prepares a fresh attempt rather than calculating a stale %s result after reset", async (status) => {
     const user = userEvent.setup();
     Object.defineProperty(globalThis, "Worker", { configurable: true, value: DelayedResetWorker });
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     const worker = FakeWorker.instances[0];
     const initialRun = worker.messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;
@@ -366,7 +369,7 @@ describe("game dashboard", () => {
   it("prepares a fresh attempt rather than calculating a stale tripped result after retry", async () => {
     const user = userEvent.setup();
     Object.defineProperty(globalThis, "Worker", { configurable: true, value: DelayedResetWorker });
-    render(<GameDashboard />);
+    renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
     const worker = FakeWorker.instances[0];
     const initialRun = worker.messages.find((message): message is Extract<WorkerRequest, { type: "initialize" }> => message.type === "initialize")!;

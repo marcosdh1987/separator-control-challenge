@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import type { SimulationSample } from "@/lib/simulation/types";
+import { MESSAGES } from "@/lib/i18n/messages";
 import { createSceneModel, createProcessSummary, formatEngineeringValue } from "./scene-model";
+
+const SUMMARY_COPY = MESSAGES.en.challenge.processSummary;
 
 function sampleAt(overrides: {
   total?: number;
@@ -25,8 +28,8 @@ function sampleAt(overrides: {
     waterVolumeM3: 0.48,
     oilLayerPct: total - interfaceLevel,
     flows: { totalInletM3H: overrides.inletFlow ?? 50, waterCutFraction: 0.3, oilInletM3H: 35, waterInletM3H: 15, oilOutletM3H: overrides.oilFlow ?? 35, waterOutletM3H: overrides.waterFlow ?? 15 },
-    safety: { severity: "safe", source: null, label: "Normal operating envelope", trip: null, ...overrides.safety },
-    disturbance: "Steady oil/water feed",
+    safety: { severity: "safe", source: null, condition: "normal", trip: null, ...overrides.safety },
+    disturbance: "steady",
   };
 }
 
@@ -59,17 +62,17 @@ describe("scene model", () => {
     ["INTERFACE_HH", "interface"],
     ["OIL_LAYER_LL", "oil-layer"],
   ] as const)("maps %s trip presentation", (trip, source) => {
-    const model = createSceneModel(sampleAt({ safety: { severity: "trip", source, trip, label: `${trip} trip` } }));
-    expect(model.safety).toMatchObject({ severity: "trip", source, label: `${trip} trip`, motionEnabled: false, pulseHz: 0 });
+    const model = createSceneModel(sampleAt({ safety: { severity: "trip", source, trip, condition: "normal" } }));
+    expect(model.safety).toMatchObject({ severity: "trip", source, motionEnabled: false, pulseHz: 0 });
   });
 
   it("preserves explicit alarm and safe presentations", () => {
     expect(createSceneModel(sampleAt()).safety).toMatchObject({ severity: "safe", source: null, motionEnabled: true, pulseHz: 0, markerY: null });
-    expect(createSceneModel(sampleAt({ safety: { severity: "alarm", source: "interface", label: "Interface high alarm" } })).safety)
+    expect(createSceneModel(sampleAt({ safety: { severity: "alarm", source: "interface", condition: "interface-high" } })).safety)
       .toMatchObject({
         severity: "alarm",
         source: "interface",
-        label: "Interface high alarm",
+        condition: "interface-high",
         motionEnabled: true,
         markerY: -0.36,
         pulseHz: 0.7,
@@ -80,10 +83,10 @@ describe("scene model", () => {
     ["total", 0],
     ["interface", -0.36],
     ["oil-layer", -0.18],
-  ] as const)("targets the %s phase boundary without changing the safety label", (source, markerY) => {
-    const model = createSceneModel(sampleAt({ safety: { severity: "alarm", source, label: `${source} warning` } }));
+  ] as const)("targets the %s phase boundary without changing the safety condition", (source, markerY) => {
+    const model = createSceneModel(sampleAt({ safety: { severity: "alarm", source, condition: "total-high" } }));
     expect(model.safety.source).toBe(source);
-    expect(model.safety.label).toBe(`${source} warning`);
+    expect(model.safety.condition).toBe("total-high");
     expect(model.safety.markerY).toBeCloseTo(markerY, 10);
     expect(model.safety.beaconIntensity).toBeGreaterThan(0);
     expect(model.safety.rimIntensity).toBeGreaterThan(0);
@@ -119,7 +122,7 @@ describe("scene model", () => {
   });
 
   it("creates a complete accessible engineering summary", () => {
-    const summary = createProcessSummary(sampleAt({ total: 52.3, measuredTotal: 51.9, interface: 19.2, measuredInterface: 20.1, inletFlow: 70, oilFlow: 40, waterFlow: 15, oilValve: 72, waterValve: 48, safety: { severity: "alarm", source: "total", label: "Total level high alarm" } }));
+    const summary = createProcessSummary(sampleAt({ total: 52.3, measuredTotal: 51.9, interface: 19.2, measuredInterface: 20.1, inletFlow: 70, oilFlow: 40, waterFlow: 15, oilValve: 72, waterValve: 48, safety: { severity: "alarm", source: "total", condition: "total-high" } }), SUMMARY_COPY, MESSAGES.en.simulation.safetyCondition["total-high"]);
     expect(summary).toContain("gas, oil, and water");
     expect(summary.toLowerCase()).toContain("true total level 52.3 percent; measured total level 51.9 percent");
     expect(summary.toLowerCase()).toContain("true interface 19.2 percent; measured interface 20.1 percent");
@@ -140,7 +143,7 @@ describe("scene model", () => {
 
   it("describes invalid raw values as unavailable in the accessible summary", () => {
     const sample = sampleAt({ total: Number.NaN, measuredTotal: Number.POSITIVE_INFINITY, inletFlow: Number.NEGATIVE_INFINITY, oilValve: Number.NaN });
-    const summary = createProcessSummary(sample);
+    const summary = createProcessSummary(sample, SUMMARY_COPY, MESSAGES.en.simulation.safetyCondition.normal);
     expect(summary).not.toMatch(/NaN|Infinity/);
     expect(summary).toMatch(/true total level unavailable/i);
     expect(summary).toMatch(/measured total level unavailable/i);

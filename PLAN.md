@@ -10,17 +10,21 @@ for this educational application.
 
 ## 2. Reduced-order physical model
 
-Integrate `dV/dt = Qin - Qout` at a fixed 0.05 s step in SI units. Convert volume
-to level with circular-segment geometry for a generic 1.2 m diameter, 3.0 m long
-horizontal vessel. The outlet valve uses opening, constant pressure differential,
-and hydrostatic head. A first-order actuator applies finite lag and stroke rate.
+Integrate two-phase inventory `dV_oil/dt = Q_oil_in - Q_oil_out` and
+`dV_water/dt = Q_water_in - Q_water_out` at fixed 0.05 s steps in SI units.
+Convert volumes to total level and interface level with circular-segment geometry
+for a 1.2 m diameter, 3.0 m long horizontal vessel. Two outlet valves (oil and water)
+account for opening, reference pressure differential, and hydrostatic heads of both
+phases. First-order actuators apply finite lag (default 3 s, configurable per valve)
+and stroke rate limits (default 20 %/s).
 
 ## 3. Simplifications and limitations
 
-Model one equivalent incompressible liquid with constant density. Exclude phase
-separation, gas-cap dynamics, oil/water interface, heat or mass transfer, variable
-fluid properties, piping networks, relief systems, and equipment sizing. Never
-claim field, safety, or control-system suitability.
+Model two immiscible incompressible liquids (oil and water) with constant densities.
+Exclude gas phase, phase coalescence (rag layers), emulsification, compressibility,
+flashing, VLE, heat or mass transfer, variable fluid properties, piping networks,
+relief systems, real valve sizing, and sensor hysteresis. Never claim field, safety,
+or control-system suitability.
 
 ## 4. Frontend architecture
 
@@ -31,13 +35,20 @@ Playwright. No backend, database, authentication, telemetry, or runtime LLM.
 
 ## 5. Game mechanics
 
-Players choose one of six seeded scenarios, configure PID gains, and start a
-180 s attempt. Gains lock while an attempt runs. Pause, resume, reset, and
-0.5x-4x playback preserve the exact simulated trajectory. Crossing LL or HH
-terminates the attempt.
+Players choose one of six seeded scenarios, configure dual PID gains (total level and
+interface), and start a 180 s attempt. Gains lock while an attempt runs. Pause, resume,
+reset, and 0.5x–4x playback preserve the exact simulated trajectory. Crossing any
+low-low or high-high alarm on total level, interface, or oil layer terminates the attempt.
 
-The valve-delay scenario combines its 12 s actuator time constant with the same
-50-to-70 m3/h inlet step used by the nominal comparison, making lag observable.
+Six scenarios with increasing difficulty:
+
+1. **Normal**: Steady oil and water feed; nominal sensors and outlet valves.
+2. **Feed step**: Total inlet rises from 50 to 70 m³/h at 30 s.
+3. **Water-rich slug**: Inlet feed rises and water cut increases smoothly from 35 to 55 s.
+4. **Oil outlet restriction**: Oil valve capacity falls to 60% at 45 s.
+5. **Slow water dump**: Water valve actuator time constant increases to 12 s; water cut
+   steps from 30% to 50% at 30 s.
+6. **Noisy interface**: Interface sensor adds ±1.5% noise with 0.5 s sample hold.
 
 ## 6. Scoring system
 

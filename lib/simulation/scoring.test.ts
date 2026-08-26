@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { feedbackCopy } from "@/lib/i18n/messages/en/simulation";
+import { MESSAGES } from "@/lib/i18n/messages";
+import type { FeedbackCode, RankId } from "./types";
+
 import { calculateScore, rankForScore } from "./scoring";
 import type { RunMetrics, TripKind } from "./types";
 
@@ -49,6 +53,13 @@ const perfectMetrics: RunMetrics = {
   trip: null,
 };
 
+/**
+ * The engine reports a structured feedback code; a reader sees the English copy.
+ * Tests assert both so a wrong attribution and a wrong sentence are each caught.
+ */
+const renderedFeedback = (score: { feedback: FeedbackCode }) =>
+  feedbackCopy(MESSAGES.en.simulation, score.feedback);
+
 describe("dual-loop score", () => {
   it("awards exactly 100 points to perfect control", () => {
     expect(calculateScore(perfectMetrics).total).toBe(100);
@@ -88,11 +99,10 @@ describe("dual-loop score", () => {
     expect(score.total).toBe(35);
     expect(score.modifiers).toContainEqual({
       id: "trip",
-      label: "Interface high-high trip cap",
+      trip: "INTERFACE_HH",
       points: 0,
     });
-    expect(score.diagnosis).toContain("Interface");
-    expect(score.suggestion).toContain("water valve");
+    expect(score.feedback).toEqual({ kind: "trip", trip: "INTERFACE_HH" });
   });
 
   it("emits exact per-loop and per-actuator modifiers", () => {
@@ -157,8 +167,9 @@ describe("dual-loop score", () => {
       },
     });
 
-    expect(score.diagnosis).toContain("Total level");
-    expect(score.suggestion).toContain("total level loop");
+    expect(score.feedback).toEqual({ kind: "modifier", modifier: "total-oscillation" });
+    expect(renderedFeedback(score).diagnosis).toContain("Total level");
+    expect(renderedFeedback(score).suggestion).toContain("total level loop");
   });
 
   it("chooses total level deterministically when normalized tracking losses tie", () => {
@@ -170,8 +181,9 @@ describe("dual-loop score", () => {
       },
     });
 
-    expect(score.diagnosis).toContain("Total level tracking");
-    expect(score.suggestion).toContain("total level loop");
+    expect(score.feedback).toEqual({ kind: "tracking", loop: "total" });
+    expect(renderedFeedback(score).diagnosis).toContain("Total level tracking");
+    expect(renderedFeedback(score).suggestion).toContain("total level loop");
   });
 
   it("chooses safety deterministically when normalized base categories tie", () => {
@@ -184,10 +196,12 @@ describe("dual-loop score", () => {
       },
     });
 
-    expect(score.diagnosis).toContain("Total level");
-    expect(score.diagnosis).toContain("oil valve");
-    expect(score.suggestion).toContain("Total level");
-    expect(score.suggestion).toContain("oil valve");
+    expect(score.feedback).toEqual({ kind: "safety", loop: "total" });
+    const safetyCopy = renderedFeedback(score);
+    expect(safetyCopy.diagnosis).toContain("Total level");
+    expect(safetyCopy.diagnosis).toContain("oil valve");
+    expect(safetyCopy.suggestion).toContain("Total level");
+    expect(safetyCopy.suggestion).toContain("oil valve");
   });
 
   it.each([
@@ -197,6 +211,7 @@ describe("dual-loop score", () => {
       interfaceAlarmTimeS: 5,
       expectedLoop: "Total level",
       expectedActuator: "oil valve",
+      expectedLoopId: "total" as const,
     },
     {
       name: "interface",
@@ -204,6 +219,7 @@ describe("dual-loop score", () => {
       interfaceAlarmTimeS: 20,
       expectedLoop: "Interface",
       expectedActuator: "water valve",
+      expectedLoopId: "interface" as const,
     },
     {
       name: "stable total-level tie-break",
@@ -211,12 +227,14 @@ describe("dual-loop score", () => {
       interfaceAlarmTimeS: 20,
       expectedLoop: "Total level",
       expectedActuator: "oil valve",
+      expectedLoopId: "total" as const,
     },
   ])("attributes dominant safety loss to $name evidence", ({
     totalAlarmTimeS,
     interfaceAlarmTimeS,
     expectedLoop,
     expectedActuator,
+    expectedLoopId,
   }) => {
     const score = calculateScore({
       ...perfectMetrics,
@@ -227,10 +245,12 @@ describe("dual-loop score", () => {
       },
     });
 
-    expect(score.diagnosis).toContain(expectedLoop);
-    expect(score.diagnosis).toContain(expectedActuator);
-    expect(score.suggestion).toContain(expectedLoop);
-    expect(score.suggestion).toContain(expectedActuator);
+    expect(score.feedback).toEqual({ kind: "safety", loop: expectedLoopId });
+    const copy = renderedFeedback(score);
+    expect(copy.diagnosis).toContain(expectedLoop);
+    expect(copy.diagnosis).toContain(expectedActuator);
+    expect(copy.suggestion).toContain(expectedLoop);
+    expect(copy.suggestion).toContain(expectedActuator);
   });
 
   it.each([
@@ -242,6 +262,7 @@ describe("dual-loop score", () => {
       interfaceSettled: true,
       expectedLoop: "Total level",
       expectedActuator: "oil valve",
+      expectedLoopId: "total" as const,
     },
     {
       name: "interface",
@@ -251,6 +272,7 @@ describe("dual-loop score", () => {
       interfaceSettled: false,
       expectedLoop: "Interface",
       expectedActuator: "water valve",
+      expectedLoopId: "interface" as const,
     },
     {
       name: "stable total-level tie-break",
@@ -260,6 +282,7 @@ describe("dual-loop score", () => {
       interfaceSettled: false,
       expectedLoop: "Total level",
       expectedActuator: "oil valve",
+      expectedLoopId: "total" as const,
     },
   ])("attributes dominant recovery loss to $name evidence", ({
     totalRecoveryTimeS,
@@ -268,6 +291,7 @@ describe("dual-loop score", () => {
     interfaceSettled,
     expectedLoop,
     expectedActuator,
+    expectedLoopId,
   }) => {
     const score = calculateScore({
       ...perfectMetrics,
@@ -286,10 +310,12 @@ describe("dual-loop score", () => {
       },
     });
 
-    expect(score.diagnosis).toContain(expectedLoop);
-    expect(score.diagnosis).toContain(expectedActuator);
-    expect(score.suggestion).toContain(expectedLoop);
-    expect(score.suggestion).toContain(expectedActuator);
+    expect(score.feedback).toEqual({ kind: "recovery", loop: expectedLoopId });
+    const copy = renderedFeedback(score);
+    expect(copy.diagnosis).toContain(expectedLoop);
+    expect(copy.diagnosis).toContain(expectedActuator);
+    expect(copy.suggestion).toContain(expectedLoop);
+    expect(copy.suggestion).toContain(expectedActuator);
   });
 
   it.each([
@@ -302,19 +328,22 @@ describe("dual-loop score", () => {
     ("names the exact %s trip source and direction", (trip, diagnosis, actuator) => {
       const score = calculateScore({ ...perfectMetrics, trip });
 
-      expect(score.diagnosis).toContain(diagnosis);
-      expect(score.suggestion).toContain(actuator);
+      expect(score.feedback).toEqual({ kind: "trip", trip });
+      expect(renderedFeedback(score).diagnosis).toContain(diagnosis);
+      expect(renderedFeedback(score).suggestion).toContain(actuator);
     });
 });
 
 describe("performance ranks", () => {
   it.each([
-    [39, "Trainee Operator"],
-    [40, "Control Technician"],
-    [60, "Process Engineer"],
-    [75, "Loop Tuning Specialist"],
-    [90, "Separator Control Master"],
-  ])("maps %i to %s", (score, rank) => {
+    [39, "trainee", "Trainee Operator"],
+    [40, "technician", "Control Technician"],
+    [60, "engineer", "Process Engineer"],
+    [75, "specialist", "Loop Tuning Specialist"],
+    [90, "master", "Separator Control Master"],
+  ] satisfies Array<[number, RankId, string]>)("maps %i to %s", (score, rank, englishName) => {
     expect(rankForScore(score)).toBe(rank);
+    expect(MESSAGES.en.simulation.rank[rank]).toBe(englishName);
+    expect(MESSAGES.es.simulation.rank[rank].length).toBeGreaterThan(0);
   });
 });

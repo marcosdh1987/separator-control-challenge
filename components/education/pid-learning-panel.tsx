@@ -3,12 +3,15 @@
 import { BookOpen, ChevronDown } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 
+import { DIAGNOSIS_PATTERN_IDS } from "@/lib/education/diagnosis";
+import type { LoopId } from "@/lib/simulation/types";
 import {
-  DIAGNOSIS_PATTERNS,
-  LOOP_EXPLANATIONS,
-  PID_EDUCATION_CONTENT,
+  LIQUID_LOOP_EXPLANATION_IDS,
+  MANUAL_TUNING_STEP_IDS,
+  PID_PARALLEL_FORMULA,
   REFERENCES,
 } from "@/lib/education/pid-content";
+import { useMessages } from "@/lib/i18n/provider";
 
 interface LearningDisclosureProps {
   title: string;
@@ -26,24 +29,48 @@ function LearningDisclosure({ title, children }: LearningDisclosureProps) {
   </section>;
 }
 
-export function PidLearningPanel() {
-  const { theory, piNote, antiWindupNote, derivativeNoiseNote, classicalTuning, repeatableExperimentGoldenRule } = PID_EDUCATION_CONTENT;
-  return <aside aria-label="PID learning resources" className="pid-learning-panel">
-    <div className="pid-learning-panel__heading"><BookOpen aria-hidden="true" /><div><p>Learning station</p><h2>Observe, change, compare</h2></div></div>
-    <LearningDisclosure title="PID theory">
-      <p className="pid-formula">{theory.parallelFormula}</p>
+interface PidLearningPanelProps {
+  /** Which loops this run actually has; the pressure loop needs the gas cap. */
+  loopIds?: readonly LoopId[];
+}
+
+export function PidLearningPanel({
+  loopIds = LIQUID_LOOP_EXPLANATION_IDS,
+}: PidLearningPanelProps = {}) {
+  const {
+    panel,
+    theory,
+    diagnosisPattern,
+    loopExplanation,
+    manualTuning,
+    referenceDescription,
+    piNote,
+    antiWindupNote,
+    derivativeNoiseNote,
+    classicalTuning,
+    repeatableExperimentGoldenRule,
+  } = useMessages().education;
+
+  return <aside aria-label={panel.ariaLabel} className="pid-learning-panel">
+    <div className="pid-learning-panel__heading"><BookOpen aria-hidden="true" /><div><p>{panel.eyebrow}</p><h2>{panel.title}</h2></div></div>
+    <LearningDisclosure title={panel.theory}>
+      <p className="pid-formula">{PID_PARALLEL_FORMULA}</p>
       <p>{theory.errorDefinition}</p><p>{theory.parallelGainsNote}</p><p>{theory.reverseActionConvention}</p>
     </LearningDisclosure>
-    <LearningDisclosure title="Manual tuning golden rule"><p className="golden-rule">{repeatableExperimentGoldenRule}</p></LearningDisclosure>
-    <LearningDisclosure title="How do I diagnose the response?">
-      <div className="diagnosis-list">{DIAGNOSIS_PATTERNS.map((pattern) => <section key={pattern.title}><h3>{pattern.title}</h3><ul>{pattern.symptoms.map((symptom) => <li key={symptom}>{symptom}</li>)}</ul><p>{pattern.suggestion}</p></section>)}</div>
+    <LearningDisclosure title={panel.goldenRule}>
+      <p className="golden-rule">{repeatableExperimentGoldenRule}</p>
+      <ol className="tuning-step-list">{MANUAL_TUNING_STEP_IDS.map((id) => <li key={id}><h3>{manualTuning.step[id].title}</h3><ul>{manualTuning.step[id].body.map((line) => <li key={line}>{line}</li>)}</ul></li>)}</ol>
+      <p className="pid-help__note">{manualTuning.reminder}</p>
     </LearningDisclosure>
-    <LearningDisclosure title="Learn more">
+    <LearningDisclosure title={panel.diagnosis}>
+      <div className="diagnosis-list">{DIAGNOSIS_PATTERN_IDS.map((id) => <section key={id}><h3>{diagnosisPattern[id].title}</h3><ul>{diagnosisPattern[id].symptoms.map((symptom) => <li key={symptom}>{symptom}</li>)}</ul><p>{diagnosisPattern[id].suggestion}</p></section>)}</div>
+    </LearningDisclosure>
+    <LearningDisclosure title={panel.learnMore}>
       <p>{piNote}</p><p>{antiWindupNote}</p><p>{derivativeNoiseNote}</p><section><h3>{classicalTuning.title}</h3><p>{classicalTuning.body}</p></section>
-      <ul className="reference-list">{REFERENCES.map((reference) => <li key={reference.title}>{reference.url ? <a href={reference.url} rel="noreferrer" target="_blank">{reference.title}</a> : reference.title}<span>{reference.description}</span></li>)}</ul>
+      <ul className="reference-list">{REFERENCES.map((reference) => <li key={reference.id}>{reference.url ? <a href={reference.url} rel="noreferrer" target="_blank">{reference.title}</a> : reference.title}<span>{referenceDescription[reference.id]}</span></li>)}</ul>
     </LearningDisclosure>
-    <LearningDisclosure title="What each loop moves">
-      {Object.values(LOOP_EXPLANATIONS).map((loop) => <section className="loop-explanation" key={loop.title}><h3>{loop.title}</h3>{loop.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}{loop.caution ? <p className="pid-help__note">{loop.caution}</p> : null}</section>)}
+    <LearningDisclosure title={panel.loops}>
+      {loopIds.map((id) => <section className="loop-explanation" key={id}><h3>{loopExplanation[id].title}</h3>{loopExplanation[id].paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}<p className="pid-help__note">{loopExplanation[id].caution}</p></section>)}
     </LearningDisclosure>
   </aside>;
 }

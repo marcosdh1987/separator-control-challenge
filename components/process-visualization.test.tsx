@@ -1,7 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { ProcessVisualization } from "./process-visualization";
+import { MESSAGES } from "@/lib/i18n/messages";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import { createEquilibriumSample } from "@/hooks/use-simulation";
 import type { SimulationSample } from "@/lib/simulation/types";
 
@@ -25,7 +27,7 @@ function sampleWith(safety: SimulationSample["safety"] = createEquilibriumSample
 
 describe("process visualization fallback", () => {
   it("renders a complete, semantic three-phase engineering view", () => {
-    render(<ProcessVisualization sample={sampleWith({ severity: "alarm", source: "total", label: "Total level high alarm", trip: null })} status="running" />);
+    renderWithLocale(<ProcessVisualization sample={sampleWith({ severity: "alarm", source: "total", condition: "total-high", trip: null })} status="running" />);
 
     const region = screen.getByRole("region", { name: /separator process cutaway/i });
     expect(within(region).getByRole("img", { name: /gas, oil, and water.*true total level 78\.0.*measured interface 20\.4.*total inlet 70\.0.*actual oil valve 72\.0.*total level high alarm/i })).toBeVisible();
@@ -42,19 +44,20 @@ describe("process visualization fallback", () => {
   });
 
   it.each([
-    ["TOTAL_LL", "total", "Total low-low trip"],
-    ["TOTAL_HH", "total", "Total high-high trip"],
-    ["INTERFACE_LL", "interface", "Interface low-low trip"],
-    ["INTERFACE_HH", "interface", "Interface high-high trip"],
-    ["OIL_LAYER_LL", "oil-layer", "Oil layer low-low trip"],
-  ] as const)("names the active %s safety source", (trip, source, label) => {
-    render(<ProcessVisualization sample={sampleWith({ severity: "trip", source, label, trip })} status="tripped" />);
+    ["TOTAL_LL", "total", "total-low-low"],
+    ["TOTAL_HH", "total", "total-high-high"],
+    ["INTERFACE_LL", "interface", "interface-low-low"],
+    ["INTERFACE_HH", "interface", "interface-high-high"],
+    ["OIL_LAYER_LL", "oil-layer", "oil-layer-low-low"],
+  ] as const)("names the active %s safety source", (trip, source, condition) => {
+    const label = MESSAGES.en.simulation.safetyCondition[condition];
+    renderWithLocale(<ProcessVisualization sample={sampleWith({ severity: "trip", source, condition, trip })} status="tripped" />);
     expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole("img")).toHaveAccessibleName(new RegExp(`${label}`, "i"));
   });
 
   it("uses instance-safe SVG definitions", () => {
-    const { container } = render(<><ProcessVisualization sample={sampleWith()} status="idle" /><ProcessVisualization sample={sampleWith()} status="idle" /></>);
+    const { container } = renderWithLocale(<><ProcessVisualization sample={sampleWith()} status="idle" /><ProcessVisualization sample={sampleWith()} status="idle" /></>);
     const ids = Array.from(container.querySelectorAll("defs [id]"), (node) => node.id);
     expect(ids.length).toBeGreaterThan(8);
     expect(new Set(ids).size).toBe(ids.length);
@@ -70,7 +73,7 @@ describe("process visualization fallback", () => {
     ["oil", "var(--amber)"],
     ["water", "var(--cyan-bright)"],
   ] as const)("gives the %s stream marker an explicit visible phase color", (stream, fill) => {
-    render(<ProcessVisualization sample={sampleWith()} status="running" />);
+    renderWithLocale(<ProcessVisualization sample={sampleWith()} status="running" />);
     const markerPath = screen.getByTestId(`${stream}-flow-marker`);
     expect(markerPath).toHaveAttribute("fill", fill);
     expect(markerPath.closest("marker")).toHaveAttribute("orient", "auto-start-reverse");
@@ -83,7 +86,7 @@ describe("process visualization fallback", () => {
   ] as const)("renders honest positive, negative, and stopped %s flow direction", (stream, field) => {
     const sample = sampleWith();
     sample.flows[field] = 25;
-    const { rerender } = render(<ProcessVisualization sample={sample} status="running" />);
+    const { rerender } = renderWithLocale(<ProcessVisualization sample={sample} status="running" />);
     const positive = screen.getByTestId(`${stream}-flow-indicator`);
     expect(positive).toHaveAttribute("data-flow-state", "forward");
     expect(positive).toHaveAttribute("marker-end");
@@ -107,7 +110,7 @@ describe("process visualization fallback", () => {
   });
 
   it("keeps critical operating values in semantic HTML outside the scaled SVG", () => {
-    render(<ProcessVisualization sample={sampleWith({ severity: "alarm", source: "total", label: "Total level high alarm", trip: null })} status="running" />);
+    renderWithLocale(<ProcessVisualization sample={sampleWith({ severity: "alarm", source: "total", condition: "total-high", trip: null })} status="running" />);
     const instruments = screen.getByRole("group", { name: "Critical separator instruments" });
     for (const label of ["Total true", "Total measured", "Total SP", "Interface true", "Interface measured", "Interface SP", "Total inlet", "Oil outlet", "Water outlet", "Oil command", "Oil actual", "Water command", "Water actual", "Active safety"]) {
       expect(within(instruments).getByText(label)).toBeVisible();
@@ -123,7 +126,7 @@ describe("process visualization fallback", () => {
     sample.total.measuredValuePct = Number.POSITIVE_INFINITY;
     sample.interface.valveCommandPct = Number.NEGATIVE_INFINITY;
     sample.flows.totalInletM3H = Number.NaN;
-    const { container } = render(<ProcessVisualization sample={sample} status="running" />);
+    const { container } = renderWithLocale(<ProcessVisualization sample={sample} status="running" />);
     expect(container.textContent).not.toMatch(/NaN|Infinity/);
     expect(screen.getAllByText(/—/).length).toBeGreaterThanOrEqual(4);
     expect(screen.getByRole("img")).toHaveAccessibleName(/unavailable/i);

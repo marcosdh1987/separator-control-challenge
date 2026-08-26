@@ -1,26 +1,28 @@
+"use client";
+
+import { useMessages } from "@/lib/i18n/provider";
+import type { PhaseId } from "@/lib/simulation/types";
+
+/** Oil first, matching the order the two loops appear in on the dashboard. */
+const MISSION_VALVES = ["oil", "water"] as const satisfies readonly PhaseId[];
+
 export function MissionSummary() {
+  const { mission } = useMessages().onboarding;
+
   return (
     <div className="mission-summary">
-      <p id="quick-start-description">
-        Keep the total level near 50% and the oil/water interface near 20% while the process is disturbed.
-      </p>
+      <p id="quick-start-description">{mission.objective}</p>
       <dl>
-        <div>
-          <dt>Oil valve LV-101</dt>
-          <dd>Moves oil out to correct total liquid level.</dd>
-        </div>
-        <div>
-          <dt>Water valve WV-101</dt>
-          <dd>Moves water out to correct the interface.</dd>
-        </div>
+        {MISSION_VALVES.map((phase) => (
+          <div key={phase}>
+            <dt>{mission.valve[phase].term}</dt>
+            <dd>{mission.valve[phase].definition}</dd>
+          </div>
+        ))}
       </dl>
-      <p>Gains lock when an attempt starts, so tune before you run.</p>
-      <ol aria-label="How to play">
-        <li>Choose a scenario.</li>
-        <li>Adjust the PID gains.</li>
-        <li>Start the attempt.</li>
-        <li>Monitor levels, valves, and safety.</li>
-        <li>Retry with what you learned.</li>
+      <p>{mission.gainsLockNote}</p>
+      <ol aria-label={mission.howToPlayLabel}>
+        {mission.howToPlaySteps.map((step) => <li key={step}>{step}</li>)}
       </ol>
     </div>
   );

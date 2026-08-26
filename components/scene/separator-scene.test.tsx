@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const canvasProps = vi.hoisted(() => ({ last: null as Record<string, unknown> | null }));
@@ -40,11 +40,12 @@ vi.mock("./separator-vessel", () => ({ SeparatorVessel: () => null }));
 vi.mock("./scene-readiness", () => ({ establishSceneReadiness: vi.fn(() => () => undefined) }));
 
 import { SeparatorScene } from "./separator-scene";
+import { renderWithLocale } from "@/lib/i18n/test-utils";
 import { createEquilibriumSample } from "@/hooks/use-simulation";
 
 describe("separator scene presentation profiles", () => {
   it("uses a demand-rendered, non-interactive low-cost profile for presentations", () => {
-    render(<SeparatorScene mode="presentation" onSceneError={vi.fn()} onReady={vi.fn()} resetToken={0} sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<SeparatorScene mode="presentation" onSceneError={vi.fn()} onReady={vi.fn()} resetToken={0} sample={createEquilibriumSample()} status="idle" />);
 
     expect(canvasProps.last).toEqual(expect.objectContaining({ frameloop: "demand", shadows: false }));
     expect(screen.queryByTestId("orbit-controls")).not.toBeInTheDocument();
@@ -53,7 +54,7 @@ describe("separator scene presentation profiles", () => {
   });
 
   it("keeps the full cinematic dashboard profile by default", () => {
-    render(<SeparatorScene onSceneError={vi.fn()} onReady={vi.fn()} resetToken={0} sample={createEquilibriumSample()} status="idle" />);
+    renderWithLocale(<SeparatorScene onSceneError={vi.fn()} onReady={vi.fn()} resetToken={0} sample={createEquilibriumSample()} status="idle" />);
 
     expect(canvasProps.last).toEqual(expect.objectContaining({ frameloop: "always", shadows: true }));
     expect(screen.getByTestId("orbit-controls")).toBeInTheDocument();

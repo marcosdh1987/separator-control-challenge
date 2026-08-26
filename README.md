@@ -1,22 +1,54 @@
 # Separator Control Challenge
 
-Separator Control Challenge is a browser game about tuning a PID level-control
-loop. Keep a simplified horizontal separator near its setpoint while deterministic
-flow, valve, and instrument disturbances stress the controller.
+*Léelo en [español](#separator-control-challenge-en-español).*
+
+An open training environment for three-phase separator control. Tune the loops on a
+simplified horizontal separator and watch what happens when the feed steps, a slug
+arrives, an instrument gets noisy, or the well starts making more gas — with nothing
+real at stake.
+
+It is built for people who work on or around well testing: operators, technicians,
+and engineers who want to see *why* a loop behaves the way it does before they meet
+it in the field.
 
 The simulator is deliberately educational. It is **not** suitable for field
-operation, equipment sizing, safety-system design, or real process control.
+operation, equipment sizing, safety-system design, or real process control. What it
+does and does not represent is stated plainly in the [model card](docs/model-card.md).
 
 ## Highlights
 
-- Interactive 3D visualization of a simplified three-phase separator.
-- Two coupled PID loops controlling total liquid level and oil/water interface.
-- Fixed-step, deterministic simulation running entirely in a Web Worker.
-- Six repeatable scenarios, from steady flow to a water-rich liquid slug.
-- PID saturation, anti-windup, derivative filtering, actuator lag, and noise.
-- Transparent 100-point scoring with deterministic engineering feedback.
-- Guided onboarding, training flow, and synchronized process trends.
-- No backend, external API, account, or runtime AI required.
+- **A seven-lesson course** at `/training`: each lesson isolates one idea, gives you
+  a separator that shows it, and grades what you actually achieved. Includes a
+  presentation mode for teaching in front of a class.
+- **Bilingual, English and Spanish**, detected from the browser and switchable at any
+  time — including all the teaching material.
+- **Three coupled control loops**: total liquid level, oil/water interface, and
+  optionally gas-cap pressure, which is where trainees first meet loop interaction.
+- **Real-gas thermodynamics** for the pressure loop: compressibility from Dranchuk &
+  Abou-Kassem, valve flow to IEC 60534-2-1, integrated semi-implicitly.
+- **Deterministic**: fixed 0.05 s step in a Web Worker, seeded scenarios, golden runs
+  asserted in CI. The same seed always produces the same run.
+- **Honest failure modes**: saturation, integral windup, derivative amplifying sensor
+  noise, and a slug that a purely reactive controller cannot fully catch.
+- Interactive 3D view of the vessel with a P&ID diagram alternative.
+- No backend, no account, no telemetry, and no AI at runtime.
+
+## Using it in a course
+
+The `/training` route is the guided path: seven lessons, roughly 90 minutes end to
+end, each with a short theory section, an exercise with a fixed scenario, and a
+debrief that reports what was measured against what the lesson asked for.
+
+Progress is stored in the trainee's own browser and is never sent anywhere. If you
+are teaching and want to collect results, ask trainees to use **Export progress** —
+it produces a small JSON file with attempts, best score, and time to first attempt
+per lesson.
+
+**Presentation mode** on any lesson strips the interface down for projection and
+lets you reveal the task when you are ready.
+
+The `/challenge` route is the free-play simulator, for people who would rather
+explore than be led.
 
 ## Built with GPT-5.6 and Codex
 
@@ -74,9 +106,12 @@ make ci
 
 ## Documentation
 
+- [Model card](docs/model-card.md) — what the simulator represents, and what it does not
+- [Physical model](docs/physical-model.md) — equations, correlations and defaults
+- [Scoring](docs/scoring.md) — how a run is judged
+- [Internationalisation](docs/i18n.md) — how the bilingual layer works
+- [Architecture decisions](docs/adr/) — why the simulation runs where it does
 - [Implementation plan](PLAN.md)
-- [Physical model](docs/physical-model.md)
-- [Scoring](docs/scoring.md)
 
 The Python package in `src/separator_control_challenge/` supports repository
 governance and agent tooling only. It is not part of the browser runtime.
@@ -86,3 +121,66 @@ governance and agent tooling only. It is not part of the browser runtime.
 The application uses independently written, generic educational equations and
 parameters. It has no runtime or build-time dependency on private engineering
 repositories, documentation, services, data, or credentials.
+
+## Contributing
+
+Issues and pull requests are welcome, particularly from people who run well tests
+for a living: a lesson that does not match field reality is a bug worth reporting.
+
+Before opening a pull request, run `make check`. It is read-only and covers linting,
+type checking, unit tests and the production build. `make ci` additionally runs the
+Playwright flows.
+
+## Licence
+
+Apache License 2.0. See [LICENSE](LICENSE).
+
+---
+
+# Separator Control Challenge (en español)
+
+Un entorno abierto de entrenamiento en control de separadores trifásicos. Sintonizá
+los lazos de un separador horizontal simplificado y mirá qué pasa cuando la
+alimentación da un escalón, llega un slug, un instrumento se pone ruidoso o el pozo
+empieza a producir más gas — sin nada real en juego.
+
+Está hecho para gente que trabaja en well testing o alrededor: operadores, técnicos e
+ingenieros que quieren entender *por qué* un lazo se comporta como se comporta antes
+de encontrárselo en el campo.
+
+El simulador es deliberadamente educativo. **No** sirve para operar en campo,
+dimensionar equipos, diseñar sistemas de seguridad ni para control de procesos real.
+Lo que representa y lo que no está dicho sin vueltas en el
+[model card](docs/model-card.md).
+
+## Para usarlo en un curso
+
+La ruta `/training` es el camino guiado: siete lecciones, unos 90 minutos en total,
+cada una con una parte de teoría breve, un ejercicio con escenario fijo, y un cierre
+que informa qué se midió contra lo que la lección pedía.
+
+El progreso se guarda en el navegador de cada persona y no se envía a ningún lado. Si
+estás dando el curso y querés juntar resultados, pediles que usen **Exportar
+progreso**: genera un JSON chico con intentos, mejor puntaje y tiempo hasta el primer
+intento por lección.
+
+El **modo presentación** de cada lección deja la interfaz limpia para proyectar y te
+permite revelar la tarea cuando quieras.
+
+La ruta `/challenge` es el simulador libre, para quien prefiera explorar en vez de
+que lo lleven de la mano.
+
+## Para correrlo
+
+```bash
+npm install
+make run-dev
+```
+
+Abre <http://localhost:3000> automáticamente.
+
+## Contribuir
+
+Las issues y los pull requests son bienvenidos, especialmente de gente que hace
+pruebas de pozo a diario: una lección que no coincide con la realidad de campo es un
+bug que vale la pena reportar.

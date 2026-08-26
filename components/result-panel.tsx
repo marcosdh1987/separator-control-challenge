@@ -3,15 +3,10 @@
 import { Award, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { feedbackCopy, modifierLabel } from "@/lib/i18n/messages/en/simulation";
+import { useMessages } from "@/lib/i18n/provider";
+import { TRIP_CONDITIONS } from "@/lib/simulation/equilibrium";
 import type { RunResult } from "@/lib/simulation/types";
-
-const TRIP_LABELS = {
-  TOTAL_LL: "Total level low-low trip",
-  TOTAL_HH: "Total level high-high trip",
-  INTERFACE_LL: "Interface low-low trip",
-  INTERFACE_HH: "Interface high-high trip",
-  OIL_LAYER_LL: "Oil-layer low-low trip",
-} as const;
 
 interface ResultPanelProps {
   result: RunResult;
@@ -22,13 +17,16 @@ interface ResultPanelProps {
 export function ResultPanel({ result, onClose, onRetry }: ResultPanelProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const messages = useMessages();
+  const copy = messages.challenge.result;
   const { metrics, score } = result;
+  const feedback = feedbackCopy(messages.simulation, score.feedback);
   const categories = [
-    ["Safety", score.safety, 35],
-    ["Tracking", score.tracking, 25],
-    ["Stability", score.stability, 15],
-    ["Recovery", score.recovery, 15],
-    ["Valve care", score.valveEfficiency, 10],
+    [copy.categories.safety, score.safety, 35],
+    [copy.categories.tracking, score.tracking, 25],
+    [copy.categories.stability, score.stability, 15],
+    [copy.categories.recovery, score.recovery, 15],
+    [copy.categories.valve, score.valveEfficiency, 10],
   ] as const;
 
   useEffect(() => {
@@ -82,21 +80,21 @@ export function ResultPanel({ result, onClose, onRetry }: ResultPanelProps) {
   }, [onClose]);
 
   return (
-    <div ref={dialogRef} aria-label="Attempt results" aria-modal="true" className="result-scrim" role="dialog">
+    <div ref={dialogRef} aria-label={copy.dialogLabel} aria-modal="true" className="result-scrim" role="dialog">
       <section className="result-panel">
-        <button ref={closeRef} aria-label="Close results" className="result-close" type="button" onClick={onClose}>
+        <button ref={closeRef} aria-label={copy.close} className="result-close" type="button" onClick={onClose}>
           <X aria-hidden="true" />
         </button>
         <div className="result-hero">
           <div className="score-ring" style={{ "--score": `${score.total * 3.6}deg` } as React.CSSProperties}>
-            <span>FINAL SCORE</span>
+            <span>{copy.finalScore}</span>
             <strong>{score.total}</strong>
-            <small>/ 100</small>
+            <small>{copy.outOf}</small>
           </div>
           <div>
-            <p className="eyebrow">Attempt complete</p>
-            <h2><Award aria-hidden="true" /> {score.rank}</h2>
-            <p>{score.diagnosis}</p>
+            <p className="eyebrow">{copy.complete}</p>
+            <h2><Award aria-hidden="true" /> {messages.simulation.rank[score.rank]}</h2>
+            <p>{feedback.diagnosis}</p>
           </div>
         </div>
 
@@ -111,57 +109,57 @@ export function ResultPanel({ result, onClose, onRetry }: ResultPanelProps) {
         </div>
 
         <div className="result-metrics">
-          <article className="result-metric-group"><h3>Total level loop</h3>
-            <div><span>MAE</span><strong>{metrics.loops.total.mae.toFixed(1)}%</strong></div>
-            <div><span>Stability σ</span><strong>{metrics.loops.total.stabilityStdDev.toFixed(1)}%</strong></div>
-            <div><span>Peak / low</span><strong>{metrics.loops.total.maximumPct.toFixed(1)} / {metrics.loops.total.minimumPct.toFixed(1)}%</strong></div>
-            <div><span>Outside ±5%</span><strong>{metrics.loops.total.targetBandTimeOutsideS.toFixed(1)} s</strong></div>
-            <div><span>SP crossings</span><strong>{metrics.loops.total.oscillationCrossings}</strong></div>
+          <article className="result-metric-group"><h3>{copy.totalLoopGroup}</h3>
+            <div><span>{copy.mae}</span><strong>{metrics.loops.total.mae.toFixed(1)}%</strong></div>
+            <div><span>{copy.stabilitySigma}</span><strong>{metrics.loops.total.stabilityStdDev.toFixed(1)}%</strong></div>
+            <div><span>{copy.peakLow}</span><strong>{metrics.loops.total.maximumPct.toFixed(1)} / {metrics.loops.total.minimumPct.toFixed(1)}%</strong></div>
+            <div><span>{copy.outsideTotalBand}</span><strong>{metrics.loops.total.targetBandTimeOutsideS.toFixed(1)} s</strong></div>
+            <div><span>{copy.setpointCrossings}</span><strong>{metrics.loops.total.oscillationCrossings}</strong></div>
           </article>
-          <article className="result-metric-group"><h3>Oil/water interface loop</h3>
-            <div><span>MAE</span><strong>{metrics.loops.interface.mae.toFixed(1)}%</strong></div>
-            <div><span>Stability σ</span><strong>{metrics.loops.interface.stabilityStdDev.toFixed(1)}%</strong></div>
-            <div><span>Peak / low</span><strong>{metrics.loops.interface.maximumPct.toFixed(1)} / {metrics.loops.interface.minimumPct.toFixed(1)}%</strong></div>
-            <div><span>Outside ±3%</span><strong>{metrics.loops.interface.targetBandTimeOutsideS.toFixed(1)} s</strong></div>
-            <div><span>SP crossings</span><strong>{metrics.loops.interface.oscillationCrossings}</strong></div>
+          <article className="result-metric-group"><h3>{copy.interfaceLoopGroup}</h3>
+            <div><span>{copy.mae}</span><strong>{metrics.loops.interface.mae.toFixed(1)}%</strong></div>
+            <div><span>{copy.stabilitySigma}</span><strong>{metrics.loops.interface.stabilityStdDev.toFixed(1)}%</strong></div>
+            <div><span>{copy.peakLow}</span><strong>{metrics.loops.interface.maximumPct.toFixed(1)} / {metrics.loops.interface.minimumPct.toFixed(1)}%</strong></div>
+            <div><span>{copy.outsideInterfaceBand}</span><strong>{metrics.loops.interface.targetBandTimeOutsideS.toFixed(1)} s</strong></div>
+            <div><span>{copy.setpointCrossings}</span><strong>{metrics.loops.interface.oscillationCrossings}</strong></div>
           </article>
-          <article className="result-metric-group"><h3>Oil valve LV-101</h3>
-            <div><span>Travel</span><strong>{metrics.actuators.oil.travelPct.toFixed(1)}%</strong></div>
-            <div><span>Saturation</span><strong>{metrics.actuators.oil.saturationTimeS.toFixed(1)} s</strong></div>
-            <div><span>Integral limit</span><strong>{metrics.actuators.oil.integralLimitTimeS.toFixed(1)} s</strong></div>
+          <article className="result-metric-group"><h3>{copy.oilValveGroup}</h3>
+            <div><span>{copy.travel}</span><strong>{metrics.actuators.oil.travelPct.toFixed(1)}%</strong></div>
+            <div><span>{copy.saturation}</span><strong>{metrics.actuators.oil.saturationTimeS.toFixed(1)} s</strong></div>
+            <div><span>{copy.integralLimit}</span><strong>{metrics.actuators.oil.integralLimitTimeS.toFixed(1)} s</strong></div>
           </article>
-          <article className="result-metric-group"><h3>Water valve WV-101</h3>
-            <div><span>Travel</span><strong>{metrics.actuators.water.travelPct.toFixed(1)}%</strong></div>
-            <div><span>Saturation</span><strong>{metrics.actuators.water.saturationTimeS.toFixed(1)} s</strong></div>
-            <div><span>Integral limit</span><strong>{metrics.actuators.water.integralLimitTimeS.toFixed(1)} s</strong></div>
+          <article className="result-metric-group"><h3>{copy.waterValveGroup}</h3>
+            <div><span>{copy.travel}</span><strong>{metrics.actuators.water.travelPct.toFixed(1)}%</strong></div>
+            <div><span>{copy.saturation}</span><strong>{metrics.actuators.water.saturationTimeS.toFixed(1)} s</strong></div>
+            <div><span>{copy.integralLimit}</span><strong>{metrics.actuators.water.integralLimitTimeS.toFixed(1)} s</strong></div>
           </article>
         </div>
 
         <div className="result-run-status">
-          <div><span>Trip outcome</span><strong>{metrics.trip ? TRIP_LABELS[metrics.trip] : "No trip"}</strong></div>
-          <div><span>Joint recovery</span><strong>{metrics.settled ? `${metrics.recoveryTimeS.toFixed(1)} s` : "Not settled"}</strong></div>
-          <div><span>Minimum oil layer</span><strong>{metrics.minimumOilLayerPct.toFixed(1)}%</strong></div>
+          <div><span>{copy.tripOutcome}</span><strong>{metrics.trip ? messages.simulation.safetyCondition[TRIP_CONDITIONS[metrics.trip]] : copy.noTrip}</strong></div>
+          <div><span>{copy.jointRecovery}</span><strong>{metrics.settled ? `${metrics.recoveryTimeS.toFixed(1)} s` : copy.notSettled}</strong></div>
+          <div><span>{copy.minimumOilLayer}</span><strong>{metrics.minimumOilLayerPct.toFixed(1)}%</strong></div>
         </div>
 
         <div className="coaching-card">
           <ShieldCheck aria-hidden="true" />
-          <div><strong>Next tuning move</strong><p>{score.suggestion}</p></div>
+          <div><strong>{copy.nextMove}</strong><p>{feedback.suggestion}</p></div>
         </div>
 
         <section className="modifier-section" aria-labelledby="modifier-heading">
-          <h3 id="modifier-heading">Applied modifiers</h3>
+          <h3 id="modifier-heading">{copy.modifiersHeading}</h3>
           {score.modifiers.length > 0 ? <ul className="modifier-list">
             {score.modifiers.map((modifier) => (
-              <li key={modifier.id}>{modifier.label} <strong>{modifier.points}</strong></li>
+              <li key={modifier.id}>{modifierLabel(messages.simulation, modifier)} <strong>{modifier.points}</strong></li>
             ))}
-          </ul> : <p>No modifiers applied</p>}
+          </ul> : <p>{copy.noModifiers}</p>}
         </section>
 
         <div className="result-actions">
           <button className="primary-button" type="button" onClick={onRetry}>
-            <RotateCcw aria-hidden="true" /> Tune and retry
+            <RotateCcw aria-hidden="true" /> {copy.retry}
           </button>
-          <button className="secondary-button" type="button" onClick={onClose}>Review trends</button>
+          <button className="secondary-button" type="button" onClick={onClose}>{copy.reviewTrends}</button>
         </div>
       </section>
     </div>

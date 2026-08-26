@@ -5,25 +5,23 @@ import { CylinderGeometry, SphereGeometry } from "three";
 
 import type { SceneQuality } from "./use-scene-quality";
 import { FRONT_SHELL_THETA, REAR_SHELL_THETA } from "./vessel-geometry";
+import { NOZZLE_ANCHORS, SHELL_RADIUS_M, VESSEL_LENGTH_M } from "@/lib/visualization/scene-model";
 
 interface SeparatorVesselProps {
   quality: SceneQuality;
 }
 
-const SHELL_RADIUS = 0.63;
-const SHELL_LENGTH = 3;
-
 export function SeparatorVessel({ quality }: SeparatorVesselProps) {
   const rearShellGeometry = useMemo(
-    () => new CylinderGeometry(SHELL_RADIUS, SHELL_RADIUS, SHELL_LENGTH, 64, 1, true, REAR_SHELL_THETA.start, REAR_SHELL_THETA.length),
+    () => new CylinderGeometry(SHELL_RADIUS_M, SHELL_RADIUS_M, VESSEL_LENGTH_M, 64, 1, true, REAR_SHELL_THETA.start, REAR_SHELL_THETA.length),
     [],
   );
   const inspectionGeometry = useMemo(
-    () => new CylinderGeometry(SHELL_RADIUS, SHELL_RADIUS, SHELL_LENGTH, 64, 1, true, FRONT_SHELL_THETA.start, FRONT_SHELL_THETA.length),
+    () => new CylinderGeometry(SHELL_RADIUS_M, SHELL_RADIUS_M, VESSEL_LENGTH_M, 64, 1, true, FRONT_SHELL_THETA.start, FRONT_SHELL_THETA.length),
     [],
   );
-  const rearHeadGeometry = useMemo(() => new SphereGeometry(SHELL_RADIUS, 48, 24, Math.PI, Math.PI), []);
-  const inspectionHeadGeometry = useMemo(() => new SphereGeometry(SHELL_RADIUS, 48, 24, 0, Math.PI), []);
+  const rearHeadGeometry = useMemo(() => new SphereGeometry(SHELL_RADIUS_M, 48, 24, Math.PI, Math.PI), []);
+  const inspectionHeadGeometry = useMemo(() => new SphereGeometry(SHELL_RADIUS_M, 48, 24, 0, Math.PI), []);
 
   useEffect(() => () => {
     rearShellGeometry.dispose();
@@ -73,9 +71,9 @@ export function SeparatorVessel({ quality }: SeparatorVesselProps) {
         </mesh>
       ))}
 
-      <Nozzle position={[-0.95, 0.72, 0]} rotation={[0, 0, 0]} quality={quality} />
-      <Nozzle position={[0.82, -0.73, 0]} rotation={[0, 0, Math.PI]} quality={quality} />
-      <Nozzle position={[-0.1, -0.73, 0]} rotation={[0, 0, Math.PI]} quality={quality} />
+      {Object.entries(NOZZLE_ANCHORS).map(([name, anchor]) => (
+        <Nozzle key={name} position={[anchor.x, anchor.y, 0]} rotation={[0, 0, anchor.rotationZ]} quality={quality} />
+      ))}
 
       {[-0.95, 0.95].map((x) => (
         <group key={x} position={[x, -0.93, 0]}>
