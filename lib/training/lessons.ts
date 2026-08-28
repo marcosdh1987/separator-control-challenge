@@ -149,7 +149,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     // Measured: the untouched starting tuning reaches an IAE of 627 through the
     // restriction; a systematic Kp 6 / Ki 0.12 reaches 287 and a half-hearted
     // Kp 4 / Ki 0.08 reaches 528. The bound sits between the tuned result and
-    // the half-hearted one. Valve travel is deliberately not graded here — it
+    // the half-hearted one. Valve travel is deliberately not graded here; it
     // never exceeds ~140 on this scenario at any tuning, so a travel bound would
     // be a criterion that cannot fail; the trade-off is graded in the
     // noisy-interface lesson, where the numbers separate.

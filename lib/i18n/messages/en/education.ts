@@ -62,7 +62,7 @@ export const education = {
   gain: {
     kp: {
       friendlyName: "Response strength",
-      technicalName: "Proportional gain — Kp",
+      technicalName: "Proportional gain (Kp)",
       summary: "Higher Kp → faster response, but lower stability margin.",
       description:
         "Kp determines how strongly the controller reacts to the current error. A larger Kp produces a larger valve-command change for the same deviation from setpoint.",
@@ -87,7 +87,7 @@ export const education = {
     },
     ki: {
       friendlyName: "Offset removal",
-      technicalName: "Integral gain — Ki",
+      technicalName: "Integral gain (Ki)",
       summary: "Higher Ki → less persistent offset, but more overshoot and windup risk.",
       description:
         "Ki accumulates error over time. Even a small persistent error continues increasing the integral contribution until the controller removes the offset.",
@@ -113,7 +113,7 @@ export const education = {
     },
     kd: {
       friendlyName: "Damping and anticipation",
-      technicalName: "Derivative gain — Kd",
+      technicalName: "Derivative gain (Kd)",
       summary: "Higher Kd → more damping, but more sensitivity to noise.",
       description:
         "Kd reacts to how quickly the measurement (PV) is changing. It can add damping and reduce overshoot by opposing rapid changes.",
@@ -216,7 +216,7 @@ export const education = {
 
   /** Shown when no single diagnosis pattern dominates the current gains. */
   gainAdvisoryFallback:
-    "Low error is only half the job—watch actual valve travel and saturation too.",
+    "Low error is only half the job: watch actual valve travel and saturation too.",
 
   repeatableExperimentGoldenRule:
     "Change one parameter at a time and repeat the same deterministic scenario. Otherwise, you cannot know which change improved or degraded the response.",
@@ -361,7 +361,7 @@ export const education = {
       raise: (gain: string, from: string, to: string) => `Raise ${gain} from ${from} to ${to}.`,
       lower: (gain: string, from: string, to: string) => `Lower ${gain} from ${from} to ${to}.`,
       remove: (gain: string) => `Set ${gain} to 0 and re-run before changing anything else.`,
-      hold: "Keep these gains and change the scenario instead — this loop is doing its job.",
+      hold: "Keep these gains and change the scenario instead: this loop is doing its job.",
     },
 
     nextMove: "Next move",

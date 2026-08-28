@@ -23,15 +23,15 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
     theory: [
       "A separator is a pressure vessel whose only job is to hold the well stream still long enough for gravity to do the work. Gas rises, oil floats, water settles. Everything else in the vessel exists to protect that.",
       "The controlling quantity is residence time: how long fluid stays inside, which is simply volume divided by flow. Light crude in a warm vessel may need three to five minutes; heavy, cold crude can need twenty to thirty. Raise the inlet flow and residence time falls, the dispersed droplets never reach their own phase, and separation efficiency drops sharply.",
-      "Between oil and water there is rarely a clean line. Fine solids, surfactants and emulsions can build a stable layer between them — a rag layer — that does not obey the settling laws and can grow until it blocks the internal weirs.",
+      "Between oil and water there is rarely a clean line. Fine solids, surfactants and emulsions can build a stable layer between them, known as a rag layer, that does not obey the settling laws and can grow until it blocks the internal weirs.",
       "Separation fails in two directions, and both are level problems. Let the liquid climb too high and the gas leaving the top drags droplets with it: liquid carry-over. Let it fall too low and gas escapes through the liquid outlet instead: gas carry-under. Level control exists to keep the vessel between those two failures.",
-      "Every run here begins the way a real test does: vessel empty, well shut in, valves closed. Pressing Start opens the well. While the vessel fills, the controllers hold their valves shut — there is nothing to discharge yet — and they begin to open only as the level approaches its setpoint. Watch for that moment; it is the loops taking over from the fill.",
+      "Every run here begins the way a real test does: vessel empty, well shut in, valves closed. Pressing Start opens the well. While the vessel fills, the controllers hold their valves shut, since there is nothing to discharge yet, and they begin to open only as the level approaches its setpoint (the target value the loop holds). Watch for that moment; it is the loops taking over from the fill.",
       "During the fill the vessel sits below every low-level limit, and that is not an upset: low-side protection stays bypassed until each level has first reached its normal range, exactly as it does in the field. From then on it is armed, and a falling level is a real event.",
     ],
     fieldNote:
       "The level controller is not there to hit a number. It is there to protect residence time and keep a liquid seal on the outlet. The number is just how we ask for that.",
     briefing: [
-      "Press Start and watch the vessel fill. The valves stay shut — that is correct, not stuck.",
+      "Press Start and watch the vessel fill. The valves stay shut: that is correct, not stuck.",
       "Watch the oil valve as the total level nears 50%: it starts to open just before the setpoint, and the level settles through a small overshoot.",
       "Once everything is quiet, try Shut in well, and watch the loops close the valves before the vessel drains. Open it again and let it recover.",
     ],
@@ -40,18 +40,18 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
       "From here on, something will always be pushing the vessel away from this state. Every lesson is about what you do when it does.",
     ],
     debriefFailed: [
-      "The vessel left its safety envelope. With no disturbance acting, that means the gains are moving the valves harder than the process needs.",
+      "The vessel left its safety envelope, the alarm and trip limits on level and pressure. With no disturbance acting, that means the gains are moving the valves harder than the process needs.",
       "Reset and start again, and watch which level moves first.",
     ],
   },
 
   "level-and-proportional-action": {
     title: "Proportional action, and the offset it leaves",
-    summary: "The feed steps up. Proportional-only control answers — but never all the way.",
+    summary: "The feed steps up. Proportional-only control answers, but never all the way.",
     theory: [
       "Proportional action moves the valve in proportion to the error right now. Twice the error, twice the correction. It is fast and it is honest, and it is what you feel first when you turn up a controller.",
-      "It also cannot finish the job. A proportional controller only produces a correction while an error exists, so the moment the level returns to setpoint the extra valve opening disappears. If the feed is permanently higher than before, the valve must sit permanently further open — and the only way this controller holds it there is to keep a permanent error.",
-      "That standing error is called offset. It is not a defect in your tuning. It is what proportional-only control is.",
+      "It also cannot finish the job. A proportional controller only produces a correction while an error exists, so the moment the level returns to setpoint the extra valve opening disappears. If the feed is permanently higher than before, the valve must sit permanently further open, and the only way this controller holds it there is to keep a permanent error.",
+      "That standing error is called offset, or steady-state error. It is not a defect in your tuning. It is what proportional-only control is.",
       "Turning Kp up shrinks the offset without removing it, and buys the reduction with a more violent valve. That trade is the whole reason the next lesson exists.",
     ],
     briefing: [
@@ -60,22 +60,22 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
       "Try a higher Kp and run it again. Compare where the level settles, and what the valve did to get there.",
     ],
     debriefPassed: [
-      "The level settled — but not at setpoint. That gap is the offset, and no value of Kp will close it.",
+      "The level settled, but not at setpoint. That gap is the offset, and no value of Kp will close it.",
       "Look at what raising Kp actually bought you: a smaller gap, and a busier valve. Hold on to that trade; it comes back in every lesson.",
     ],
     debriefFailed: [
-      "The run ended before it could show the effect. Either the vessel tripped, or the level never settled long enough to read the offset.",
+      "The run ended before it could show the effect. Either the vessel tripped (hit an automatic protective shutdown), or the level never settled long enough to read the offset.",
       "A very high Kp will make the level oscillate instead of settling. Bring it down until the response is calm, then look for the gap.",
     ],
   },
 
   "integral-action-and-windup": {
     title: "Integral action, and how it gets stuck",
-    summary: "Removing the offset — without paying for it in overshoot.",
+    summary: "Removing the offset without paying for it in overshoot.",
     theory: [
       "Integral action accumulates error over time. However small the remaining gap is, the integrator keeps adding to the valve command until the gap is gone. That is what removes the offset proportional action leaves behind.",
       "It buys that with time. The integrator only knows where the process has been, not where it is going, so it keeps pushing after the level is already on its way back. Too much integral action and the level sails past setpoint and has to be pulled back: overshoot.",
-      "There is a worse failure. If the valve reaches its limit and the error persists, the integrator keeps accumulating against a valve that cannot move any further. When the process finally turns around, that stored-up command has to be unwound before the valve responds at all — the controller is briefly deaf. That is integral windup.",
+      "There is a worse failure. If the valve reaches its limit and the error persists, the integrator keeps accumulating against a valve that cannot move any further. When the process finally turns around, that stored-up command has to be unwound before the valve responds at all: the controller is briefly deaf. That is integral windup.",
       "This simulator limits the integrator to keep windup survivable, and holds it in place while the valve is saturated. Real controllers do the same thing, and for the same reason.",
       "The order that works is Kp first, then Ki, then Kd if it earns its place. Tune Kp until the response is fast but calm, then add just enough integral to close the offset.",
     ],
@@ -107,7 +107,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
       "If the valve is moving and the process is not, believe the process. A busy valve is a cost, not an achievement.",
     briefing: [
       "The interface transmitter has ±1.5% noise and holds each sample for half a second.",
-      "Tune the interface loop to track its setpoint without letting the water valve chatter.",
+      "Tune the interface loop to track its setpoint without letting the water valve chatter (move in rapid, repeated small steps).",
       "Try raising Kd and watch the valve travel figure, then decide whether it was worth it.",
     ],
     debriefPassed: [
@@ -125,9 +125,9 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
     summary: "A reactive controller always arrives late. Learn what to do about that.",
     theory: [
       "A slug is a body of liquid that arrives all at once, from the pipeline rather than from the well's average rate. Total feed jumps and the water fraction jumps with it.",
-      "Feedback control cannot anticipate. A PID only acts on error that has already appeared, so by the time the level has risen enough to command the valve open, the slug is already inside the vessel. A reactive controller is always late to a slug — not because it is badly tuned, but because of what feedback is.",
-      "What decides the outcome is whether the vessel has the surge volume to absorb what arrived, and whether the valve has the capacity to pass it before the level reaches its trip. Tuning changes how gracefully you use that room. It does not create more of it.",
-      "There is a genuine choice here. Holding the level tightly passes the slug straight downstream; letting the level move absorbs it and protects whatever is next in the train. Field practice often prefers the second — the vessel is used as a buffer rather than a set point. It is called averaging level control, and it is the right answer more often than trainees expect.",
+      "Feedback control cannot anticipate. A PID only acts on error that has already appeared, so by the time the level has risen enough to command the valve open, the slug is already inside the vessel. A reactive controller is always late to a slug, not because it is badly tuned, but because of what feedback is.",
+      "What decides the outcome is whether the vessel has the surge volume (the spare capacity between the operating level and the trip) to absorb what arrived, and whether the valve has the capacity to pass it before the level reaches its trip. Tuning changes how gracefully you use that room. It does not create more of it.",
+      "There is a genuine choice here. Holding the level tightly passes the slug straight downstream; letting the level move absorbs it and protects whatever is next in the train. Field practice often prefers the second: the vessel is used as a buffer rather than a setpoint. It is called averaging level control, and it is the right answer more often than trainees expect.",
     ],
     briefing: [
       "The slug arrives at 35 seconds and lasts about twenty.",
@@ -151,18 +151,18 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
       "Switch the gas cap on and a third controller appears: pressure, acting on the gas outlet valve. Gas released by the feed collects above the liquid and raises pressure; opening the valve vents it away.",
       "The first thing to know is the timescale. Pressure responds in seconds where level takes minutes. Gains that feel gentle on a level loop are violent here, which is why this loop starts with a smaller Kp and no derivative at all.",
       "The second thing is that the three loops are not independent. The gas cap is whatever volume the liquid leaves behind, so draining liquid enlarges the gas space and drops the pressure, and a pressure excursion pushes back on how easily the liquid outlets can discharge. Three separate single-loop controllers are each solving part of one coupled problem.",
-      "There is a process reason to keep pressure steady beyond the equipment rating. A sharp pressure drop makes gas break out of the liquid inside the vessel — flashing — which stirs the liquid and corrupts the volumetric measurements the whole well test depends on.",
+      "There is a process reason to keep pressure steady beyond the equipment rating. A sharp pressure drop makes gas break out of the liquid inside the vessel, called flashing, which stirs the liquid and corrupts the volumetric measurements the whole well test depends on.",
     ],
     fieldNote:
       "A well test is a measurement. Pressure that will not sit still does not just stress the vessel; it makes the numbers you came for untrustworthy.",
     briefing: [
-      "The gas cap is enabled and the well starts making far more gas per cubic metre of oil at 40 seconds.",
+      "The gas cap is enabled and the well starts making far more gas per cubic metre of oil at 40 seconds (a rising gas-oil ratio, or GOR).",
       "Hold pressure through the surge without tripping on pressure high-high.",
       "Watch the level loops while you do it. If pressure swings, look at whether the liquid levels moved with it.",
     ],
     debriefPassed: [
       "You held pressure through the surge. Look at the gas valve: it had to open considerably, and it had the capacity to do so because it is correctly sized.",
-      "Now look at the level traces during the surge. The coupling is visible — and it is why an operator watches all three loops, not the one that is alarming.",
+      "Now look at the level traces during the surge. The coupling is visible, and it is why an operator watches all three loops, not the one that is alarming.",
     ],
     debriefFailed: [
       "Pressure got away. Either the loop was too slow to open the valve as the gas arrived, or it was so aggressive that it oscillated and lost the setpoint anyway.",
@@ -177,7 +177,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
       "Everything so far has been one idea at a time. This is the whole job: an untuned loop, a disturbance you did not choose, and a result you have to justify.",
       "Use a procedure rather than intuition. Establish a repeatable experiment so two runs can be compared at all. Set Ki and Kd to zero. Raise Kp until the response is fast but still calm. Add just enough Ki to remove the offset. Add Kd only if the measurement is clean and the response genuinely needs damping.",
       "Judge the result on more than error. A controller that tracks beautifully by moving the valve constantly is not better; it is trading equipment life for a prettier trace. Read tracking error and valve travel together, and be able to say which one you chose to favour and why.",
-      "Published tuning rules — Ziegler-Nichols, Cohen-Coon, relay autotuning — give you a starting point from a measured response, not a final answer. They are opening bids.",
+      "Published tuning rules (Ziegler-Nichols, Cohen-Coon, relay autotuning) give you a starting point from a measured response, not a final answer. They are opening bids.",
     ],
     briefing: [
       "Both loops start with proportional action only, and a low gain.",
@@ -234,7 +234,7 @@ export const training = {
     attempt: (attempts: number) => `Attempt ${attempts}`,
     notAttempted: "Run the exercise to see how you did.",
     passedBanner: "Lesson passed",
-    failedBanner: "Not yet — read the debrief and try again",
+    failedBanner: "Not yet: read the debrief and try again",
   },
 
   check: {

@@ -152,4 +152,22 @@ between the `BEGIN/END GENERATED SKILLS` sentinels in adapter files — run
 break the CI drift gate.
 **How to apply:** edit `.github/skills/*.md` (source) and regenerate.
 
+## Editorial register for all user-facing copy - 2026-08-28
+
+Spanish copy (i18n messages, lessons, instructor guide) uses neutral Latin American
+Spanish in a professional technical register: tuteo imperatives, no Rioplatense
+voseo, no colloquialisms. Technical terms are glossed on first use in both languages
+(carry-over, rag layer, windup, slug, flashing, GOR, chattering, surge volume);
+field terms said in English stay in English inside Spanish text with a Spanish
+gloss. Em-dashes are banned from prose in both languages (replace with colon, comma,
+or parentheses); the bare "—" missing-value placeholder in `lib/education/units.ts`
+formatters is the one deliberate exception.
+
+**Why it matters:** the audience is working industry engineers/technicians; register
+and terminology carry credibility, and em-dashes read as AI-generated text.
+**How to apply:** keep new copy in this register; the style notes live in the header
+comments of `lib/i18n/messages/es/education.ts` and `es/onboarding.ts`. Tests assert
+some literal strings (landing headline, gain technical names, score-closed banner),
+so update the matching test when copy changes.
+
 <!-- Add new learnings above this line -->

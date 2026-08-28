@@ -25,7 +25,7 @@ export function buildAttemptEvidence(
 ): AttemptEvidence {
   // Judge the control, not the fill. The window opens at the scenario's
   // disturbance when it has one, and otherwise at the moment the vessel first
-  // established — before either, every attempt looks identical.
+  // established; before either, every attempt looks identical.
   const startS = disturbanceStartS && disturbanceStartS > 0
     ? disturbanceStartS
     : result.metrics.establishedAtS || undefined;
@@ -48,7 +48,7 @@ const check = (
  * Judges one attempt against a lesson.
  *
  * Two rules make the course honest rather than merely strict. A lesson may require
- * a *failure* — reaching the trip it is about is the pass. And a lesson may require
+ * a *failure*: reaching the trip it is about is the pass. And a lesson may require
  * an offset to remain, because proportional-only control cannot remove one and
  * pretending otherwise would teach the wrong thing.
  */

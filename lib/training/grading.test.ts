@@ -97,7 +97,7 @@ describe("grading", () => {
     const base = lesson.exercise.initialPid;
 
     // It starts on the standard tuning, whose derivative gain is too much for a
-    // noisy measurement — that is the situation the trainee has to recognise.
+    // noisy measurement; that is the situation the trainee has to recognise.
     const asFound = attempt(lesson, base);
     expect(asFound.passed).toBe(false);
     expect(asFound.checks.find((check) => check.id === "valve-travel")?.passed).toBe(false);

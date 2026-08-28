@@ -334,7 +334,7 @@ describe("game dashboard", () => {
     expect(screen.getByRole("dialog", { name: "Attempt results" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Close results" }));
 
-    expect(screen.getByText("Final score closed — reset to start another attempt")).toBeVisible();
+    expect(screen.getByText("Final score closed: reset to start another attempt")).toBeVisible();
     expect(screen.queryByText("Final deterministic score calculated when the attempt ends")).not.toBeInTheDocument();
   });
 

@@ -155,115 +155,115 @@ export const simulation: SimulationMessages = {
   tripFeedback: {
     TOTAL_LL: {
       diagnosis: "Disparo por nivel total muy bajo",
-      suggestion: "Resintonizá el lazo de nivel total para que la válvula de petróleo cierre antes sin oscilar.",
+      suggestion: "Resintoniza el lazo de nivel total para que la válvula de petróleo cierre antes sin oscilar.",
     },
     TOTAL_HH: {
       diagnosis: "Disparo por nivel total muy alto",
-      suggestion: "Resintonizá el lazo de nivel total para que la válvula de petróleo abra antes y conserve margen.",
+      suggestion: "Resintoniza el lazo de nivel total para que la válvula de petróleo abra antes y conserve margen.",
     },
     INTERFACE_LL: {
       diagnosis: "Disparo por interfase muy baja",
-      suggestion: "Resintonizá el lazo de interfase para que la válvula de agua cierre antes y sin windup.",
+      suggestion: "Resintoniza el lazo de interfase para que la válvula de agua cierre antes y sin windup.",
     },
     INTERFACE_HH: {
       diagnosis: "Disparo por interfase muy alta",
-      suggestion: "Resintonizá el lazo de interfase para que la válvula de agua abra antes y recupere margen.",
+      suggestion: "Resintoniza el lazo de interfase para que la válvula de agua abra antes y recupere margen.",
     },
     OIL_LAYER_LL: {
       diagnosis: "Disparo por capa de petróleo muy baja",
-      suggestion: "Usá el lazo de interfase y la válvula de agua para bajar la interfase antes de que colapse la capa de petróleo.",
+      suggestion: "Usa el lazo de interfase y la válvula de agua para bajar la interfase antes de que colapse la capa de petróleo.",
     },
     PRESSURE_LL: {
       diagnosis: "Disparo por presión muy baja",
-      suggestion: "Frená el lazo de presión: la válvula de gas está venteando el domo más rápido de lo que la alimentación lo repone.",
+      suggestion: "Modera el lazo de presión: la válvula de gas está venteando el domo más rápido de lo que la alimentación lo repone.",
     },
     PRESSURE_HH: {
       diagnosis: "Disparo por presión muy alta",
-      suggestion: "Resintonizá el lazo de presión para que la válvula de gas abra antes; la presión se mueve mucho más rápido que el nivel.",
+      suggestion: "Resintoniza el lazo de presión para que la válvula de gas abra antes; la presión se mueve mucho más rápido que el nivel.",
     },
   } satisfies Record<Exclude<TripKind, null>, FeedbackCopy>,
 
   modifierFeedback: {
     "total-oscillation": {
       diagnosis: "Oscilación sostenida del nivel total",
-      suggestion: "Bajá Kp o Ki en el lazo de nivel total antes de agregar acción derivativa filtrada.",
+      suggestion: "Baja Kp o Ki en el lazo de nivel total antes de agregar acción derivativa filtrada.",
     },
     "interface-oscillation": {
       diagnosis: "Oscilación sostenida de la interfase",
-      suggestion: "Bajá Kp o Ki en el lazo de interfase y mantené suave la respuesta de la válvula de agua.",
+      suggestion: "Baja Kp o Ki en el lazo de interfase y mantén suave la respuesta de la válvula de agua.",
     },
     "oil-saturation": {
       diagnosis: "Saturación prolongada de la válvula de petróleo",
-      suggestion: "Resintonizá el lazo de nivel total para que la válvula de petróleo se mantenga dentro de su autoridad útil.",
+      suggestion: "Resintoniza el lazo de nivel total para que la válvula de petróleo se mantenga dentro de su autoridad útil.",
     },
     "water-saturation": {
       diagnosis: "Saturación prolongada de la válvula de agua",
-      suggestion: "Resintonizá el lazo de interfase para que la válvula de agua se mantenga dentro de su autoridad útil.",
+      suggestion: "Resintoniza el lazo de interfase para que la válvula de agua se mantenga dentro de su autoridad útil.",
     },
     "oil-travel": {
       diagnosis: "Recorrido excesivo de la válvula de petróleo",
-      suggestion: "Reducí la agresividad del lazo de nivel total para bajar el desgaste de la válvula sin perder seguridad.",
+      suggestion: "Reduce la agresividad del lazo de nivel total para bajar el desgaste de la válvula sin perder seguridad.",
     },
     "water-travel": {
       diagnosis: "Recorrido excesivo de la válvula de agua",
-      suggestion: "Reducí la agresividad del lazo de interfase para bajar el desgaste de la válvula sin perder seguridad.",
+      suggestion: "Reduce la agresividad del lazo de interfase para bajar el desgaste de la válvula sin perder seguridad.",
     },
     "total-windup": {
       diagnosis: "La acción integral del nivel total quedó pegada al límite",
-      suggestion: "Bajá Ki en el lazo de nivel total y verificá que la válvula de petróleo tenga autoridad suficiente.",
+      suggestion: "Baja Ki en el lazo de nivel total y verifica que la válvula de petróleo tenga autoridad suficiente.",
     },
     "interface-windup": {
       diagnosis: "La acción integral de la interfase quedó pegada al límite",
-      suggestion: "Bajá Ki en el lazo de interfase y verificá que la válvula de agua tenga autoridad suficiente.",
+      suggestion: "Baja Ki en el lazo de interfase y verifica que la válvula de agua tenga autoridad suficiente.",
     },
     "pressure-oscillation": {
       diagnosis: "Oscilación sostenida de la presión",
-      suggestion: "Bajá Kp en el lazo de presión: el domo de gas responde en segundos, así que las ganancias que sirven para un lazo de nivel acá son enormes.",
+      suggestion: "Baja Kp en el lazo de presión: el domo de gas responde en segundos, así que las ganancias adecuadas para un lazo de nivel resultan excesivas aquí.",
     },
     "gas-saturation": {
       diagnosis: "Saturación prolongada de la válvula de gas",
-      suggestion: "La válvula de gas se quedó sin autoridad. Fijate si el GOR de la alimentación supera lo que esa válvula puede pasar.",
+      suggestion: "La válvula de gas se quedó sin autoridad. Verifica si el GOR (relación gas-petróleo) de la alimentación supera la capacidad de esa válvula.",
     },
     "gas-travel": {
       diagnosis: "Recorrido excesivo de la válvula de gas",
-      suggestion: "Suavizá el lazo de presión; el movimiento constante desgasta el trim sin mejorar el control.",
+      suggestion: "Suaviza el lazo de presión; el movimiento constante desgasta el trim sin mejorar el control.",
     },
     "pressure-windup": {
       diagnosis: "La acción integral de la presión quedó pegada al límite",
-      suggestion: "Bajá Ki en el lazo de presión y verificá que la válvula de gas pueda pasar el gas entrante.",
+      suggestion: "Baja Ki en el lazo de presión y verifica que la válvula de gas pueda pasar el gas entrante.",
     },
   } satisfies Record<Exclude<ScoreModifierId, "trip">, FeedbackCopy>,
 
   balancedFeedback: {
     diagnosis: "Respuesta equilibrada entre nivel total e interfase",
-    suggestion: "Probá un escenario más difícil o recortá el recorrido de las válvulas sin sacrificar seguridad.",
+    suggestion: "Prueba un escenario más difícil o recorta el recorrido de las válvulas sin sacrificar seguridad.",
   } satisfies FeedbackCopy,
 
   pressureFeedback: {
     diagnosis: "El control de presión domina el puntaje",
-    suggestion: "Estabilizá primero el lazo de presión: es el más rápido, y sus vaivenes mueven los niveles de líquido a través del domo de gas.",
+    suggestion: "Estabiliza primero el lazo de presión: es el más rápido, y sus oscilaciones mueven los niveles de líquido a través del domo de gas.",
   } satisfies FeedbackCopy,
 
   lossFeedback: {
     safety: (loop, valve): FeedbackCopy => ({
       diagnosis: `La exposición a alarmas de ${loop} / ${valve} domina el puntaje`,
-      suggestion: `Resintonizá primero el lazo de ${loop} y su ${valve} para recuperar margen de seguridad.`,
+      suggestion: `Resintoniza primero el lazo de ${loop} y su ${valve} para recuperar margen de seguridad.`,
     }),
     tracking: (_loop, loopInSentence): FeedbackCopy => ({
       diagnosis: `El error de seguimiento de ${loopInSentence} domina el puntaje`,
-      suggestion: `Subí Kp de a poco en el lazo de ${loopInSentence} y después agregá algo de Ki para el offset.`,
+      suggestion: `Sube Kp de forma gradual en el lazo de ${loopInSentence} y después agrega algo de Ki para el offset.`,
     }),
     stability: (_loop, loopInSentence): FeedbackCopy => ({
       diagnosis: `La variabilidad de ${loopInSentence} domina el puntaje`,
-      suggestion: `Bajá Kp o Ki en el lazo de ${loopInSentence} y agregá derivativa solo con una medición limpia.`,
+      suggestion: `Baja Kp o Ki en el lazo de ${loopInSentence} y agrega derivativa solo con una medición limpia.`,
     }),
     recovery: (loop, valve): FeedbackCopy => ({
       diagnosis: `La recuperación de ${loop} / ${valve} limita la respuesta conjunta`,
-      suggestion: `Resintonizá el lazo de ${loop} y su ${valve} para recuperar antes sin perder estabilidad.`,
+      suggestion: `Resintoniza el lazo de ${loop} y su ${valve} para recuperar antes sin perder estabilidad.`,
     }),
     valve: (phase, effort, loopInSentence, phaseInSentence): FeedbackCopy => ({
       diagnosis: `El ${effort} de la válvula de ${phase.toLocaleLowerCase("es")} domina el puntaje`,
-      suggestion: `Resintonizá el lazo de ${loopInSentence} para reducir el ${effort} de la válvula de ${phaseInSentence}.`,
+      suggestion: `Resintoniza el lazo de ${loopInSentence} para reducir el ${effort} de la válvula de ${phaseInSentence}.`,
     }),
   },
 };

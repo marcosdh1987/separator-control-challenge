@@ -14,7 +14,7 @@ describe("PidHelp", () => {
     await user.click(screen.getByRole("button", { name: "Help with Response strength" }));
 
     expect(screen.getByRole("heading", { name: "Response strength" })).toBeVisible();
-    expect(screen.getByText("Proportional gain — Kp")).toBeVisible();
+    expect(screen.getByText("Proportional gain (Kp)")).toBeVisible();
     expect(screen.getByText("Higher Kp → faster response, but lower stability margin.")).toBeVisible();
   });
 

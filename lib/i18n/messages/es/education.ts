@@ -12,15 +12,15 @@ import type { TeachingPresetId } from "@/lib/onboarding/types";
 import type { LoopId } from "@/lib/simulation/types";
 
 /**
- * Río de la Plata Spanish: voseo for anything addressed to the trainee. Terms an
- * operator says in English stay in English (setpoint, windup, hunting); "overshoot"
- * is taught as "sobrepaso" and glossed once, in the diagnosis pattern that names it.
+ * Neutral Latin American Spanish in a professional technical register. Terms an
+ * operator says in English stay in English (setpoint, windup, hunting) and are
+ * glossed in Spanish on first use; "overshoot" is taught as "sobrepaso".
  */
 export const education: EducationMessages = {
   panel: {
     ariaLabel: "Recursos de aprendizaje de PID",
     eyebrow: "Estación de aprendizaje",
-    title: "Observá, cambiá, compará",
+    title: "Observa, cambia, compara",
     theory: "Teoría del PID",
     goldenRule: "Regla de oro de la sintonía manual",
     diagnosis: "¿Cómo diagnostico la respuesta?",
@@ -40,7 +40,7 @@ export const education: EducationMessages = {
   gain: {
     kp: {
       friendlyName: "Fuerza de la respuesta",
-      technicalName: "Ganancia proporcional — Kp",
+      technicalName: "Ganancia proporcional (Kp)",
       summary: "Más Kp → respuesta más rápida, pero menos margen de estabilidad.",
       description:
         "Kp define con cuánta fuerza reacciona el controlador al error actual. Un Kp mayor produce un cambio mayor en el comando de la válvula ante la misma desviación respecto del setpoint.",
@@ -62,23 +62,23 @@ export const education: EducationMessages = {
         "El movimiento de la válvula es innecesariamente agresivo.",
       ],
       importantNote:
-        "La acción proporcional sola puede dejar un offset persistente después de una perturbación.",
+        "La acción proporcional sola puede dejar un offset persistente (error en estado estacionario) después de una perturbación.",
     },
     ki: {
       friendlyName: "Eliminación del offset",
-      technicalName: "Ganancia integral — Ki",
+      technicalName: "Ganancia integral (Ki)",
       summary: "Más Ki → menos offset persistente, pero más sobrepaso y más riesgo de windup.",
       description:
-        "Ki acumula el error en el tiempo. Incluso un error chico pero persistente sigue aumentando el aporte integral hasta que el controlador elimina el offset.",
+        "Ki acumula el error en el tiempo. Incluso un error pequeño pero persistente sigue aumentando el aporte integral hasta que el controlador elimina el offset.",
       increaseWhen: [
         "El proceso se estabiliza lejos del setpoint.",
-        "Queda un error chico durante mucho tiempo.",
-        "La acción proporcional recupera casi toda la perturbación pero no vuelve del todo al objetivo.",
+        "Queda un error pequeño durante mucho tiempo.",
+        "La acción proporcional recupera casi toda la perturbación pero no regresa del todo al objetivo.",
       ],
       tooMuchCanCause: [
         "Sobrepaso.",
         "Oscilación lenta y repetida.",
-        "Windup integral.",
+        "Windup integral (acumulación del término integral contra un actuador saturado).",
         "Recuperación lenta después de saturar el actuador.",
         "Movimiento excesivo de la válvula.",
       ],
@@ -92,7 +92,7 @@ export const education: EducationMessages = {
     },
     kd: {
       friendlyName: "Amortiguación y anticipación",
-      technicalName: "Ganancia derivativa — Kd",
+      technicalName: "Ganancia derivativa (Kd)",
       summary: "Más Kd → más amortiguación, pero más sensibilidad al ruido.",
       description:
         "Kd reacciona a la velocidad con la que cambia la medición (PV). Puede amortiguar la respuesta y reducir el sobrepaso oponiéndose a los cambios rápidos.",
@@ -108,18 +108,18 @@ export const education: EducationMessages = {
         "Salto derivativo (derivative kick) si se implementa directamente sobre el error.",
       ],
       reduceWhen: [
-        "El ruido de medición hace mover rápido a la válvula.",
+        "El ruido de medición provoca movimientos rápidos de la válvula.",
         "La acción derivativa no mejora la respuesta completa.",
       ],
       importantNote:
-        "Dejá Kd en cero durante los primeros pasos de sintonía. Este controlador deriva la medición, no el error respecto del setpoint, para evitar el salto derivativo. Con mediciones industriales ruidosas, un PI suele ser preferible a un PID completo.",
+        "Mantén Kd en cero durante los primeros pasos de sintonía. Este controlador deriva la medición, no el error respecto del setpoint, para evitar el salto derivativo. Con mediciones industriales ruidosas, un PI suele ser preferible a un PID completo.",
     },
   } satisfies Record<GainId, GainHelpCopy>,
 
   gainHelp: {
-    increaseWhen: "Aumentá cuando",
+    increaseWhen: "Aumenta cuando",
     tooMuchCanCause: "Demasiado puede causar",
-    reduceWhen: "Reducí cuando",
+    reduceWhen: "Reduce cuando",
     trigger: (gainName) => `Ayuda sobre ${gainName}`,
     close: (gainName) => `Cerrar la ayuda de ${gainName}`,
   },
@@ -128,12 +128,12 @@ export const education: EducationMessages = {
     "sluggish": {
       title: "Respuesta lenta",
       symptoms: [
-        "La recuperación arranca despacio.",
+        "La recuperación comienza despacio.",
         "El tiempo de establecimiento es largo.",
         "La acción de la válvula es débil.",
         "Hay poco o nada de sobrepaso.",
       ],
-      suggestion: "Probá aumentar Kp un poco.",
+      suggestion: "Prueba aumentar Kp de forma gradual.",
     },
     "offset": {
       title: "Offset persistente",
@@ -142,7 +142,7 @@ export const education: EducationMessages = {
         "La PV queda por encima o por debajo del SP.",
         "El error no desaparece.",
       ],
-      suggestion: "Con Kp ya razonablemente sintonizado, aumentá Ki un poco.",
+      suggestion: "Con Kp ya razonablemente sintonizado, aumenta Ki de forma gradual.",
     },
     "overshoot": {
       title: "Sobrepaso (overshoot)",
@@ -150,7 +150,7 @@ export const education: EducationMessages = {
         "La PV cruza el setpoint de forma significativa.",
         "La corrección sigue actuando cuando el proceso ya debería frenar.",
       ],
-      suggestion: "Reducí Kp o Ki. Si la sintonía PI ya es razonable, probá un Kd chico.",
+      suggestion: "Reduce Kp o Ki. Si la sintonía PI ya es razonable, prueba un Kd pequeño.",
     },
     "sustained-oscillation": {
       title: "Oscilación sostenida",
@@ -159,15 +159,15 @@ export const education: EducationMessages = {
         "La válvula abre y cierra una y otra vez.",
         "El proceso nunca se estabiliza.",
       ],
-      suggestion: "Reducí primero Kp. Si la oscilación es lenta, reducí también Ki.",
+      suggestion: "Reduce primero Kp. Si la oscilación es lenta, reduce también Ki.",
     },
     "hunting": {
-      title: "Oscilación lenta o hunting",
+      title: "Oscilación lenta (hunting)",
       symptoms: [
         "Aparecen ondas de período largo alrededor del setpoint.",
         "La acción integral acumulada invierte la válvula una y otra vez.",
       ],
-      suggestion: "Reducí Ki.",
+      suggestion: "Reduce Ki.",
     },
     "valve-saturation": {
       title: "Saturación de válvula",
@@ -176,63 +176,63 @@ export const education: EducationMessages = {
         "El error se sigue acumulando.",
         "La recuperación se demora al salir de la saturación.",
       ],
-      suggestion: "Bajá las ganancias agresivas y revisá el windup integral.",
+      suggestion: "Reduce las ganancias agresivas y revisa el windup integral.",
     },
     "noisy-command": {
       title: "Comando de válvula ruidoso",
       symptoms: [
-        "Hay movimientos chicos y rápidos de la válvula.",
+        "Hay movimientos pequeños y rápidos de la válvula.",
         "La propia PV no justifica cada movimiento.",
       ],
-      suggestion: "Reducí Kd o filtrá la acción derivativa.",
+      suggestion: "Reduce Kd o filtra la acción derivativa.",
     },
   } satisfies Record<DiagnosisPatternId, DiagnosisPatternCopy>,
 
   gainAdvisoryFallback:
-    "Bajar el error es solo la mitad del trabajo: mirá también el recorrido real de las válvulas y la saturación.",
+    "Reducir el error es solo la mitad del trabajo: observa también el recorrido real de las válvulas y la saturación.",
 
   repeatableExperimentGoldenRule:
-    "Cambiá un solo parámetro por vez y repetí el mismo escenario determinista. Si no, no podés saber qué cambio mejoró o empeoró la respuesta.",
+    "Cambia un solo parámetro por vez y repite el mismo escenario determinista. De lo contrario, no puedes saber qué cambio mejoró o empeoró la respuesta.",
 
   manualTuning: {
     reminder:
-      "Un parámetro por vez. Mismo escenario. Misma semilla. Compará la respuesta completa.",
+      "Un parámetro por vez. Mismo escenario. Misma semilla. Compara la respuesta completa.",
     step: {
       "repeatable-experiment": {
-        title: "Armá un experimento repetible",
+        title: "Define un experimento repetible",
         body: [
-          "Elegí un escenario de perturbación y mantené la semilla determinista sin cambios.",
-          "Usá los mismos niveles iniciales, condiciones de alimentación, duración y velocidad de reproducción en cada comparación.",
+          "Elige un escenario de perturbación y mantén la semilla determinista sin cambios.",
+          "Usa los mismos niveles iniciales, condiciones de alimentación, duración y velocidad de reproducción en cada comparación.",
         ],
       },
       "disable-integral-derivative": {
-        title: "Desactivá la acción integral y la derivativa",
-        body: ["Poné Ki = 0 y Kd = 0.", "Empezá sintonizando solo la acción proporcional."],
+        title: "Desactiva la acción integral y la derivativa",
+        body: ["Fija Ki = 0 y Kd = 0.", "Empieza sintonizando solo la acción proporcional."],
       },
       "increase-proportional": {
-        title: "Aumentá Kp de a poco",
+        title: "Aumenta Kp de forma gradual",
         body: [
-          "Arrancá con un Kp bajo.",
-          "Corré el escenario completo.",
-          "Aumentá Kp en incrementos chicos hasta que el lazo responda con prontitud.",
-          "Dejá de aumentar Kp antes de que aparezca oscilación sostenida o saturación excesiva de la válvula.",
-          "No sintonices mirando solo los primeros segundos. Esperá lo suficiente para ver la recuperación completa.",
+          "Comienza con un Kp bajo.",
+          "Ejecuta el escenario completo.",
+          "Aumenta Kp en incrementos pequeños hasta que el lazo responda con prontitud.",
+          "Deja de aumentar Kp antes de que aparezca oscilación sostenida o saturación excesiva de la válvula.",
+          "No sintonices mirando solo los primeros segundos. Espera lo suficiente para observar la recuperación completa.",
         ],
       },
       "add-integral": {
-        title: "Agregá acción integral",
+        title: "Agrega acción integral",
         body: [
-          "Cuando Kp da una respuesta estable y razonablemente rápida, agregá un Ki chico.",
-          "Aumentá Ki de a poco hasta que desaparezca el offset persistente.",
-          "Dejá de aumentar Ki si el sobrepaso, la oscilación lenta o la saturación del actuador se vuelven significativos.",
+          "Cuando Kp entrega una respuesta estable y razonablemente rápida, agrega un Ki pequeño.",
+          "Aumenta Ki de forma gradual hasta que desaparezca el offset persistente.",
+          "Deja de aumentar Ki si el sobrepaso, la oscilación lenta o la saturación del actuador se vuelven significativos.",
         ],
       },
       "add-derivative": {
-        title: "Agregá derivativa solo si se justifica",
+        title: "Agrega derivativa solo si se justifica",
         body: [
-          "Si el controlador PI queda demasiado poco amortiguado, agregá un Kd chico.",
-          "Compará el resultado contra el mismo escenario.",
-          "Conservá Kd solo si reduce el sobrepaso o el tiempo de establecimiento sin aumentar el movimiento de válvula por ruido.",
+          "Si el controlador PI queda demasiado poco amortiguado, agrega un Kd pequeño.",
+          "Compara el resultado contra el mismo escenario.",
+          "Conserva Kd solo si reduce el sobrepaso o el tiempo de establecimiento sin aumentar el movimiento de válvula inducido por ruido.",
         ],
       },
     } satisfies Record<ManualTuningStepId, TuningStepCopy>,
@@ -255,13 +255,13 @@ export const education: EducationMessages = {
       title: "Lazo de nivel total / válvula de petróleo",
       paragraphs: [
         "El controlador de nivel total de líquido manipula la válvula de salida de petróleo.",
-        "Cuando el nivel total de líquido sube por encima de su setpoint, el controlador debe abrir más la válvula de petróleo para sacar más líquido.",
+        "Cuando el nivel total de líquido sube por encima de su setpoint, el controlador debe abrir más la válvula de petróleo para extraer más líquido.",
         "Cuando el nivel total cae por debajo de su setpoint, debe reducir la salida de petróleo.",
         "La variable controlada es el nivel total de líquido. La variable manipulada es la apertura de la válvula de petróleo.",
         "Una apertura mayor debería bajar el nivel total, aunque el efecto llega demorado por la dinámica del separador.",
       ],
       caution:
-        "La respuesta del proceso no es instantánea. Aumentar la ganancia porque no pasa nada de inmediato puede producir sobrepaso cuando la respuesta demorada se hace visible.",
+        "La respuesta del proceso no es instantánea. Aumentar la ganancia porque no ocurre nada de inmediato puede producir sobrepaso cuando la respuesta demorada se hace visible.",
     },
     interface: {
       title: "Lazo de interfase petróleo/agua / válvula de agua",
@@ -277,14 +277,14 @@ export const education: EducationMessages = {
     pressure: {
       title: "Lazo de presión del domo de gas / válvula de gas",
       paragraphs: [
-        "El controlador de presión maniobra la válvula de contrapresión de gas en la salida del recipiente.",
-        "El gas liberado por la alimentación se acumula en el espacio sobre el líquido y sube la presión; abrir la válvula de gas lo ventea.",
+        "El controlador de presión manipula la válvula de contrapresión de gas en la salida del recipiente.",
+        "El gas liberado por la alimentación se acumula en el espacio sobre el líquido y eleva la presión; abrir la válvula de gas lo ventea.",
         "La variable controlada es la presión del domo de gas. La variable manipulada es la apertura de la válvula de gas.",
-        "Este lazo es mucho más rápido que los de nivel. La presión responde en segundos donde el nivel tarda minutos, así que ganancias que en un lazo de nivel parecen suaves acá son violentas.",
+        "Este lazo es mucho más rápido que los de nivel. La presión responde en segundos donde el nivel tarda minutos, así que ganancias que en un lazo de nivel parecen suaves aquí resultan agresivas.",
         "Los tres lazos están acoplados a través del domo: drenar líquido agranda el espacio de gas y baja la presión, y a su vez una excursión de presión repercute sobre las salidas de líquido.",
       ],
       caution:
-        "Un lazo de presión sintonizado como uno de nivel va a oscilar. Arrancá con un Kp menor al que usarías en nivel, y agregá derivativa solo si la medición está limpia.",
+        "Un lazo de presión sintonizado como uno de nivel va a oscilar. Comienza con un Kp menor al que usarías en nivel, y agrega derivativa solo si la medición está limpia.",
     },
   } satisfies Record<LoopId, LoopExplanationCopy>,
 
@@ -310,8 +310,8 @@ export const education: EducationMessages = {
   coach: {
     ariaLabel: "Coach de sintonía posterior a la corrida",
     eyebrow: "Coach de control",
-    title: "Qué te está diciendo esta corrida",
-    empty: "Terminá un intento y el coach te lee la respuesta.",
+    title: "Qué indica esta corrida",
+    empty: "Completa un intento y el coach interpreta la respuesta.",
     headline: (loop: string, pattern: string) => `${loop}: ${pattern.toLowerCase()}`,
     headlineClean: "No hay una falla que domine esta respuesta.",
     loopHeading: (loop: string, valve: string) => `Lazo de ${loop} · ${valve}`,
@@ -324,10 +324,10 @@ export const education: EducationMessages = {
     } satisfies Record<GainId, string>,
 
     move: {
-      raise: (gain: string, from: string, to: string) => `Subí ${gain} de ${from} a ${to}.`,
-      lower: (gain: string, from: string, to: string) => `Bajá ${gain} de ${from} a ${to}.`,
-      remove: (gain: string) => `Poné ${gain} en 0 y volvé a correr antes de tocar otra cosa.`,
-      hold: "Dejá estas ganancias y cambiá de escenario: este lazo está haciendo su trabajo.",
+      raise: (gain: string, from: string, to: string) => `Sube ${gain} de ${from} a ${to}.`,
+      lower: (gain: string, from: string, to: string) => `Baja ${gain} de ${from} a ${to}.`,
+      remove: (gain: string) => `Fija ${gain} en 0 y vuelve a correr antes de cambiar otra cosa.`,
+      hold: "Conserva estas ganancias y cambia de escenario: este lazo está cumpliendo su función.",
     },
 
     nextMove: "Próximo movimiento",
@@ -335,14 +335,14 @@ export const education: EducationMessages = {
     evidenceLine: (overshoot: string, settling: string, travel: string) =>
       `Sobrepaso ${overshoot} · establecimiento ${settling} · recorrido comandado ${travel}`,
     reminder:
-      "Cambiá solo la ganancia que se nombra arriba, repetí el mismo escenario con la misma semilla y compará el balance.",
+      "Cambia solo la ganancia indicada arriba, repite el mismo escenario con la misma semilla y compara el balance.",
 
-    experiment: "Probá el experimento",
+    experiment: "Prueba el experimento",
     preset: {
       "p-only": {
         label: "P solo, sin sintonizar",
         guidance:
-          "El mismo Kp que Balanceado, con Ki y Kd apagados. El lazo corrige igual y igual se queda corto: la acción proporcional necesita un error permanente para sostener una corrección permanente, así que el offset no se va solo.",
+          "El mismo Kp que Balanceado, con Ki y Kd desactivados. El lazo corrige, pero se queda corto: la acción proporcional necesita un error permanente para sostener una corrección permanente, de modo que el offset no desaparece por sí solo.",
       },
     } satisfies Record<TeachingPresetId, CoachPresetCopy>,
     applyPreset: (label: string) => `Cargar las ganancias ${label}`,
@@ -353,7 +353,7 @@ export const education: EducationMessages = {
     eyebrow: "Balance de sintonía",
     title: "Este intento contra el anterior",
     firstAttempt:
-      "Primer intento en este escenario. Cambiá una sola ganancia, corrélo de nuevo y este panel te muestra qué se movió.",
+      "Primer intento en este escenario. Cambia una sola ganancia, ejecútalo de nuevo y este panel muestra qué se movió.",
     baseline: "Anterior",
     current: "Esta corrida",
     change: "Cambio",
@@ -373,14 +373,14 @@ export const education: EducationMessages = {
 
     metricHint: {
       iae: "Error total, el área bajo |PV − SP|. La medida directa de cuán lejos del objetivo estuvo la corrida.",
-      ise: "Eleva el error al cuadrado, así una excursión grande cuesta mucho más que una chica y larga.",
-      itae: "Pondera el error por lo tarde que ocurrió, así el error que se queda pega más fuerte.",
-      overshoot: "Cuánto se pasó del setpoint al volver, en relación con lo que la perturbación lo corrió.",
-      settlingTime: "Tiempo desde la perturbación hasta que el lazo entró en su banda objetivo y se quedó.",
-      riseTime: "Tiempo para ir del 90% de la desviación máxima al 10%.",
-      steadyOffset: "Dónde quedó el lazo respecto del setpoint. Solo la acción integral saca este error.",
-      totalVariation: "Cuánto movimiento le pidió el controlador a la válvula, Σ|Δu|. El ruido del sensor aparece acá antes que en ningún lado.",
-      reversals: "Cuántas veces el comando cambió de sentido. Un número alto es chattering, no control.",
+      ise: "Eleva el error al cuadrado, de modo que una excursión grande pesa mucho más que una desviación pequeña y prolongada.",
+      itae: "Pondera el error por el momento en que ocurrió, de modo que el error que persiste pesa más.",
+      overshoot: "Cuánto superó el setpoint al regresar, en relación con el desplazamiento que causó la perturbación.",
+      settlingTime: "Tiempo desde la perturbación hasta que el lazo entró en su banda objetivo y permaneció en ella.",
+      riseTime: "Tiempo para pasar del 90% de la desviación máxima al 10%.",
+      steadyOffset: "Dónde quedó el lazo respecto del setpoint. Solo la acción integral elimina este error.",
+      totalVariation: "Cuánto movimiento le pidió el controlador a la válvula, Σ|Δu|. El ruido del sensor aparece aquí antes que en ninguna otra métrica.",
+      reversals: "Cuántas veces el comando cambió de sentido. Un número alto indica chattering (movimiento rápido y repetido), no control.",
     },
 
     unit: {
@@ -409,6 +409,6 @@ export const education: EducationMessages = {
       `${loop}: ${gain} ${from} → ${to}`,
     gainsUnchanged: "Las ganancias fueron idénticas a las del intento anterior.",
     tooManyChanges:
-      "Cambió más de una ganancia, así que esta comparación no te puede decir qué hizo cada cambio. Cambiá de a una.",
+      "Cambió más de una ganancia, así que esta comparación no puede atribuir el efecto de cada cambio. Modifica una por vez.",
   },
 };

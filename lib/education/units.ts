@@ -29,7 +29,7 @@ export function marginToMillimetres(
 /**
  * Residence time at the current inventory and outflow: the quantity separation
  * actually depends on. Returns null when nothing is leaving, because a vessel with
- * no outflow does not have a meaningful residence time — it has a filling time.
+ * no outflow does not have a meaningful residence time; it has a filling time.
  */
 export function residenceTimeMinutes(
   liquidVolumeM3: number,

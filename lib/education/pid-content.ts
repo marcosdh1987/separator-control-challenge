@@ -68,17 +68,17 @@ const REFERENCE_ENTRIES: readonly Reference[] = [
   },
   {
     id: "control-tutorials-pid",
-    title: "Control Tutorials for MATLAB and Simulink — PID",
+    title: "Control Tutorials for MATLAB and Simulink: PID",
     url: "https://ctms.engin.umich.edu/CTMS/index.php?example=Introduction&section=ControlPID",
   },
   {
     id: "mathworks-pid-tuning",
-    title: "MathWorks — PID Controller Tuning",
+    title: "MathWorks: PID Controller Tuning",
     url: "https://www.mathworks.com/help/control/pid-controller-design.html",
   },
   {
     id: "controlguru-pid",
-    title: "ControlGuru — PID Control",
+    title: "ControlGuru: PID Control",
     url: "https://controlguru.com/",
   },
   {

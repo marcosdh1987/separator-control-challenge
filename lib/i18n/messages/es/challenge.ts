@@ -32,7 +32,7 @@ export const challenge: ChallengeMessages = {
   scoreSummary: {
     notStarted: "Sin iniciar",
     preparing: "Preparando un intento nuevo…",
-    closed: "Puntaje final cerrado: reiniciá para otro intento",
+    closed: "Puntaje final cerrado: reinicia para otro intento",
     calculating: "Calculando el puntaje final determinista…",
     unavailable: "Puntaje final no disponible",
     pending: "El puntaje final determinista se calcula al terminar el intento",
@@ -66,9 +66,9 @@ export const challenge: ChallengeMessages = {
 
   scenarioSelector: {
     eyebrow: "Mazo de desafíos",
-    legend: "Elegí un escenario de perturbación",
+    legend: "Elige un escenario de perturbación",
     groupLabel: (difficulty) => `Escenarios ${difficulty.toLocaleLowerCase("es")}`,
-    startHere: "Empezá acá",
+    startHere: "Empieza aquí",
   },
 
   difficulty: {
@@ -95,7 +95,7 @@ export const challenge: ChallengeMessages = {
     shutWell: "Cerrar pozo",
     wellHint: "Cerrar el pozo en plena corrida es el ejercicio clásico: los lazos tienen que cerrar sus válvulas antes de que el recipiente se vacíe.",
     speedLegend: "Velocidad de reproducción",
-    configureHint: "Configurá los dos controladores antes de arrancar. Las ganancias quedan bloqueadas durante el intento.",
+    configureHint: "Configura los dos controladores antes de comenzar. Las ganancias quedan bloqueadas durante el intento.",
   },
 
   controller: {

@@ -7,43 +7,44 @@ import type {
 import type { PidPresetId, TourTargetId } from "@/lib/onboarding/types";
 import type { PhaseId } from "@/lib/simulation/types";
 
-/** Río de la Plata Spanish, voseo for every instruction given to the trainee. */
+/** Neutral Latin American Spanish, professional register, for every instruction given to the trainee. */
 export const onboarding: OnboardingMessages = {
   quickStart: {
     eyebrow: "Primera visita a la sala de control",
     title: "Tu misión",
     startGuidedTour: "Empezar la visita guiada",
-    skipAndPlay: "Saltear y jugar",
+    skipAndPlay: "Omitir e ir al simulador",
     dontShowAgain: "No mostrar de nuevo",
   },
 
   mission: {
     objective:
-      "Mantené el nivel total cerca del 50% y la interfase petróleo/agua cerca del 20% mientras el proceso se perturba.",
+      "Mantén el nivel total cerca del 50% y la interfase petróleo/agua cerca del 20% mientras el proceso se perturba.",
     valve: {
       oil: {
         term: "Válvula de petróleo LV-101",
-        definition: "Saca petróleo para corregir el nivel total de líquido.",
+        definition: "Extrae petróleo para corregir el nivel total de líquido.",
       },
       water: {
         term: "Válvula de agua WV-101",
-        definition: "Saca agua para corregir la interfase.",
+        definition: "Extrae agua para corregir la interfase.",
       },
     } satisfies Record<PhaseId, MissionValveCopy>,
-    gainsLockNote: "Las ganancias se bloquean al iniciar el intento, así que sintonizá antes de correr.",
-    howToPlayLabel: "Cómo se juega",
+    gainsLockNote:
+      "Las ganancias se bloquean al iniciar el intento, así que sintoniza antes de correr.",
+    howToPlayLabel: "Cómo funciona",
     howToPlaySteps: [
-      "Elegí un escenario.",
-      "Ajustá las ganancias del PID.",
-      "Iniciá el intento.",
-      "Seguí los niveles, las válvulas y la seguridad.",
-      "Volvé a intentar con lo que aprendiste.",
+      "Elige un escenario.",
+      "Ajusta las ganancias del PID.",
+      "Inicia el intento.",
+      "Sigue los niveles, las válvulas y la seguridad.",
+      "Vuelve a intentar con lo que aprendiste.",
     ],
   },
 
   tour: {
     eyebrow: "Guía de sala de control",
-    skip: "Saltear",
+    skip: "Omitir",
     back: "Atrás",
     next: "Siguiente",
     finish: "Finalizar",
@@ -52,37 +53,37 @@ export const onboarding: OnboardingMessages = {
       "scenario-selector": {
         title: "Selector de escenario",
         description:
-          "Elegí una perturbación. El escalón de alimentación es un buen primer desafío puntuado.",
+          "Elige una perturbación. El escalón de alimentación es un buen primer desafío puntuado.",
       },
       "total-pid": {
         title: "PID de nivel total",
         description:
-          "Este controlador mueve la válvula de petróleo. Más apertura saca más petróleo y baja el nivel total.",
+          "Este controlador mueve la válvula de petróleo. Más apertura extrae más petróleo y baja el nivel total.",
       },
       "interface-pid": {
         title: "PID de interfase",
         description:
-          "Este controlador mueve la válvula de agua. Más apertura saca más agua y baja la interfase.",
+          "Este controlador mueve la válvula de agua. Más apertura extrae más agua y baja la interfase.",
       },
       "manual-pid-tuning": {
         title: "Sintonía manual del PID",
         description:
-          "Repetí el mismo escenario determinista y la misma semilla. Poné Ki = 0 y Kd = 0. Empezá sintonizando solo la acción proporcional. Dejá correr la recuperación completa antes de comparar un cambio.",
+          "Repite el mismo escenario determinista y la misma semilla. Fija Ki = 0 y Kd = 0. Empieza sintonizando solo la acción proporcional. Deja correr la recuperación completa antes de comparar un cambio.",
       },
       "start-attempt": {
         title: "Iniciar el intento",
         description:
-          "Arrancá solo cuando tu sintonía esté lista. Las ganancias PID quedan bloqueadas mientras dura el intento.",
+          "Comienza solo cuando tu sintonía esté lista. Las ganancias PID quedan bloqueadas mientras dura el intento.",
       },
       "process-view": {
         title: "Vista del proceso",
         description:
-          "Mirá juntos el nivel total, la interfase petróleo/agua, la posición de las válvulas y la envolvente de seguridad.",
+          "Observa en conjunto el nivel total, la interfase petróleo/agua, la posición de las válvulas y la envolvente de seguridad.",
       },
       "live-trends": {
         title: "Tendencias en vivo",
         description:
-          "Usá las tendencias para distinguir una recuperación rápida de una oscilación, una saturación o una deriva.",
+          "Usa las tendencias para distinguir una recuperación rápida de una oscilación, una saturación o una deriva.",
       },
       "score-safety": {
         title: "Puntaje y seguridad",

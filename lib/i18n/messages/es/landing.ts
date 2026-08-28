@@ -13,9 +13,9 @@ export const landing: LandingMessages = {
 
   hero: {
     eyebrow: "Separador trifásico / briefing del operador",
-    headline: "¿Podés mantener estable un separador trifásico?",
+    headline: "¿Puedes mantener estable un separador trifásico?",
     description:
-      "Sintonizá dos lazos de control PID, superá perturbaciones realistas de ensayo de pozo y mantené el proceso dentro de su envolvente segura de operación.",
+      "Sintoniza dos lazos de control PID, supera perturbaciones realistas de ensayo de pozo y mantén el proceso dentro de su envolvente segura de operación.",
     visualLabel: "Presentación estática del separador",
     visualTag: "SEP-101 / OPERACIÓN NORMAL / VISUAL EN REPOSO",
   },
@@ -29,16 +29,16 @@ export const landing: LandingMessages = {
     label: "Briefing del desafío",
     steps: [
       {
-        title: "Sintonizá",
-        description: "Ajustá las ganancias PID de petróleo y agua antes de que llegue la perturbación.",
+        title: "Sintoniza",
+        description: "Ajusta las ganancias PID de petróleo y agua antes de que llegue la perturbación.",
       },
       {
-        title: "Sobreviví",
-        description: "Leé los inventarios acoplados y sostené la envolvente de seguridad.",
+        title: "Resiste",
+        description: "Lee los inventarios acoplados y sostén la envolvente de seguridad.",
       },
       {
-        title: "Sumá puntaje",
-        description: "Terminá un intento determinístico e inspeccioná la respuesta del control.",
+        title: "Suma puntaje",
+        description: "Completa un intento determinista e inspecciona la respuesta del control.",
       },
     ] satisfies readonly BriefingStep[],
     controlNote: {
@@ -46,13 +46,13 @@ export const landing: LandingMessages = {
       title: "Dos válvulas, dos inventarios acoplados.",
       oilValve: "La válvula de salida de petróleo controla el nivel total de líquido.",
       waterValve: "La válvula de salida de agua controla la interfase petróleo/agua.",
-      goal: "Mantené el nivel total cerca del 50%, la interfase cerca del 20% y protegé la envolvente de operación.",
+      goal: "Mantén el nivel total cerca del 50%, la interfase cerca del 20% y protege la envolvente de operación.",
     },
   },
 
   training: {
     eyebrow: "Entrenamiento guiado",
     headline: "El entrenamiento guiado está en preparación.",
-    description: "Aprendé los controles del separador paso a paso antes de encarar un desafío puntuado.",
+    description: "Aprende los controles del separador paso a paso antes de encarar un desafío puntuado.",
   },
 };

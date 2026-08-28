@@ -12,8 +12,8 @@ una capacitación interna, o acompañando a alguien que aprende por su cuenta.
 Es un **entorno de entrenamiento**. Sirve para que alguien vea por qué un lazo se
 comporta como se comporta, y para que llegue a una falla sin consecuencias. El
 comportamiento transfiere; los números no. No sirve para dimensionar, ni para
-decidir una sintonía real, ni para nada relacionado con seguridad. Eso está dicho sin
-vueltas en el [model card](model-card.md), y conviene decirlo también en voz alta al
+decidir una sintonía real, ni para nada relacionado con seguridad. Eso está dicho de forma
+explícita en el [model card](model-card.md), y conviene decirlo también en voz alta al
 empezar: un alumno que cree que está viendo su separador va a sacar conclusiones
 equivocadas.
 
@@ -35,7 +35,7 @@ Siete lecciones, unos 110 minutos en total (con llenados incluidos). Cada una a�
 | 4 | Interfase ruidosa | La derivativa amplifica ruido y gasta válvula | Sensor de interfase ruidoso | 15 |
 | 5 | Slugs | La realimentación siempre llega tarde; usar el volumen | Slug con alto corte de agua | 20 |
 | 6 | El tercer lazo | Presión: escala de tiempo y acople entre lazos | Salto de GOR | 20 |
-| 7 | Sintonizar con método | Procedimiento, y un canje que hay que defender | Restricción en la salida | 18 |
+| 7 | Sintonizar con método | Procedimiento, y un compromiso que hay que defender | Restricción en la salida | 18 |
 
 La lección 1 ahora enseña la puesta en marcha completa: recipiente vacío, apertura del pozo con
 su rampa de alimentación (15 segundos), las válvulas cerradas durante el llenado hasta que los
@@ -59,32 +59,32 @@ para proyectar mientras la clase mira.
 
 Una secuencia que funciona:
 
-1. Leé la teoría con el grupo. Son cuatro o cinco párrafos, no más.
-2. Ocultá la tarea y preguntá qué creen que va a pasar. Que se comprometan con una
+1. Lee la teoría con el grupo. Son cuatro o cinco párrafos, no más.
+2. Oculta la tarea y pregunta qué creen que va a pasar. Que se comprometan con una
    predicción antes de ver el resultado.
-3. Revelá la tarea y corré el escenario una vez, con la sintonía que viene puesta.
+3. Revela la tarea y ejecuta el escenario una vez, con la sintonía que viene puesta.
 4. Que cada uno lo intente en su máquina. El cierre les dice qué se midió y contra qué.
 5. Comparen resultados. La conversación interesante casi nunca es quién sacó más
-   puntaje, sino qué canje eligió cada uno.
+   puntaje, sino qué compromiso eligió cada uno.
 
 ### Control de pozo durante la corrida
 
 En cualquier corrida en vivo el operador puede abrir o cerrar el pozo con el botón
 **"Abrir pozo / Cerrar pozo"** de la consola. Es el ejercicio clásico de well
-testing: si el pozo empieza a producir de forma anormal, lo cerrás y dejás que el
-separador se recupere. La pregunta que el ejercicio hace es concreta: **con esta
+testing: si el pozo empieza a producir de forma anormal, se cierra el pozo y se deja
+que el separador se recupere. La pregunta que el ejercicio hace es concreta: **con esta
 sintonía, ¿las válvulas cierran a tiempo, o el recipiente se vacía hasta el disparo
 por nivel bajo?**
 
 Con los lazos bien sintonizados, las dos válvulas de líquido acompañan la caída y
-cierran antes de que el nivel llegue al disparo — que a esa altura ya está armado,
+cierran antes de que el nivel llegue al disparo, que a esa altura ya está armado,
 porque el recipiente ya operó en su rango normal. Con una sintonía floja, los lazos
 llegan tarde. Es una prueba mejor que cualquier puntaje, y dura treinta segundos.
 
 ## Los números que reporta el cierre
 
 El cierre no dice "bien" o "mal": dice qué se midió y contra qué límite. Los límites
-no son inventados — se fijaron corriendo el simulador con distintas sintonías y
+no son inventados: se fijaron corriendo el simulador con distintas sintonías y
 eligiendo el valor que separa "hizo lo que la lección enseña" de "no lo hizo". Los
 comentarios en `lib/training/lessons.ts` dejan por escrito la medición detrás de cada
 umbral.
@@ -92,13 +92,13 @@ umbral.
 Dos criterios merecen explicación en clase:
 
 - **Error de seguimiento (IAE)**: la integral del error absoluto. Un número más
-  chico es mejor seguimiento, pero por sí solo no dice nada del costo.
+  bajo indica mejor seguimiento, pero por sí solo no dice nada del costo.
 - **Recorrido de válvula**: cuánto se movió el actuador en total. Es el costo. En la
-  lección 4 se ve clarísimo: con derivativa alta el error no mejora nada y el
+  lección 4 se ve con claridad: con derivativa alta el error no mejora nada y el
   recorrido se multiplica por seis.
 
 Si un alumno pregunta por qué la lección 7 no califica el recorrido: porque en ese
-escenario el recorrido no discrimina — ninguna sintonía razonable lo dispara. Un
+escenario el recorrido no discrimina: ninguna sintonía razonable lo dispara. Un
 criterio que no puede fallar no es un criterio, y preferimos no fingir que lo es.
 
 ## Recolectar resultados
@@ -106,8 +106,8 @@ criterio que no puede fallar no es un criterio, y preferimos no fingir que lo es
 El progreso se guarda **solo en el navegador de cada persona** y no se envía a ningún
 lado. La aplicación no tiene backend ni telemetría.
 
-Si querés juntar resultados, pediles que usen **Exportar progreso** en la página del
-curso. Baja un JSON chico con, por lección: intentos, si la aprobaron, mejor puntaje,
+Para reunir resultados, pide a los alumnos que usen **Exportar progreso** en la página
+del curso. Descarga un JSON pequeño con, por lección: intentos, si la aprobaron, mejor puntaje,
 tiempo hasta el primer intento y tiempo hasta aprobar.
 
 El tiempo hasta el primer intento es el más interesante de los cuatro: mide cuánto
@@ -122,11 +122,11 @@ instrumentos (LT-101, PIC-101) no se traducen, porque en el campo tampoco.
 
 ## Antes de la clase
 
-- Probá el recorrido completo una vez en la máquina que vas a usar. La vista 3D
+- Prueba el recorrido completo una vez en la máquina que vas a usar. La vista 3D
   necesita WebGL; si no está disponible, la aplicación cae sola al diagrama, pero
   mejor saberlo antes.
-- Si vas a proyectar, entrá al modo presentación y verificá que se lea desde el fondo
+- Si vas a proyectar, entra al modo presentación y verifica que se lea desde el fondo
   del aula.
-- Si el grupo es de operadores con experiencia, arrancá por la notación: el selector
+- Si el grupo es de operadores con experiencia, comienza por la notación: el selector
   **BP / Ti / Td** muestra las mismas ganancias como las ve un panel de campo, y eso
   suele ordenar la conversación desde el primer minuto.

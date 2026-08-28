@@ -116,7 +116,7 @@ export const simulation = {
 
   safetyCondition: {
     "normal": "Normal operating envelope",
-    "startup": "Filling — low-level protection bypassed",
+    "startup": "Filling: low-level protection bypassed",
     "pressure-low-low": "Pressure low-low trip",
     "pressure-low": "Pressure low alarm",
     "pressure-high": "Pressure high alarm",

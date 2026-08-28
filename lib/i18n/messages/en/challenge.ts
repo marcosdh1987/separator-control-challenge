@@ -32,7 +32,7 @@ export const challenge = {
   scoreSummary: {
     notStarted: "Not started",
     preparing: "Preparing a fresh attempt…",
-    closed: "Final score closed — reset to start another attempt",
+    closed: "Final score closed: reset to start another attempt",
     calculating: "Calculating final deterministic score…",
     unavailable: "Final score unavailable",
     pending: "Final deterministic score calculated when the attempt ends",

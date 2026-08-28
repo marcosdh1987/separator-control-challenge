@@ -52,7 +52,7 @@ describe("landing page", () => {
   it("renders the mission, call to action, and control note in Spanish", () => {
     renderWithLocale(<LandingPage />, { locale: "es" });
 
-    expect(screen.getByRole("heading", { name: "¿Podés mantener estable un separador trifásico?" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "¿Puedes mantener estable un separador trifásico?" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Empezar el entrenamiento guiado" })).toHaveAttribute("href", "/training");
     expect(screen.getByText("La válvula de salida de agua controla la interfase petróleo/agua.")).toBeVisible();
   });
