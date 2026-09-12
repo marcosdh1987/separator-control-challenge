@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { MESSAGES } from "@/lib/i18n/messages";
 import { runToEnd } from "@/lib/simulation/engine";
 import { getScenario } from "@/lib/simulation/scenarios";
 import {
@@ -9,7 +10,7 @@ import {
 } from "@/lib/simulation/types";
 import { buildAttemptEvidence, gradeAttempt } from "./grading";
 import { LESSON_LIST, getLesson, nextLessonId } from "./lessons";
-import { LESSON_IDS, type Lesson } from "./types";
+import { LESSON_IDS, LESSON_VISUAL_KINDS, type Lesson } from "./types";
 
 /** Runs a lesson's exercise with a given tuning and grades the attempt. */
 function attempt(lesson: Lesson, pid: DualPidConfig) {
@@ -39,6 +40,16 @@ describe("lesson catalogue", () => {
       if (lesson.successCriteria.maximumPressureIae !== undefined) {
         expect(lesson.exercise.gasEnabled).toBe(true);
       }
+    }
+  });
+
+  it("provides a visual kind and localized accessible text for every lesson", () => {
+    const supportedKinds = new Set<string>(LESSON_VISUAL_KINDS);
+
+    for (const lesson of LESSON_LIST) {
+      expect(supportedKinds.has(lesson.visualKind)).toBe(true);
+      expect(MESSAGES.en.training.lesson[lesson.id].visualAlt.trim()).not.toBe("");
+      expect(MESSAGES.es.training.lesson[lesson.id].visualAlt.trim()).not.toBe("");
     }
   });
 });

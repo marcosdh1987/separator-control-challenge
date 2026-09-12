@@ -3,9 +3,19 @@ import {
   DEFAULT_PID,
   DEFAULT_PRESSURE_PID,
 } from "@/lib/simulation/types";
-import { LESSON_IDS, type Lesson, type LessonId } from "./types";
+import { LESSON_IDS, type Lesson, type LessonId, type LessonVisualKind } from "./types";
 
 const pid = (overrides: Partial<typeof DEFAULT_PID> = {}) => ({ ...DEFAULT_PID, ...overrides });
+
+const LESSON_VISUAL_BY_ID = {
+  "what-is-a-separator": "separator",
+  "level-and-proportional-action": "proportional-action",
+  "integral-action-and-windup": "integral-windup",
+  "interface-noise-and-derivative": "interface-noise",
+  "slugs-and-the-limits-of-feedback": "slug-feedback",
+  "the-third-loop-pressure": "pressure-loop",
+  "systematic-tuning": "systematic-tuning",
+} as const satisfies Record<LessonId, LessonVisualKind>;
 
 /**
  * The curriculum. Each lesson isolates one idea and gives it a scenario that
@@ -22,6 +32,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "what-is-a-separator",
     level: "foundation",
     estimatedMinutes: 6,
+    visualKind: LESSON_VISUAL_BY_ID["what-is-a-separator"],
     exercise: {
       scenarioId: "normal",
       gasEnabled: false,
@@ -35,6 +46,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "level-and-proportional-action",
     level: "foundation",
     estimatedMinutes: 10,
+    visualKind: LESSON_VISUAL_BY_ID["level-and-proportional-action"],
     exercise: {
       scenarioId: "feed-step",
       gasEnabled: false,
@@ -53,6 +65,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "integral-action-and-windup",
     level: "practice",
     estimatedMinutes: 12,
+    visualKind: LESSON_VISUAL_BY_ID["integral-action-and-windup"],
     exercise: {
       scenarioId: "feed-step",
       gasEnabled: false,
@@ -79,6 +92,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "interface-noise-and-derivative",
     level: "practice",
     estimatedMinutes: 12,
+    visualKind: LESSON_VISUAL_BY_ID["interface-noise-and-derivative"],
     exercise: {
       scenarioId: "noisy-interface",
       gasEnabled: false,
@@ -100,6 +114,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "slugs-and-the-limits-of-feedback",
     level: "advanced",
     estimatedMinutes: 15,
+    visualKind: LESSON_VISUAL_BY_ID["slugs-and-the-limits-of-feedback"],
     exercise: {
       scenarioId: "water-rich-slug",
       gasEnabled: false,
@@ -114,6 +129,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "the-third-loop-pressure",
     level: "advanced",
     estimatedMinutes: 15,
+    visualKind: LESSON_VISUAL_BY_ID["the-third-loop-pressure"],
     exercise: {
       scenarioId: "gor-surge",
       gasEnabled: true,
@@ -138,6 +154,7 @@ const LESSONS: Record<LessonId, Lesson> = {
     id: "systematic-tuning",
     level: "advanced",
     estimatedMinutes: 18,
+    visualKind: LESSON_VISUAL_BY_ID["systematic-tuning"],
     exercise: {
       scenarioId: "oil-outlet-restriction",
       gasEnabled: false,

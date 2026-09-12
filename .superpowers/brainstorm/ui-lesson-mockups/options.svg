@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="980" viewBox="0 0 1440 980" role="img" aria-labelledby="title desc">
+  <title id="title">Mockups for collapsible lesson theory</title>
+  <desc id="desc">Two dark training lesson interface options. Option A keeps the illustration visible inside a collapsible panel. Option B keeps a compact illustration thumbnail visible beside the collapsed panel.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#07161a"/><stop offset="1" stop-color="#0d252b"/></linearGradient>
+    <linearGradient id="vessel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#214b55"/><stop offset="1" stop-color="#142f38"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity=".24"/></filter>
+    <style>
+      .sans{font-family:Inter,ui-sans-serif,system-ui,sans-serif}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.text{fill:#d8f3f0}.muted{fill:#91b3b6}.cyan{fill:#78e8dc}.amber{fill:#ffb45c}.tiny{font-size:12px;letter-spacing:.12em;text-transform:uppercase}.body{font-size:15px;line-height:1.5}.panel{fill:#091e23;stroke:#2b6066;stroke-width:1}.line{stroke:#35545c;stroke-width:5;stroke-linecap:round}.thin{stroke:#78e8dc;stroke-width:2;stroke-dasharray:7 7;fill:none}.border{stroke:#78e8dc;stroke-opacity:.22;fill:none}
+    </style>
+  </defs>
+  <rect width="1440" height="980" fill="url(#bg)"/>
+  <text x="72" y="62" class="sans tiny cyan">MOCKUPS · ANTES DE EMPEZAR</text>
+  <text x="72" y="104" class="sans text" font-size="30" font-weight="700">La teoría se puede consultar sin competir con el simulador</text>
+  <text x="72" y="137" class="sans muted" font-size="16">Ambas opciones dejan una imagen persistente cuando el texto queda minimizado.</text>
+
+  <!-- OPTION A -->
+  <g transform="translate(72 188)" filter="url(#shadow)">
+    <rect width="620" height="720" rx="20" class="panel"/>
+    <text x="28" y="42" class="sans cyan tiny">OPCIÓN A</text>
+    <text x="28" y="76" class="sans text" font-size="22" font-weight="700">Imagen dentro del panel</text>
+    <text x="28" y="104" class="sans muted" font-size="14">La ilustración se mantiene visible al colapsar.</text>
+    <rect x="28" y="132" width="564" height="260" rx="14" fill="#07171b" stroke="#24484e"/>
+    <!-- separator illustration -->
+    <g transform="translate(103 170)">
+      <path d="M70 55 Q70 22 105 22 H348 Q383 22 383 55 V170 Q383 203 348 203 H105 Q70 203 70 170 Z" fill="url(#vessel)" stroke="#91b3b6" stroke-width="3"/>
+      <path d="M70 125 H383 V170 Q383 203 348 203 H105 Q70 203 70 170Z" fill="#1c8fa8" fill-opacity=".78"/>
+      <path d="M70 92 H383 V125 H70Z" fill="#c4802f" fill-opacity=".82"/>
+      <path d="M70 92 H383 M70 125 H383" class="thin"/>
+      <text x="302" y="54" class="sans text" font-size="11" font-weight="700">GAS</text>
+      <text x="305" y="113" class="sans text" font-size="11" font-weight="700">OIL</text>
+      <text x="294" y="166" class="sans text" font-size="11" font-weight="700">WATER</text>
+      <path d="M8 112 H70" class="line"/><path d="M383 149 H440" class="line"/><path d="M383 80 H440" class="line"/>
+      <path d="M440 80 v-24 h42" class="line"/><path d="M440 149 v24 h42" class="line"/>
+      <circle cx="458" cy="56" r="13" fill="#091e23" stroke="#ffb45c" stroke-width="2"/><circle cx="458" cy="173" r="13" fill="#091e23" stroke="#ffb45c" stroke-width="2"/>
+      <text x="426" y="34" class="mono amber" font-size="11">PCV-101</text><text x="426" y="205" class="mono amber" font-size="11">LCV-101</text>
+      <text x="0" y="102" class="mono muted" font-size="11">WELL</text>
+    </g>
+    <rect x="28" y="416" width="564" height="206" rx="14" fill="#0d292f" stroke="#35545c"/>
+    <g transform="translate(50 444)">
+      <circle cx="14" cy="14" r="14" fill="#78e8dc" fill-opacity=".13" stroke="#78e8dc"/><path d="M14 7v14M7 14h14" stroke="#78e8dc" stroke-width="2"/>
+      <text x="40" y="20" class="sans text" font-size="17" font-weight="700">Antes de empezar</text>
+      <text x="500" y="20" text-anchor="end" class="sans cyan" font-size="13">Ocultar teoría⌃</text>
+      <text x="0" y="60" class="sans muted body">Un separador mantiene el fluido quieto para que la gravedad</text>
+      <text x="0" y="84" class="sans muted body">separe gas, petróleo y agua. El nivel protege el tiempo de</text>
+      <text x="0" y="108" class="sans muted body">residencia y conserva el sello de líquido en las salidas.</text>
+      <rect x="0" y="132" width="500" height="44" rx="8" fill="#ffb45c" fill-opacity=".08"/>
+      <text x="16" y="159" class="sans amber" font-size="13">Desde el campo · El número protege un proceso, no al revés.</text>
+    </g>
+    <rect x="28" y="650" width="564" height="44" rx="10" fill="#07171b" stroke="#24484e"/>
+    <text x="50" y="678" class="sans text" font-size="15" font-weight="700">Tu tarea</text><text x="570" y="678" text-anchor="end" class="sans cyan" font-size="13">3 pasos</text>
+  </g>
+
+  <!-- OPTION B -->
+  <g transform="translate(748 188)" filter="url(#shadow)">
+    <rect width="620" height="720" rx="20" class="panel"/>
+    <text x="28" y="42" class="sans cyan tiny">OPCIÓN B</text>
+    <text x="28" y="76" class="sans text" font-size="22" font-weight="700">Miniatura persistente</text>
+    <text x="28" y="104" class="sans muted" font-size="14">Más compacto cuando se colapsa, con acceso a ampliar.</text>
+    <rect x="28" y="132" width="564" height="260" rx="14" fill="#07171b" stroke="#24484e"/>
+    <g transform="translate(103 170)">
+      <path d="M70 55 Q70 22 105 22 H348 Q383 22 383 55 V170 Q383 203 348 203 H105 Q70 203 70 170 Z" fill="url(#vessel)" stroke="#91b3b6" stroke-width="3"/>
+      <path d="M70 125 H383 V170 Q383 203 348 203 H105 Q70 203 70 170Z" fill="#1c8fa8" fill-opacity=".78"/>
+      <path d="M70 92 H383 V125 H70Z" fill="#c4802f" fill-opacity=".82"/>
+      <path d="M70 92 H383 M70 125 H383" class="thin"/>
+      <text x="302" y="54" class="sans text" font-size="11" font-weight="700">GAS</text><text x="305" y="113" class="sans text" font-size="11" font-weight="700">OIL</text><text x="294" y="166" class="sans text" font-size="11" font-weight="700">WATER</text>
+      <path d="M8 112 H70" class="line"/><path d="M383 149 H440" class="line"/><path d="M383 80 H440" class="line"/>
+      <path d="M440 80 v-24 h42" class="line"/><path d="M440 149 v24 h42" class="line"/>
+      <circle cx="458" cy="56" r="13" fill="#091e23" stroke="#ffb45c" stroke-width="2"/><circle cx="458" cy="173" r="13" fill="#091e23" stroke="#ffb45c" stroke-width="2"/>
+      <text x="426" y="34" class="mono amber" font-size="11">PCV-101</text><text x="426" y="205" class="mono amber" font-size="11">LCV-101</text><text x="0" y="102" class="mono muted" font-size="11">WELL</text>
+    </g>
+    <rect x="28" y="416" width="564" height="96" rx="14" fill="#0d292f" stroke="#35545c"/>
+    <g transform="translate(44 430)">
+      <rect width="100" height="68" rx="9" fill="#07171b" stroke="#35545c"/>
+      <path d="M20 28 Q20 14 32 14 H76 Q88 14 88 28 V48 Q88 58 76 58 H32 Q20 58 20 48 Z" fill="#214b55" stroke="#91b3b6" stroke-width="1.5"/><path d="M20 40 H88 V48 Q88 58 76 58 H32 Q20 58 20 48Z" fill="#1c8fa8" fill-opacity=".78"/><path d="M20 34 H88 V40 H20Z" fill="#c4802f" fill-opacity=".82"/>
+    </g>
+    <text x="164" y="448" class="sans text" font-size="17" font-weight="700">Antes de empezar</text>
+    <text x="164" y="476" class="sans muted" font-size="14">La teoría está minimizada para dejar más espacio.</text>
+    <text x="546" y="448" text-anchor="end" class="sans cyan" font-size="13">Leer teoría →</text>
+    <rect x="28" y="536" width="564" height="158" rx="14" fill="#091e23" stroke="#24484e"/>
+    <text x="52" y="574" class="sans text" font-size="17" font-weight="700">Tu tarea</text><text x="568" y="574" text-anchor="end" class="sans cyan" font-size="13">3 pasos⌄</text>
+    <text x="52" y="612" class="sans muted" font-size="14">1 · Presiona Iniciar y observa el llenado.</text>
+    <text x="52" y="638" class="sans muted" font-size="14">2 · Observa cuándo comienza a abrir la válvula.</text>
+    <text x="52" y="664" class="sans muted" font-size="14">3 · Deja que el proceso se estabilice.</text>
+  </g>
+
+  <text x="72" y="944" class="sans muted" font-size="14">Recomendación preliminar: Opción A en escritorio; en móvil la imagen puede reducirse a una banda visual compacta.</text>
+</svg>

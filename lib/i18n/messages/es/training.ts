@@ -6,6 +6,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
     title: "Qué hace un separador trifásico",
     summary:
       "Arranque en frío: llenar el recipiente, observar cómo los lazos toman el control y entender qué protegen.",
+    visualAlt: "Diagrama de un separador horizontal con gas sobre petróleo y agua, con válvulas de entrada y salida.",
     theory: [
       "Un separador es un recipiente a presión cuya función es retener la corriente del pozo el tiempo suficiente para que la gravedad separe las fases por diferencia de densidad: el gas asciende, el petróleo flota sobre el agua y el agua decanta. Los internos del recipiente existen para proteger ese proceso de asentamiento.",
       "La variable que gobierna la separación es el tiempo de residencia: el tiempo que el fluido permanece dentro del recipiente, igual al volumen ocupado dividido por el caudal. Un crudo liviano en un recipiente templado puede requerir de tres a cinco minutos; un crudo pesado y frío, de veinte a treinta. Si el caudal de entrada aumenta, el tiempo de residencia disminuye, las gotas dispersas no alcanzan a migrar hacia su propia fase y la eficiencia de separación se degrada con rapidez.",
@@ -34,6 +35,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "level-and-proportional-action": {
     title: "La acción proporcional y el offset que deja",
     summary: "La alimentación sube en escalón. El control proporcional responde, pero nunca por completo.",
+    visualAlt: "Gráfico de respuesta donde el control proporcional se estabiliza por debajo del setpoint después de un escalón de alimentación.",
     theory: [
       "La acción proporcional mueve la válvula en proporción al error presente, la diferencia entre la variable de proceso (PV) y el setpoint (SP). El doble de error produce el doble de corrección. Es la componente más rápida y directa del controlador, y la primera que se percibe al aumentar la ganancia.",
       "También es incapaz de completar la tarea. Un controlador proporcional solo genera corrección mientras existe error: en cuanto el nivel regresa al setpoint, la apertura adicional desaparece. Si la alimentación quedó permanentemente más alta que antes, la válvula debe permanecer más abierta, y la única forma en que este controlador puede sostener esa apertura es conservar un error permanente.",
@@ -58,6 +60,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "integral-action-and-windup": {
     title: "La acción integral y el windup",
     summary: "Eliminar el offset sin pagarlo con sobrepaso.",
+    visualAlt: "Diagrama del término integral acumulándose mientras una válvula de salida permanece saturada.",
     theory: [
       "La acción integral acumula el error en el tiempo. Por pequeña que sea la diferencia restante, el integrador sigue sumando al comando de la válvula hasta que el error desaparece. Eso es lo que elimina el offset que deja la acción proporcional.",
       "El costo es tiempo. El integrador solo conoce el historial del proceso, no su tendencia, de modo que sigue empujando cuando el nivel ya está regresando. Con demasiada acción integral, el nivel supera el setpoint y debe ser traído de vuelta: eso es el sobrepaso (overshoot).",
@@ -83,6 +86,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "interface-noise-and-derivative": {
     title: "Una interfase ruidosa y el efecto de la acción derivativa",
     summary: "La derivativa anticipa. Sobre una medición ruidosa, amplifica el ruido.",
+    visualAlt: "Una señal ruidosa de la interfase petróleo-agua que provoca movimientos rápidos de la válvula de agua.",
     theory: [
       "La interfase petróleo/agua es la medición más difícil del recipiente. La frontera entre fases no es una línea definida: el instrumento ve una banda de transición más que un nivel.",
       "La acción derivativa responde a la velocidad de cambio de la medición, lo que le permite iniciar la corrección antes de que el error crezca. Sobre una medición limpia, esa anticipación es genuinamente útil.",
@@ -109,6 +113,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "slugs-and-the-limits-of-feedback": {
     title: "Slugs y los límites de la realimentación",
     summary: "Un controlador reactivo siempre llega tarde. Aprende a administrar esa limitación.",
+    visualAlt: "Un slug de líquido entrando al separador y consumiendo el volumen de amortiguación disponible.",
     theory: [
       "Un slug (tapón de líquido) es un volumen de líquido que llega de una sola vez, acumulado en la línea de producción, y no el resultado del caudal promedio del pozo. La alimentación total salta y el corte de agua, la fracción de agua en el líquido producido, salta con ella.",
       "El control por realimentación no puede anticipar. Un PID solo actúa sobre un error que ya se manifestó: cuando el nivel subió lo suficiente para comandar la apertura de la válvula, el slug ya está dentro del recipiente. Un controlador por realimentación siempre llega tarde a un slug, no por mala sintonía, sino por la naturaleza misma de la realimentación.",
@@ -133,6 +138,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "the-third-loop-pressure": {
     title: "El tercer lazo: presión e interacción entre lazos",
     summary: "La presión responde en segundos; el nivel, en minutos. Comparten un mismo recipiente.",
+    visualAlt: "La presión del domo de gas actuando sobre la válvula de salida de gas por encima de los niveles de líquido.",
     theory: [
       "Al activar el domo de gas aparece un tercer controlador: el de presión, que actúa sobre la válvula de salida de gas. El gas que libera la alimentación se acumula sobre el líquido y eleva la presión; abrir la válvula lo ventea.",
       "Lo primero que hay que conocer es la escala de tiempo. La presión responde en segundos donde el nivel tarda minutos. Ganancias que en un lazo de nivel resultan suaves aquí son agresivas; por eso este lazo parte con un Kp menor y sin acción derivativa.",
@@ -159,6 +165,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "systematic-tuning": {
     title: "Sintonizar desde cero, con método",
     summary: "Sin presets. Un procedimiento repetible y un compromiso que deberás justificar.",
+    visualAlt: "Una secuencia de sintonía desde la acción proporcional hasta la integral y la derivativa opcional, que termina en una respuesta estable.",
     theory: [
       "Todo lo anterior fue una idea por vez. Esto es el trabajo completo: un lazo sin sintonizar, una perturbación que no elegiste y un resultado que tienes que justificar.",
       "Usa un procedimiento, no la intuición. Define un experimento repetible para que dos corridas sean comparables. Fija Ki y Kd en cero. Aumenta Kp hasta que la respuesta sea rápida pero todavía estable. Agrega la Ki mínima necesaria para eliminar el offset. Incorpora Kd solo si la medición es limpia y la respuesta realmente requiere amortiguación adicional.",
@@ -210,6 +217,8 @@ export const training: TrainingMessages = {
 
   player: {
     theoryHeading: "Antes de empezar",
+    readTheory: "Leer teoría",
+    hideTheory: "Ocultar teoría",
     briefingHeading: "Tu tarea",
     fieldNoteHeading: "Desde el campo",
     runHeading: "El separador",

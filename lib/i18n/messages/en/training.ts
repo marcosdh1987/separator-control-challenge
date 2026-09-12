@@ -6,6 +6,8 @@ export interface LessonCopy {
   summary: string;
   /** Read before the exercise. Each entry is a paragraph. */
   theory: readonly string[];
+  /** Accessible description for the lesson's concept illustration. */
+  visualAlt: string;
   /** A short field note: something a reader would hear from an experienced hand. */
   fieldNote?: string;
   /** What to do in the simulator, as concrete steps. */
@@ -20,6 +22,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "what-is-a-separator": {
     title: "What a three-phase separator does",
     summary: "A cold start: fill the vessel, watch the loops take over, learn what they protect.",
+    visualAlt: "Diagram of a horizontal separator showing gas above oil and water, with inlet and outlet valves.",
     theory: [
       "A separator is a pressure vessel whose only job is to hold the well stream still long enough for gravity to do the work. Gas rises, oil floats, water settles. Everything else in the vessel exists to protect that.",
       "The controlling quantity is residence time: how long fluid stays inside, which is simply volume divided by flow. Light crude in a warm vessel may need three to five minutes; heavy, cold crude can need twenty to thirty. Raise the inlet flow and residence time falls, the dispersed droplets never reach their own phase, and separation efficiency drops sharply.",
@@ -48,6 +51,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "level-and-proportional-action": {
     title: "Proportional action, and the offset it leaves",
     summary: "The feed steps up. Proportional-only control answers, but never all the way.",
+    visualAlt: "Response chart showing proportional control settling below the setpoint after a feed step.",
     theory: [
       "Proportional action moves the valve in proportion to the error right now. Twice the error, twice the correction. It is fast and it is honest, and it is what you feel first when you turn up a controller.",
       "It also cannot finish the job. A proportional controller only produces a correction while an error exists, so the moment the level returns to setpoint the extra valve opening disappears. If the feed is permanently higher than before, the valve must sit permanently further open, and the only way this controller holds it there is to keep a permanent error.",
@@ -72,6 +76,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "integral-action-and-windup": {
     title: "Integral action, and how it gets stuck",
     summary: "Removing the offset without paying for it in overshoot.",
+    visualAlt: "Diagram of the integral term accumulating while an outlet valve remains saturated.",
     theory: [
       "Integral action accumulates error over time. However small the remaining gap is, the integrator keeps adding to the valve command until the gap is gone. That is what removes the offset proportional action leaves behind.",
       "It buys that with time. The integrator only knows where the process has been, not where it is going, so it keeps pushing after the level is already on its way back. Too much integral action and the level sails past setpoint and has to be pulled back: overshoot.",
@@ -97,6 +102,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "interface-noise-and-derivative": {
     title: "A noisy interface, and what derivative does to it",
     summary: "Derivative predicts. On a noisy measurement it mostly invents.",
+    visualAlt: "A noisy oil-water interface signal driving rapid movement of the water valve.",
     theory: [
       "The oil/water interface is the hardest measurement on the vessel. The boundary is not a clean line, and the instrument sees a band rather than a level.",
       "Derivative action responds to how fast the measurement is changing, which lets it start correcting before the error grows. On a clean measurement that is genuinely useful.",
@@ -123,6 +129,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "slugs-and-the-limits-of-feedback": {
     title: "Slugs, and the limits of feedback",
     summary: "A reactive controller always arrives late. Learn what to do about that.",
+    visualAlt: "A liquid slug entering the separator and consuming the available surge volume.",
     theory: [
       "A slug is a body of liquid that arrives all at once, from the pipeline rather than from the well's average rate. Total feed jumps and the water fraction jumps with it.",
       "Feedback control cannot anticipate. A PID only acts on error that has already appeared, so by the time the level has risen enough to command the valve open, the slug is already inside the vessel. A reactive controller is always late to a slug, not because it is badly tuned, but because of what feedback is.",
@@ -147,6 +154,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "the-third-loop-pressure": {
     title: "The third loop: pressure, and how loops interact",
     summary: "Pressure moves in seconds. Level moves in minutes. They share a vessel.",
+    visualAlt: "Gas-cap pressure acting on the gas outlet valve above the liquid levels.",
     theory: [
       "Switch the gas cap on and a third controller appears: pressure, acting on the gas outlet valve. Gas released by the feed collects above the liquid and raises pressure; opening the valve vents it away.",
       "The first thing to know is the timescale. Pressure responds in seconds where level takes minutes. Gains that feel gentle on a level loop are violent here, which is why this loop starts with a smaller Kp and no derivative at all.",
@@ -173,6 +181,7 @@ const LESSON_COPY: Record<LessonId, LessonCopy> = {
   "systematic-tuning": {
     title: "Tuning from scratch, systematically",
     summary: "No presets. A repeatable procedure, and a trade-off to defend.",
+    visualAlt: "A tuning sequence from proportional to integral to optional derivative action, ending in a stable response.",
     theory: [
       "Everything so far has been one idea at a time. This is the whole job: an untuned loop, a disturbance you did not choose, and a result you have to justify.",
       "Use a procedure rather than intuition. Establish a repeatable experiment so two runs can be compared at all. Set Ki and Kd to zero. Raise Kp until the response is fast but still calm. Add just enough Ki to remove the offset. Add Kd only if the measurement is clean and the response genuinely needs damping.",
@@ -224,6 +233,8 @@ export const training = {
 
   player: {
     theoryHeading: "Before you start",
+    readTheory: "Read theory",
+    hideTheory: "Hide theory",
     briefingHeading: "Your task",
     fieldNoteHeading: "From the field",
     runHeading: "The separator",

@@ -27,6 +27,18 @@ export const LESSON_IDS = [
 
 export type LessonLevel = "foundation" | "practice" | "advanced";
 
+export const LESSON_VISUAL_KINDS = [
+  "separator",
+  "proportional-action",
+  "integral-windup",
+  "interface-noise",
+  "slug-feedback",
+  "pressure-loop",
+  "systematic-tuning",
+] as const;
+
+export type LessonVisualKind = (typeof LESSON_VISUAL_KINDS)[number];
+
 /**
  * What the trainee has to achieve. Every field is optional so a lesson can be
  * pure reading, or can be scored on whichever evidence actually matters for it.
@@ -77,6 +89,7 @@ export interface Lesson {
   level: LessonLevel;
   /** Minutes a first-time reader should expect to spend. */
   estimatedMinutes: number;
+  visualKind: LessonVisualKind;
   exercise: LessonExercise;
   successCriteria: LessonSuccessCriteria;
 }

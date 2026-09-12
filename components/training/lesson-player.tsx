@@ -1,10 +1,11 @@
 "use client";
 
-import { BookOpen, CheckCircle2, ChevronLeft, HardHat, Presentation, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Presentation, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LessonRunner } from "./lesson-runner";
+import { LessonTheory } from "./lesson-theory";
 import { LanguageSwitcher } from "../language-switcher";
 import { useTrainingProgress } from "@/hooks/use-training-progress";
 import { useMessages } from "@/lib/i18n/provider";
@@ -75,16 +76,16 @@ export function LessonPlayer({ lessonId }: LessonPlayerProps) {
 
       {presenting ? <p className="training-present-hint">{copy.instructor.hint}</p> : null}
 
-      <section aria-labelledby="lesson-theory" className="lesson-theory">
-        <h2 id="lesson-theory"><BookOpen aria-hidden="true" /> {copy.player.theoryHeading}</h2>
-        {lessonCopy.theory.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-        {lessonCopy.fieldNote ? (
-          <aside className="lesson-field-note">
-            <strong><HardHat aria-hidden="true" /> {copy.player.fieldNoteHeading}</strong>
-            <p>{lessonCopy.fieldNote}</p>
-          </aside>
-        ) : null}
-      </section>
+      <LessonTheory
+        key={`${lessonId}:${presenting ? "presentation" : "standard"}`}
+        copy={lessonCopy}
+        fieldNoteHeading={copy.player.fieldNoteHeading}
+        heading={copy.player.theoryHeading}
+        hideLabel={copy.player.hideTheory}
+        presenting={presenting}
+        readLabel={copy.player.readTheory}
+        visualKind={lesson.visualKind}
+      />
 
       <section aria-labelledby="lesson-briefing" className="lesson-briefing">
         <div className="lesson-briefing-head">

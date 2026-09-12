@@ -1114,6 +1114,45 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
   background: rgba(7, 22, 26, 0.45);
 }
 
+.lesson-theory {
+  display: grid;
+  grid-template-areas: "visual heading toggle";
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.lesson-theory[data-expanded="true"] {
+  grid-template-areas:
+    "heading toggle"
+    "body visual";
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  align-items: start;
+}
+
+.lesson-theory__heading { grid-area: heading; min-width: 0; }
+.lesson-theory__heading h2 { margin: 0; }
+.lesson-theory__heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.lesson-theory__visual { grid-area: visual; min-width: 0; }
+.lesson-theory__body { grid-area: body; min-width: 0; }
+.lesson-theory__body > p { max-width: 74ch; margin: 0 0 12px; line-height: 1.68; }
+.lesson-theory__toggle {
+  grid-area: toggle;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-self: end;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--cyan-bright);
+  cursor: pointer;
+}
+.lesson-theory__toggle svg { width: 16px; transition: transform 180ms ease; }
+.lesson-theory__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.lesson-theory__toggle:focus-visible { outline: 2px solid var(--cyan-bright); outline-offset: 2px; }
+
 .lesson-theory h2, .lesson-briefing h2, .lesson-debrief h2 {
   display: flex;
   align-items: center;
@@ -1124,6 +1163,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
   text-transform: uppercase;
   color: #78e8dc;
 }
+
+.lesson-theory .lesson-theory__heading h2 { margin: 0; }
+.lesson-theory .lesson-theory__heading p { margin: 6px 0 0; line-height: 1.5; }
 
 .lesson-theory p, .lesson-debrief p { max-width: 74ch; line-height: 1.68; margin: 0 0 12px; }
 .lesson-briefing ol { max-width: 74ch; line-height: 1.6; padding-left: 20px; margin: 0; }
@@ -1141,6 +1183,36 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
 .lesson-field-note strong { display: flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #ffb45c; }
 .lesson-field-note svg { width: 14px; height: 14px; }
 .lesson-field-note p { margin: 6px 0 0; font-style: italic; }
+
+@media (max-width: 760px) {
+  .lesson-theory {
+    grid-template-columns: 80px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .lesson-theory[data-expanded="true"] {
+    grid-template-areas:
+      "heading toggle"
+      "visual visual"
+      "body body";
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 16px;
+  }
+}
+
+.lesson-visual { display: block; width: 100%; height: auto; }
+.lesson-visual__backdrop { fill: rgb(5 15 18 / 76%); stroke: rgb(120 232 220 / 18%); }
+.lesson-visual__vessel { fill: rgb(20 48 56 / 92%); stroke: var(--muted-2); stroke-width: 2; }
+.lesson-visual__gas { fill: #16303a; }
+.lesson-visual__oil { fill: rgb(196 128 47 / 88%); }
+.lesson-visual__water { fill: rgb(28 143 168 / 88%); }
+.lesson-visual__control { fill: none; stroke: var(--cyan-bright); stroke-width: 2; }
+.lesson-visual__signal { fill: none; stroke: var(--cyan-bright); stroke-dasharray: 6 5; stroke-width: 1.5; }
+.lesson-visual__accent { fill: none; stroke: var(--amber); stroke-width: 2; }
+.lesson-visual__muted { fill: none; stroke: var(--muted-2); stroke-width: 1.5; }
+.lesson-visual__label { fill: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; font-weight: 700; }
+.lesson-visual[data-visual-variant="thumbnail"] .lesson-visual__detail { display: none; }
 
 .lesson-banner {
   display: flex;
