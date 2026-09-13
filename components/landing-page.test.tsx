@@ -32,6 +32,17 @@ describe("landing page", () => {
     expect(screen.getByText(/Not for field operation or equipment sizing/i)).toBeVisible();
   });
 
+  it("shows independent project authorship after the briefing", () => {
+    renderWithLocale(<LandingPage />);
+
+    expect(screen.getByRole("heading", { name: "About this project" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "About the author" })).toHaveAttribute("href", "https://marcosdh1987.github.io/cv/");
+    expect(screen.getByRole("link", { name: "LinkedIn" })).toHaveAttribute("href", "https://www.linkedin.com/in/marcosesoto/");
+    expect(screen.getByRole("link", { name: "Research / ORCID" })).toHaveAttribute("href", "https://orcid.org/0009-0000-5787-5965");
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/marcosdh1987");
+    expect(screen.getByRole("link", { name: "Repository" })).toHaveAttribute("href", "https://github.com/marcosdh1987/separator-control-challenge");
+  });
+
   it("passes a static equilibrium sample to the hero's explicit presentation mode", () => {
     renderWithLocale(<LandingPage />);
 
@@ -55,5 +66,6 @@ describe("landing page", () => {
     expect(screen.getByRole("heading", { name: "¿Puedes mantener estable un separador trifásico?" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Empezar el entrenamiento guiado" })).toHaveAttribute("href", "/training");
     expect(screen.getByText("La válvula de salida de agua controla la interfase petróleo/agua.")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Sobre este proyecto" })).toBeVisible();
   });
 });

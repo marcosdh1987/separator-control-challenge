@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { LanguageSwitcher } from "../language-switcher";
+import { ProjectAttribution } from "@/components/project-attribution";
 import { useTrainingProgress } from "@/hooks/use-training-progress";
 import { useMessages } from "@/lib/i18n/provider";
 import { LESSON_LIST } from "@/lib/training/lessons";
@@ -102,6 +103,7 @@ export function LessonIndex() {
         </div>
         {importError ? <p role="alert">{copy.index.importFailed}</p> : null}
       </section>
+      <ProjectAttribution variant="compact" />
     </main>
   );
 }

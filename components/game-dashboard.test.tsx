@@ -152,6 +152,17 @@ describe("game dashboard", () => {
     });
   });
 
+  it("keeps the technical footer and adds the compact project attribution", async () => {
+    renderWithLocale(<GameDashboard />);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());
+    expect(screen.getByRole("link", { name: "Marcos Esteban Soto" })).toHaveAttribute("href", "https://marcosdh1987.github.io/cv/");
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/marcosdh1987/separator-control-challenge");
+    expect(screen.getByText("FIXED STEP 0.05 s")).toBeVisible();
+    expect(screen.getByText("CLIENT-SIDE PHYSICS")).toBeVisible();
+    expect(screen.getByText("NO RUNTIME AI")).toBeVisible();
+  });
+
   it("exposes both loops, both valves, safety feedback, transport, and four trends", async () => {
     renderWithLocale(<GameDashboard />);
     await waitFor(() => expect(screen.getByRole("button", { name: /start attempt/i })).toBeEnabled());

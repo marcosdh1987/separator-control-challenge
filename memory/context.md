@@ -46,6 +46,10 @@
   `feedRampS` default 15 s. Golden runs regenerated as new physics baseline. Lection 1
   now teaches full cold-start sequence. Documentation updated: physical model cold-start
   section, scoring establishment window, model-card fidelity table, Spanish instructor guide.
+- Final presentation/authorship pass implemented: the bilingual landing now includes
+  an independent-project About section, and a shared compact attribution appears on
+  training and challenge pages while staying out of lesson Presentation Mode. README
+  now presents the project as continued independent work after OpenAI Build Week.
 
 ## Constraints & decisions in force
 
@@ -61,6 +65,6 @@
 
 ## Open threads / next steps
 
-- Finish Phase 0, then start Phase 1 (i18n) before writing any new user-facing prose,
-  so nothing has to be translated twice.
+- Before public release, manually verify the four external author links and review
+  the final landing copy once in each locale.
 - Keep all work unstaged and create commits manually when ready.

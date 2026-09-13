@@ -64,6 +64,23 @@ export const landing = {
     },
   },
 
+  about: {
+    eyebrow: "Project note / authorship",
+    title: "About this project",
+    description:
+      "Separator Control Challenge is an independent educational project by Marcos Esteban Soto, combining well testing and industrial process control with ongoing work in machine learning and intelligent industrial systems.",
+    aiNote:
+      "Built with AI-assisted engineering using GPT-5.6 and Codex. Process assumptions, physical simplifications, control behavior, and educational content were defined and reviewed using engineering judgment.",
+    invitation: "Interested in industrial AI, process control, research, or educational use?",
+    links: {
+      author: "About the author",
+      linkedin: "LinkedIn",
+      orcid: "Research / ORCID",
+      github: "GitHub",
+      repository: "Repository",
+    },
+  },
+
   /** Placeholder copy for the guided training route, which is not built yet. */
   training: {
     eyebrow: "Guided training",

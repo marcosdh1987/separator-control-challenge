@@ -50,6 +50,23 @@ export const landing: LandingMessages = {
     },
   },
 
+  about: {
+    eyebrow: "Nota del proyecto / autoría",
+    title: "Sobre este proyecto",
+    description:
+      "Separator Control Challenge es un proyecto educativo independiente desarrollado por Marcos Esteban Soto, que combina well testing y control de procesos industriales con trabajo actual en machine learning y sistemas industriales inteligentes.",
+    aiNote:
+      "Fue desarrollado mediante ingeniería asistida por IA utilizando GPT-5.6 y Codex. Las hipótesis de proceso, simplificaciones físicas, comportamiento de los lazos y contenido educativo fueron definidos y revisados utilizando criterio de ingeniería.",
+    invitation: "¿Te interesa conversar sobre IA industrial, control de procesos, investigación o uso educativo?",
+    links: {
+      author: "Sobre el autor",
+      linkedin: "LinkedIn",
+      orcid: "Investigación / ORCID",
+      github: "GitHub",
+      repository: "Repositorio",
+    },
+  },
+
   training: {
     eyebrow: "Entrenamiento guiado",
     headline: "El entrenamiento guiado está en preparación.",

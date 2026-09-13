@@ -23,6 +23,7 @@ import { ControlCoach } from "./education/control-coach";
 import { PidLearningPanel } from "./education/pid-learning-panel";
 import { TuningDebrief, type TuningAttempt } from "./education/tuning-debrief";
 import { LanguageSwitcher } from "./language-switcher";
+import { ProjectAttribution } from "@/components/project-attribution";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useSimulation } from "@/hooks/use-simulation";
 import { gainAdvisory } from "@/lib/education/diagnosis";
@@ -328,6 +329,7 @@ export function GameDashboard() {
           <span>{copy.footer.fixedStep}</span><span>{copy.footer.clientPhysics}</span><span>{messages.common.noRuntimeAi}</span>
           <p>{copy.footer.note}</p>
         </footer>
+        <ProjectAttribution variant="compact" />
       </div>
 
       {simulation.result && (

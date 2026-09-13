@@ -4,8 +4,11 @@
 
 An open training environment for three-phase separator control. Tune the loops on a
 simplified horizontal separator and watch what happens when the feed steps, a slug
-arrives, an instrument gets noisy, or the well starts making more gas — with nothing
+arrives, an instrument gets noisy, or the well starts making more gas, with nothing
 real at stake.
+
+Separator Control Challenge originally started during OpenAI Build Week and
+continued evolving afterwards as an independent educational project.
 
 It is built for people who work on or around well testing: operators, technicians,
 and engineers who want to see *why* a loop behaves the way it does before they meet
@@ -56,8 +59,8 @@ explore than be led.
 
 ## Built with GPT-5.6 and Codex
 
-Separator Control Challenge was created during the OpenAI Build Week using
-GPT-5.6 and Codex as AI-assisted engineering tools.
+Separator Control Challenge was started during OpenAI Build Week and continued
+afterwards using GPT-5.6 and Codex as AI-assisted engineering tools.
 
 GPT-5.6 was used to:
 
@@ -85,6 +88,20 @@ the controller responses were technically meaningful.
 The final application does not use AI at runtime. GPT-5.6 and Codex were used
 to build the product, while the deployed simulator runs deterministically and
 entirely in the browser.
+
+## Author
+
+Created and maintained by Marcos Esteban Soto.
+
+- Portfolio: <https://marcosdh1987.github.io/cv/>
+- LinkedIn: <https://www.linkedin.com/in/marcosesoto/>
+- ORCID: <https://orcid.org/0009-0000-5787-5965>
+- GitHub: <https://github.com/marcosdh1987>
+- Repository: <https://github.com/marcosdh1987/separator-control-challenge>
+
+This is an independent educational simulator. It is not certified, industrially
+validated, or suitable for field operation, equipment sizing, safety analysis, or
+real process control.
 
 ## Run locally
 
@@ -143,14 +160,17 @@ Apache License 2.0. See [LICENSE](LICENSE).
 
 # Separator Control Challenge (en español)
 
-Un entorno abierto de entrenamiento en control de separadores trifásicos. Sintonizá
-los lazos de un separador horizontal simplificado y mirá qué pasa cuando la
+Un entorno abierto de entrenamiento en control de separadores trifásicos. Sintoniza
+los lazos de un separador horizontal simplificado y observa qué pasa cuando la
 alimentación da un escalón, llega un slug, un instrumento se pone ruidoso o el pozo
-empieza a producir más gas — sin nada real en juego.
+empieza a producir más gas, sin nada real en juego.
 
-Está hecho para gente que trabaja en well testing o alrededor: operadores, técnicos e
-ingenieros que quieren entender *por qué* un lazo se comporta como se comporta antes
-de encontrárselo en el campo.
+Está hecho para personas que trabajan en well testing o alrededor: operadores,
+técnicos e ingenieros que quieren entender *por qué* un lazo se comporta como se
+comporta antes de encontrárselo en el campo.
+
+Separator Control Challenge comenzó durante OpenAI Build Week y continuó
+desarrollándose después como un proyecto educativo independiente.
 
 El simulador es deliberadamente educativo. **No** sirve para operar en campo,
 dimensionar equipos, diseñar sistemas de seguridad ni para control de procesos real.
@@ -164,7 +184,7 @@ cada una con una parte de teoría breve, un ejercicio con escenario fijo, y un c
 que informa qué se midió contra lo que la lección pedía.
 
 El progreso se guarda en el navegador de cada persona y no se envía a ningún lado. Si
-estás dando el curso y querés juntar resultados, pediles que usen **Exportar
+estás dando el curso y quieres juntar resultados, pídeles que usen **Exportar
 progreso**: genera un JSON chico con intentos, mejor puntaje y tiempo hasta el primer
 intento por lección.
 
@@ -173,6 +193,20 @@ permite revelar la tarea cuando quieras.
 
 La ruta `/challenge` es el simulador libre, para quien prefiera explorar en vez de
 que lo lleven de la mano.
+
+## Autor
+
+Creado y mantenido por Marcos Esteban Soto.
+
+- Portfolio: <https://marcosdh1987.github.io/cv/>
+- LinkedIn: <https://www.linkedin.com/in/marcosesoto/>
+- ORCID: <https://orcid.org/0009-0000-5787-5965>
+- GitHub: <https://github.com/marcosdh1987>
+- Repositorio: <https://github.com/marcosdh1987/separator-control-challenge>
+
+Este es un simulador educativo independiente. No está certificado ni validado
+industrialmente, y no es apto para operación en campo, dimensionamiento de equipos,
+análisis de seguridad ni control de procesos real.
 
 ## Para correrlo
 

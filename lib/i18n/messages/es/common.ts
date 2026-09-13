@@ -12,4 +12,9 @@ export const common: CommonMessages = {
     "Simulador educativo. Los parámetros del modelo son genéricos y no deben usarse para operar en campo, dimensionar equipos ni hacer análisis de seguridad.",
   noRuntimeAi: "SIN IA EN EJECUCIÓN",
   skipToContent: "Ir al contenido principal",
+  attribution: {
+    project: "Separator Control Challenge",
+    author: "Marcos Esteban Soto",
+    github: "GitHub",
+  },
 };

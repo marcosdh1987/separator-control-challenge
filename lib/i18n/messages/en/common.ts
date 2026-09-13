@@ -10,6 +10,11 @@ export const common = {
     "Educational simulator. Model parameters are generic and must not be used for field operation, equipment sizing, or safety analysis.",
   noRuntimeAi: "NO RUNTIME AI",
   skipToContent: "Skip to main content",
+  attribution: {
+    project: "Separator Control Challenge",
+    author: "Marcos Esteban Soto",
+    github: "GitHub",
+  },
 };
 
 export type CommonMessages = typeof common;

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LessonRunner } from "./lesson-runner";
 import { LessonTheory } from "./lesson-theory";
 import { LanguageSwitcher } from "../language-switcher";
+import { ProjectAttribution } from "@/components/project-attribution";
 import { useTrainingProgress } from "@/hooks/use-training-progress";
 import { useMessages } from "@/lib/i18n/provider";
 import { getLesson, nextLessonId } from "@/lib/training/lessons";
@@ -146,6 +147,7 @@ export function LessonPlayer({ lessonId }: LessonPlayerProps) {
           </>
         )}
       </section>
+      {!presenting ? <ProjectAttribution variant="compact" /> : null}
     </main>
   );
 }

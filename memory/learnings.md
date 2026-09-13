@@ -3,6 +3,16 @@
 > Non-obvious facts discovered while working: gotchas, why-it-is-this-way, dead ends
 > to avoid. Append new entries at the top. One fact per entry.
 
+## Shared project attribution keeps Presentation Mode clean — 2026-09-13
+
+Project authorship belongs in one presentational `ProjectAttribution` component
+with full and compact variants. Lesson Presentation Mode omits the compact variant
+from the render tree, so projection stays clean without relying on CSS-only hiding.
+
+**How to apply:** keep external project links and attribution copy centralized in
+the component/message catalogues; add compact references to new internal pages
+through the same component rather than duplicating footer markup.
+
 ## The reverse-acting PID already contains the start-up behaviour — 2026-08-26
 
 Cold start needed no controller logic: with the vessel empty, the reverse-acting

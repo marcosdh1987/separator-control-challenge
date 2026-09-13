@@ -16,6 +16,20 @@ afterEach(() => {
 });
 
 describe("LessonPlayer theory integration", () => {
+  it("shows compact authorship outside Presentation Mode and hides it while presenting", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+    renderWithLocale(<LessonPlayer lessonId="what-is-a-separator" />);
+
+    expect(screen.getByRole("link", { name: "Marcos Esteban Soto" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Presentation mode" }));
+    expect(screen.queryByRole("link", { name: "Marcos Esteban Soto" })).not.toBeInTheDocument();
+  });
+
   it("opens compact theory when presentation mode starts", async () => {
     const user = userEvent.setup();
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({

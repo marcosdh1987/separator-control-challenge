@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { LanguageSwitcher } from "./language-switcher";
+import { ProjectAttribution } from "@/components/project-attribution";
 import { ProcessHero } from "./process-hero";
 import { useMessages } from "@/lib/i18n/provider";
 import { createEquilibriumSnapshot } from "@/lib/simulation/equilibrium";
@@ -71,6 +72,7 @@ export function LandingPage() {
           <p className="landing-goal">{copy.briefing.controlNote.goal}</p>
         </aside>
       </section>
+      <ProjectAttribution variant="about" />
     </main>
   );
 }
