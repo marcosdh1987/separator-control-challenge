@@ -78,6 +78,8 @@ unfixable = []
 ]
 # The skills sync CLI legitimately prints user-facing progress to stdout.
 "src/separator_control_challenge/skills_sync/cli.py" = ["T201"]
+# The research export CLI reports progress and verification results on stdout.
+"src/separator_control_challenge/research_export/cli.py" = ["T201"]
 # Bootstrap/maintenance scripts are CLIs: stdout progress is their interface.
 "scripts/*.py" = ["T201"]
 
@@ -163,4 +165,5 @@ dev = [
     # Tooling for the skills sync engine (src/separator_control_challenge/skills_sync).
     # Kept in the dev group so it never bloats the product wheel.
     "jinja2>=3.1",
+    "pyarrow>=17",
 ]

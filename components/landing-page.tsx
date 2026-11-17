@@ -50,6 +50,7 @@ export function LandingPage() {
           <div className="landing-actions">
             <Link className="primary-button landing-action" href="/training">{copy.cta.startTraining}</Link>
             <Link className="secondary-button landing-action" href="/challenge">{copy.cta.enterControlRoom}</Link>
+            <Link className="secondary-button landing-action" href="/research">{messages.research.landingCta}</Link>
           </div>
         </div>
         <div className="landing-visual" aria-label={copy.hero.visualLabel}>
