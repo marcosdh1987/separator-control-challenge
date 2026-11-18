@@ -160,7 +160,8 @@ def build_envelope_map(
             }
         )
     catalogue = dataset.constraint_catalogue
-    keep = ("id", "category", "title", "basis", "status")
+    # The catalogue "basis" cites internal register ids and modules: withheld.
+    keep = ("id", "category", "title", "status")
     doc: dict[str, Any] = {
         "schema": SCHEMA_ENVELOPE,
         "schemaVersion": SCHEMA_VERSION,
@@ -172,8 +173,13 @@ def build_envelope_map(
             "version": EXPORTER_VERSION,
             "policyId": policy.policy_id,
         },
-        "source": source_block(dataset, request.documentation),
-        "evidence": evidence_block(dataset),
+        "source": source_block(
+            dataset,
+            request.documentation,
+            None,
+            policy.descriptions.get(dataset.dataset_id),
+        ),
+        "evidence": evidence_block(dataset, policy.verbatim_fields),
         "axes": axes,
         "points": points,
         "outcomes": [

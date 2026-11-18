@@ -391,7 +391,7 @@ export const research: ResearchMessages = {
       replayCenterSettling: "La corrida central cargada aquí (semilla 7200) asienta dentro de ese rango.",
       m6bExit: "M6 B sale de la banda de nivel total a los 12.415 s del hold.",
       c2simcSustains: "c2simc se sostiene durante el hold de 4 h.",
-      m6bWindows: "Nivel total pico a pico con M6 B en las ventanas del hold 0–0,5, 1–1,5, 2–2,5 y 3,5–4 h: 0,29, 1,07, 2,26, 5,41 %.",
+      m6bWindows: "Nivel total pico a pico con M6 B en las ventanas del hold de 0 a 0,5, de 1 a 1,5, de 2 a 2,5 y de 3,5 a 4 h: 0,29, 1,07, 2,26, 5,41 %.",
       c2simcWindows: "c2simc en las mismas ventanas: 0,28, 0,64, 0,34, 0,32 %.",
       deployedLosesBand: "Con stiction en LCV-102, el PID desplegado pierde la banda.",
       deployedP2P: "Nivel total pico a pico con el PID desplegado, segunda mitad del hold: 4,0 a 4,2 % en los tres escenarios (aquí se carga el central).",
@@ -443,9 +443,9 @@ export const research: ResearchMessages = {
     c2simc: "c2simc",
   },
   controllerHelp: {
-    deployed: "La sintonía por defecto del PLC virtual (POC 07), derivada del modelo.",
+    deployed: "La sintonía por defecto del PLC virtual, derivada del modelo.",
     simc: "SIMC τc 120 s sobre la ganancia identificada en la campaña A, más un filtro de PV de 10 s (Skogestad 2003).",
-    m6b: "La sintonía M6 B de POC 07, derivada del modelo.",
+    m6b: "M6 B, una sintonía derivada del modelo a partir de una identificación previa de la misma planta.",
     c2simc: "Los dos diseños SIMC de C2 juntos: LIC-102 Kc 8,42 con filtro de 15 s y LIC-103 Kc 5,36 con filtro de 10 s.",
   },
   events: {

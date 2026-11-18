@@ -241,7 +241,7 @@ function EnvelopeMap({ map }: { map: ResearchEnvelopeMapV1 }) {
                   <dt>{copy.dominant}</dt>
                   <dd>
                     {selected.dominantConstraint ? (
-                      <><code>{selected.dominantConstraint}</code>{constraint(selected.dominantConstraint) ? <> · {constraint(selected.dominantConstraint)!.title} <small>({constraint(selected.dominantConstraint)!.category}; {constraint(selected.dominantConstraint)!.basis})</small></> : null}</>
+                      <><code>{selected.dominantConstraint}</code>{constraint(selected.dominantConstraint) ? <> · {constraint(selected.dominantConstraint)!.title} <small>({constraint(selected.dominantConstraint)!.category})</small></> : null}</>
                     ) : copy.noDominant}
                   </dd>
                 </div>

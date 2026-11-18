@@ -31,8 +31,8 @@ export function formatWithUnit(value: number | null | undefined, unit: string, l
 /** Seconds as h:mm:ss (or m:ss), signed, for a time axis that can be negative. */
 export function formatClock(seconds: number): string {
   if (!Number.isFinite(seconds)) return "—";
-  const sign = seconds < 0 ? "−" : "";
   const total = Math.round(Math.abs(seconds));
+  const sign = seconds < 0 && total > 0 ? "−" : "";
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;

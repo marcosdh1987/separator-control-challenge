@@ -3,6 +3,42 @@
 > Non-obvious facts discovered while working: gotchas, why-it-is-this-way, dead ends
 > to avoid. Append new entries at the top. One fact per entry.
 
+## Node 25+ breaks jsdom localStorage in Vitest - 2026-11-17
+
+Node 25 enabled its experimental Web Storage by default; under Node 26 every test
+that calls `window.localStorage` fails with "reading 'clear'" (40 tests, also on a
+clean `main`). It is the runtime, not the code. `NODE_OPTIONS=--no-experimental-webstorage`
+restores jsdom's storage, and Node 22/24 (allowed by `engines`) are unaffected.
+
+**How to apply:** when storage tests fail en masse locally, check `node --version`
+before touching tests; run the gate with the flag or a supported LTS.
+
+## eng_dacs counts phase seconds from the tick before the phase - 2026-11-17
+
+`first_exit_s` and `settling_s` in eng_dacs `run.json` are measured from
+`phase_started[phase]`, which is the tick *before* the phase's first tick (the M6 B
+lag run leaves the band at tick 14 035 = 1 620 + 12 415). Paired runs also start the
+same phase at different ticks (start-up length depends on the controller: 1 621 vs
+2 017 s), so comparisons must align on a phase and show the shift.
+
+**How to apply:** use `phaseOriginS` / `alignRuns` (origin = phase start - dt); a
+1 s disagreement with the report is the symptom of using the first tick instead.
+
+## Register columns are exact float32: store them as float32 text - 2026-11-17
+
+eng_dacs PLC and instrument columns are float32 values widened to float64. Writing
+them with the shortest float32 text and decoding with `Math.fround` is lossless and
+cut a 4 h replay from 2.1 to 1.5 MB gzip. The exporter only picks `f32` after
+checking every value round-trips, and a per-signal SHA-256 proves identity in tests
+and in the browser.
+
+## Click SVG targets by keyboard in Playwright on this site - 2026-11-17
+
+`html { scroll-behavior: smooth }` lets Playwright click an SVG `<g>` while the
+page is still scrolling, and the click lands on whatever slides under the pointer.
+Focusing the (keyboard-operable) point and pressing Enter is deterministic and also
+tests keyboard access.
+
 ## Shared project attribution keeps Presentation Mode clean — 2026-09-13
 
 Project authorship belongs in one presentational `ProjectAttribution` component

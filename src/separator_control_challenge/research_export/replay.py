@@ -71,6 +71,16 @@ def _phases(trace: Trace, times: list[float]) -> list[dict[str, Any]]:
     return phases
 
 
+def _ticks(seconds: float) -> int:
+    """eng_dacs phase-relative seconds as a whole number of ticks."""
+    ticks = float(seconds) / SAMPLE_INTERVAL_S
+    if abs(ticks - round(ticks)) > 1e-9:
+        raise DatasetError(
+            f"{seconds} s is not a whole number of {SAMPLE_INTERVAL_S} s ticks"
+        )
+    return round(ticks)
+
+
 def _phase_origin_tick(
     phases: list[dict[str, Any]], name: str, steps: list[int]
 ) -> int | None:
@@ -255,7 +265,7 @@ def _evaluation_events(
         loop = hold.get("first_exit_loop")
         if first_exit is not None and loop in LOOP_TRUTH_KEY:
             loop_metrics = hold["loops"][loop]
-            exit_tick = origin_tick + int(first_exit)
+            exit_tick = origin_tick + _ticks(first_exit)
             verified = _verify_band_exit(
                 trace,
                 steps,
@@ -290,7 +300,7 @@ def _evaluation_events(
         if pad_lost is not None:
             _event(
                 events,
-                t=float(origin_tick + int(pad_lost)) * SAMPLE_INTERVAL_S,
+                t=float(origin_tick + _ticks(pad_lost)) * SAMPLE_INTERVAL_S,
                 kind="oil_pad_lost",
                 origin="evaluation",
                 source="run.json evaluation.metrics.control.hold.oil_pad_lost_s",
@@ -306,7 +316,7 @@ def _evaluation_events(
             continue
         _event(
             events,
-            t=float(step_origin + int(settling)) * SAMPLE_INTERVAL_S,
+            t=float(step_origin + _ticks(settling)) * SAMPLE_INTERVAL_S,
             kind="settled",
             origin="evaluation",
             source="run.json evaluation.metrics.control.steps[].settling_s",
@@ -347,7 +357,14 @@ def _signals(
             "unit": str(meta.get("unit", "")),
             "kind": str(meta.get("kind", "")),
             "source": str(meta.get("source", "")),
-            "description": str(meta.get("description", "")),
+            # Column descriptions come from eng_dacs trace_columns.json unless the
+            # policy curates one (when the original cites internal labels).
+            "description": policy.signal_descriptions.get(
+                key, str(meta.get("description", ""))
+            ),
+            "descriptionSource": "publication policy"
+            if key in policy.signal_descriptions
+            else "trace_columns.json",
             "role": spec.role,
             "interpolation": spec.interpolation,
             "group": spec.group,
@@ -435,15 +452,23 @@ def build_replay(
             "version": EXPORTER_VERSION,
             "policyId": policy.policy_id,
         },
-        "source": source_block(dataset, request.documentation, request.run),
-        "evidence": evidence_block(dataset),
+        "source": source_block(
+            dataset,
+            request.documentation,
+            request.run,
+            policy.descriptions.get(dataset.dataset_id),
+        ),
+        "evidence": evidence_block(dataset, policy.verbatim_fields),
         "run": {
             "runId": request.run,
             "scenarioId": record.get("scenario_id"),
             "variantId": record.get("variant_id"),
             "seed": int(record.get("seed", 0)),
             "block": record.get("block"),
-            "variant": variant_block(_variant(dataset, str(record.get("variant_id")))),
+            "variant": variant_block(
+                _variant(dataset, str(record.get("variant_id"))),
+                policy.allowed_references,
+            ),
             "controller": {
                 "policy": controller.get("policy") or controller.get("name"),
                 "params": controller.get("params"),

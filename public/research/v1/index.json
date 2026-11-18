@@ -2,18 +2,18 @@
   "schema": "scc.research-index",
   "schemaVersion": 1,
   "contractVersion": "1.0.0",
-  "generatedAt": "2026-11-16T22:00:00+00:00",
+  "generatedAt": "2026-11-17T12:00:00+00:00",
   "exporter": {
     "name": "separator_control_challenge.research_export",
     "version": "1.0.0"
   },
   "policyId": "research-lab-public-v1",
-  "policySha256": "3ad2c765986512884ac874546d369f46c669c272b721d50a677c25638012597c",
+  "policySha256": "2f728d49fe933ef93d1690be75168eb87c834d45ee739573724edfa0b47f97da",
   "files": [
     {
       "path": "campaigns/control-c2-lag-followup-20261116.json.gz",
-      "bytes": 4427,
-      "sha256": "537a2a946d41a842ebba9515f022c4dcc6174bcd68128cfa5b7cac3d0f7e2311",
+      "bytes": 4371,
+      "sha256": "1622999bf1f24ad1c5f1c49515cf1bf5ddb839de0984ba0f491e0f0e8f8fa8ab",
       "id": "control-c2-lag-followup-20261116",
       "type": "campaign",
       "datasetId": "control-c2-lag-followup-20261116",
@@ -21,8 +21,8 @@
     },
     {
       "path": "campaigns/control-c2-robustness-e-pilot-20261116.json.gz",
-      "bytes": 10230,
-      "sha256": "56914cb3c17d910b249c14a75af35d43e31e9a51567055718d0251575027e7f5",
+      "bytes": 10130,
+      "sha256": "9a0282cd3b10bf6f2d5bba7af57ad1e1d3c4790effa5e82145292845cdc66532",
       "id": "control-c2-robustness-e-pilot-20261116",
       "type": "campaign",
       "datasetId": "control-c2-robustness-e-pilot-20261116",
@@ -30,8 +30,8 @@
     },
     {
       "path": "campaigns/control-c2-water-replication-20261115.json.gz",
-      "bytes": 10998,
-      "sha256": "5e4ca70151059f7e693f04ec9ced18665ae92c804bbd95991fcb7980dae77452",
+      "bytes": 11085,
+      "sha256": "db9c085b92ecff40645a00122ca9b374c573a95d6db1a36e4831eec41a70209d",
       "id": "control-c2-water-replication-20261115",
       "type": "campaign",
       "datasetId": "control-c2-water-replication-20261115",
@@ -39,8 +39,8 @@
     },
     {
       "path": "envelope/nominal-pilot-20261113T234459Z.json.gz",
-      "bytes": 10599,
-      "sha256": "514b3e1a6c113485d9244b8a82ab4fe5f0c98ff3d33bbd51c0570012f7dc1ad2",
+      "bytes": 10256,
+      "sha256": "8e982c79bef533c59353ea14f1ca72fa3efdf95c0c751e30b6a15a3f5f5061aa",
       "id": "nominal-pilot-20261113T234459Z",
       "type": "envelope",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -49,8 +49,8 @@
     },
     {
       "path": "replays/control-c2-lag-followup-20261116/high_rate-000__lcv102-lag-c2simc__s7100.json.gz",
-      "bytes": 1482380,
-      "sha256": "b43f1dcdbe254cb5b003a16850911f9b81fc70a4b779250a563ccc655dd9983c",
+      "bytes": 1483038,
+      "sha256": "73cde9bd4847df03db7631a4dbd2c8b39cc7d20835cefd3ee075117d54a32119",
       "id": "control-c2-lag-followup-20261116/high_rate-000__lcv102-lag-c2simc__s7100",
       "type": "replay",
       "datasetId": "control-c2-lag-followup-20261116",
@@ -64,8 +64,8 @@
     },
     {
       "path": "replays/control-c2-lag-followup-20261116/high_rate-000__lcv102-lag-m6b__s7100.json.gz",
-      "bytes": 1491247,
-      "sha256": "c4da8e2ce9d8ed814b69e96461119fefe8eca0fd9b0539c6e531df9ff4c7fa0f",
+      "bytes": 1491979,
+      "sha256": "2b268cc1f7632c8c963e69ebd5fe083e75e6538c452b8796e024d06e30e26949",
       "id": "control-c2-lag-followup-20261116/high_rate-000__lcv102-lag-m6b__s7100",
       "type": "replay",
       "datasetId": "control-c2-lag-followup-20261116",
@@ -79,8 +79,8 @@
     },
     {
       "path": "replays/control-c2-robustness-e-pilot-20261116/center__lcv102-stick-c2simc__s7100.json.gz",
-      "bytes": 510842,
-      "sha256": "1f4bf2fba5b7c0d92eaf108ec9e8010ec0b5a5c56b19be48937f0f46b876840f",
+      "bytes": 511393,
+      "sha256": "40374d60a4d06a6dddb1b73b0f0a69e75c403e8382b6fe80e729429936a1bbd0",
       "id": "control-c2-robustness-e-pilot-20261116/center__lcv102-stick-c2simc__s7100",
       "type": "replay",
       "datasetId": "control-c2-robustness-e-pilot-20261116",
@@ -94,8 +94,8 @@
     },
     {
       "path": "replays/control-c2-robustness-e-pilot-20261116/center__lcv102-stick-m6b__s7100.json.gz",
-      "bytes": 493295,
-      "sha256": "4d8585f28c77112d43987748b828421b3af022d475fd80313c193f249f4da1a1",
+      "bytes": 493964,
+      "sha256": "5015a0f85d36824447ccbccb3acd046a1478f22e47cf3e8cedbd2edbe959ab75",
       "id": "control-c2-robustness-e-pilot-20261116/center__lcv102-stick-m6b__s7100",
       "type": "replay",
       "datasetId": "control-c2-robustness-e-pilot-20261116",
@@ -109,8 +109,8 @@
     },
     {
       "path": "replays/control-c2-robustness-e-pilot-20261116/center__lcv102-stick-nominal__s7100.json.gz",
-      "bytes": 501882,
-      "sha256": "1e62eabb386b1b3cafd3c508ec2f783ae0b0c8d8dbcfbee1c552bad1c1d3777d",
+      "bytes": 502615,
+      "sha256": "25fd9bb93a68c9fa251e0637fabd8bfada0b7536633c02ae43129e766a64c112",
       "id": "control-c2-robustness-e-pilot-20261116/center__lcv102-stick-nominal__s7100",
       "type": "replay",
       "datasetId": "control-c2-robustness-e-pilot-20261116",
@@ -124,8 +124,8 @@
     },
     {
       "path": "replays/control-c2-water-replication-20261115/center__nominal__s7200.json.gz",
-      "bytes": 249098,
-      "sha256": "ca519a9b31a8e1a0380f7d8482c3c3159c947d825ccad0e477ca36cb5a203b13",
+      "bytes": 249463,
+      "sha256": "93b06e58a1097340659249a18698809efb71a4135a1dd9934923afcd470d5243",
       "id": "control-c2-water-replication-20261115/center__nominal__s7200",
       "type": "replay",
       "datasetId": "control-c2-water-replication-20261115",
@@ -139,8 +139,8 @@
     },
     {
       "path": "replays/control-c2-water-replication-20261115/center__simc-tc120-f10__s7200.json.gz",
-      "bytes": 283918,
-      "sha256": "09b7d2a8174f69f6f84375bae73fcd5c777e0b1b124379d90f8e764582c7980e",
+      "bytes": 284309,
+      "sha256": "dac5ebfb7dfda5d34f7a50e68203a3aebff040f763dac7a75385c8898472e6d7",
       "id": "control-c2-water-replication-20261115/center__simc-tc120-f10__s7200",
       "type": "replay",
       "datasetId": "control-c2-water-replication-20261115",
@@ -154,8 +154,8 @@
     },
     {
       "path": "replays/control-c2-water-replication-20261115/pi_1p5-000__nominal__s7200.json.gz",
-      "bytes": 252959,
-      "sha256": "dc284a908233e776667bd66dd139f9dde38e1746712d1b1ab132a728d6515ce1",
+      "bytes": 253303,
+      "sha256": "fd46b1bf43a038187a5426edb833e0fe57a02751476ed28748d2a80181ebd78e",
       "id": "control-c2-water-replication-20261115/pi_1p5-000__nominal__s7200",
       "type": "replay",
       "datasetId": "control-c2-water-replication-20261115",
@@ -169,8 +169,8 @@
     },
     {
       "path": "replays/control-c2-water-replication-20261115/pi_1p5-000__simc-tc120-f10__s7200.json.gz",
-      "bytes": 321499,
-      "sha256": "4abb02a321b0d48460805ecd1de31bf7417923d472402f2a85beb9cfbbc8c624",
+      "bytes": 321902,
+      "sha256": "054ea71a4978025fbbb3dc4bb423f25476af30d0eb59a18a6347bdbee638a2ef",
       "id": "control-c2-water-replication-20261115/pi_1p5-000__simc-tc120-f10__s7200",
       "type": "replay",
       "datasetId": "control-c2-water-replication-20261115",
@@ -184,8 +184,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/center__nominal__s7100.json.gz",
-      "bytes": 210508,
-      "sha256": "cb36203667b6e2c462327a09c5abaa544c90773bb860aecb26a6b3c666f22064",
+      "bytes": 210828,
+      "sha256": "7c875154fc1f7380db0eb20fc824203611bb16f95694a6a9e2cab51581e11d43",
       "id": "nominal-pilot-20261113T234459Z/center__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -199,8 +199,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/lhs-b2-000__nominal__s7100.json.gz",
-      "bytes": 201428,
-      "sha256": "b609a4be074df4b9e6c05e4322684b90ed9cd8c398b45b27513d1635d4582e51",
+      "bytes": 201709,
+      "sha256": "85263c81c96a6f129b6f5f2fc71d4eb54b313dd8df1e58c2f6d9dc3586f6f2ae",
       "id": "nominal-pilot-20261113T234459Z/lhs-b2-000__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -214,8 +214,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/lhs-b2-008__nominal__s7100.json.gz",
-      "bytes": 13277,
-      "sha256": "1565522b9ba838a2d808ebe10911987265e40246a2d89b9e8810e1cbfb3c8f47",
+      "bytes": 13407,
+      "sha256": "231968cfb7026585e350fa1be077374425c7d69dd40320401bd1845d4c9cb991",
       "id": "nominal-pilot-20261113T234459Z/lhs-b2-008__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -229,8 +229,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/oat-bean_64th-2__nominal__s7100.json.gz",
-      "bytes": 210126,
-      "sha256": "8ddd02dd891eca1292c08ae6a0e6b322b995ef85abd5c6d48b51135ea014a5fb",
+      "bytes": 210459,
+      "sha256": "f1fcb0284ac755d4201c78931e1d0e1324f0075ef1ab0d62150e6e3c308c9d53",
       "id": "nominal-pilot-20261113T234459Z/oat-bean_64th-2__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -244,8 +244,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/oat-gor_sm3_sm3-1__nominal__s7100.json.gz",
-      "bytes": 201406,
-      "sha256": "eadf3c9570531bd11b43b43a75af19ee674c6ad114cbbbc006b8dec4736c22e3",
+      "bytes": 201692,
+      "sha256": "96a9d55349ac976a9df7af3bdd1fc3b13c914ce6a31f999a29172fdb825a1483",
       "id": "nominal-pilot-20261113T234459Z/oat-gor_sm3_sm3-1__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -259,8 +259,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/oat-productivity_index_m3_d_bar-0__nominal__s7100.json.gz",
-      "bytes": 216024,
-      "sha256": "a25c3e2369e6341fbb483699393009f8167b4e2661714e359d7d21bd32cced7f",
+      "bytes": 216355,
+      "sha256": "36469eeb90c4079c6f2d064e14f7ab0f65b70e40b6afa0ee7149146ed6b1e630",
       "id": "nominal-pilot-20261113T234459Z/oat-productivity_index_m3_d_bar-0__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -274,8 +274,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/oat-reservoir_pressure_bar-0__nominal__s7100.json.gz",
-      "bytes": 12648,
-      "sha256": "4aa917f5d0e1e0ea40693e9f3dd1943805fa12a08f9f0b949ccc3a477869b707",
+      "bytes": 12789,
+      "sha256": "4d7353e191b054b72225776658f594e0e3eec0bbbed0c60aacd6b143f85bda2f",
       "id": "nominal-pilot-20261113T234459Z/oat-reservoir_pressure_bar-0__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -289,8 +289,8 @@
     },
     {
       "path": "replays/nominal-pilot-20261113T234459Z/oat-water_cut_pct-1__nominal__s7100.json.gz",
-      "bytes": 207656,
-      "sha256": "52645058e8a8668893b8f7deca4cba213e8581494a06ee0c9f9093e0d095c25c",
+      "bytes": 207921,
+      "sha256": "dff905f534cddda10867cdb7e261a74ca433a26148461008d64c2303efcabd7f",
       "id": "nominal-pilot-20261113T234459Z/oat-water_cut_pct-1__nominal__s7100",
       "type": "replay",
       "datasetId": "nominal-pilot-20261113T234459Z",
@@ -306,7 +306,7 @@
   "pending": [],
   "notPublishable": [
     {
-      "id": "eng_dacs well-case presets (field_hp_*)",
+      "id": "eng_dacs well-case presets",
       "reason": "Representative research operating points derived from measured field data. Their identifiers and provenance notes are not exported; only the synthetic scenarios simulated around them are."
     },
     {

@@ -38,6 +38,9 @@ def verify_published(out: Path) -> list[str]:
     index = json.loads(index_path.read_text(encoding="utf-8"))
     if index.get("schema") != SCHEMA_INDEX:
         problems.append("index.json: wrong schema")
+    problems.extend(
+        f"index.json: forbidden text {token!r}" for token in forbidden_tokens(index)
+    )
     for entry in index.get("files", []):
         path = out / entry["path"]
         if not path.is_file():

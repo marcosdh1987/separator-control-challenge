@@ -23,24 +23,40 @@ export function decimateMinMax(
   toS: number,
   buckets: number,
   offsetS = 0,
+  /**
+   * For held (step) signals: also keep the sample right after each bucket's
+   * minimum and maximum. Without it, a one-tick spike would be held until the
+   * next drawn point and look up to a bucket wide.
+   */
+  holdSuccessors = false,
 ): DrawSeries {
   const out: DrawSeries = [];
   if (times.length === 0 || !(toS > fromS) || buckets < 1) return out;
   const width = (toS - fromS) / buckets;
   let bucket = -1;
-  let first: SeriesPoint | null = null;
-  let low: SeriesPoint | null = null;
-  let high: SeriesPoint | null = null;
-  let last: SeriesPoint | null = null;
+  let first = -1;
+  let low = -1;
+  let high = -1;
+  let last = -1;
   let broken = false;
+  let lastTime = Number.NEGATIVE_INFINITY;
+
+  const push = (index: number) => {
+    const t = times[index] - offsetS;
+    if (t <= lastTime || t > toS || Number.isNaN(values[index])) return;
+    out.push({ t, v: values[index] });
+    lastTime = t;
+  };
 
   const flush = () => {
-    if (!first || !low || !high || !last) return;
-    const chosen = [first, low, high, last].sort((a, b) => a.t - b.t);
-    for (let i = 0; i < chosen.length; i += 1) {
-      if (i === 0 || chosen[i] !== chosen[i - 1]) out.push(chosen[i]);
+    if (first < 0) return;
+    const chosen = new Set([first, low, high, last]);
+    if (holdSuccessors) {
+      if (low + 1 < times.length) chosen.add(low + 1);
+      if (high + 1 < times.length) chosen.add(high + 1);
     }
-    first = low = high = last = null;
+    for (const index of [...chosen].sort((a, b) => a - b)) push(index);
+    first = low = high = last = -1;
   };
 
   for (let i = 0; i < times.length; i += 1) {
@@ -59,14 +75,13 @@ export function decimateMinMax(
       flush();
       bucket = index;
     }
-    const point = { t, v };
-    if (!first) {
-      first = low = high = point;
+    if (first < 0) {
+      first = low = high = i;
     } else {
-      if (v < (low as SeriesPoint).v) low = point;
-      if (v > (high as SeriesPoint).v) high = point;
+      if (v < values[low]) low = i;
+      if (v > values[high]) high = i;
     }
-    last = point;
+    last = i;
   }
   flush();
   return out;

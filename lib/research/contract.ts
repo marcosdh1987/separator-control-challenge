@@ -103,6 +103,8 @@ export interface ReplaySignalJson {
   kind: string;
   source: string;
   description: string;
+  /** "trace_columns.json" (copied) or "publication policy" (curated replacement). */
+  descriptionSource?: string;
   role: SignalRole;
   interpolation: "linear" | "hold";
   group: string;
@@ -341,7 +343,8 @@ export interface ResearchEnvelopeMapV1 {
   axes: EnvelopeAxis[];
   points: EnvelopePoint[];
   outcomes: { id: EnvelopeOutcome; definition: string }[];
-  constraints: { id: string; category: string; title: string; basis: string; status: string }[];
+  /** Catalogue entries; their eng_dacs "basis" text is withheld by the policy. */
+  constraints: { id: string; category: string; title: string; status: string }[];
   interpolation: string;
   criteria: ResearchReplayV1["criteria"];
   privacy: ResearchReplayV1["privacy"];

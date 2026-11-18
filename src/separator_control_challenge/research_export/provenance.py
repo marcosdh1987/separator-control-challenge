@@ -44,6 +44,7 @@ def source_block(
     dataset: Dataset,
     documentation: tuple[DocReference, ...],
     run_id: str | None = None,
+    description: str | None = None,
 ) -> dict[str, Any]:
     """Where the numbers come from, without leaking private paths or hosts.
 
@@ -61,7 +62,9 @@ def source_block(
         "repositoryAccess": "private",
         "datasetId": dataset.dataset_id,
         "campaignId": str(manifest.get("campaign_id", "")),
-        "campaignDescription": str(manifest.get("description", "")),
+        # The eng_dacs description is free text from a private code base; only a
+        # curated description from the publication policy is published.
+        "campaignDescription": description,
         "datasetContractVersion": str(manifest.get("contract_version", "")),
         "datasetGeneratedAt": manifest.get("generated_at"),
         "gitSha": str(provenance.get("git_sha", "")),
@@ -92,7 +95,9 @@ def source_block(
     return block
 
 
-def evidence_block(dataset: Dataset) -> dict[str, Any]:
+def evidence_block(
+    dataset: Dataset, verbatim_fields: tuple[str, ...] = ()
+) -> dict[str, Any]:
     """Stage (confirmatory or exploratory) and calibration status.
 
     ``stage`` comes from the campaign configuration. A stage-1 campaign that
@@ -120,7 +125,9 @@ def evidence_block(dataset: Dataset) -> dict[str, Any]:
         "calibration": "calibrated" if calibrated else "synthetic_uncalibrated",
         "calibrationIds": sorted(calibration_ids),
         "scenarioEvidence": str(scenario.get("evidence") or "exploratory_synthetic"),
-        "modelUncertainties": [str(u) for u in scenario.get("uncertainties") or []],
+        "modelUncertainties": [str(u) for u in scenario.get("uncertainties") or []]
+        if "evidence.modelUncertainties" in verbatim_fields
+        else [],
         "campaignSeeds": [int(s) for s in dataset.manifest.get("seeds", [])],
         "frozenCriteriaSha256": resolved.get("frozen_criteria_sha256"),
     }
@@ -136,13 +143,22 @@ def criteria_block(dataset: Dataset) -> dict[str, Any]:
     }
 
 
-def variant_block(variant: dict[str, Any]) -> dict[str, Any]:
+def variant_block(
+    variant: dict[str, Any], allowed_references: tuple[str, ...] = ()
+) -> dict[str, Any]:
+    """Structured controller data only.
+
+    The free-text ``basis`` is withheld (it names internal studies and paths);
+    references are kept only when the policy lists them (literature citations).
+    """
     return {
         "variantId": variant.get("variant_id"),
         "policy": variant.get("policy"),
         "params": variant.get("policy_params") or {},
-        "basis": variant.get("basis"),
+        "basis": None,
         "provenance": variant.get("provenance"),
-        "references": list(variant.get("references") or []),
+        "references": [
+            ref for ref in variant.get("references") or [] if ref in allowed_references
+        ],
         "modifiers": list(variant.get("modifiers") or []),
     }

@@ -245,6 +245,12 @@ def build_dataset(root: Path, *, tamper_exit: bool = False) -> Path:
                 "variant_id": "tuned",
                 "policy": "plc_pid_gains",
                 "calibration_id": "uncalibrated-synthetic",
+                # Free text as eng_dacs writes it: must not reach public files.
+                "basis": "POC07 candidate from experiments/poc07/tuning.json",
+                "references": [
+                    "Skogestad S. (2003) Simple analytic rules.",
+                    "docs/adr/0009 (private decision record)",
+                ],
             },
         ],
         "runs": manifest_runs,
@@ -346,6 +352,9 @@ def write_policy(path: Path, **overrides: Any) -> Path:
             }
         ],
         "notPublishable": [],
+        "datasetDescriptions": {DATASET_ID: "Curated synthetic campaign."},
+        "allowedReferences": ["Skogestad S. (2003) Simple analytic rules."],
+        "verbatimFields": ["evidence.modelUncertainties"],
     }
     policy.update(overrides)
     path.write_text(json.dumps(policy))

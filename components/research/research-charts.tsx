@@ -35,7 +35,7 @@ function drawSignal(run: ChartRun, key: SignalKey, x0: number, x1: number, step:
   const replay = run.aligned.replay;
   const signal = replay.signals.get(key);
   if (!signal) return [];
-  const points = decimateMinMax(timesOf(replay), signal.data, x0, x1, BUCKETS, run.aligned.offsetS);
+  const points = decimateMinMax(timesOf(replay), signal.data, x0, x1, BUCKETS, run.aligned.offsetS, step);
   return step ? toSteps(points) : points;
 }
 
@@ -135,7 +135,9 @@ export function ResearchCharts({ charts, runs, x0, x1, cursorS, onSeek }: Resear
       return { label: `${run.name} ${label}`.trim(), value, color: CONTROLLER_STYLE[run.controller].color, dash };
     }));
 
-  const formatTime = (seconds: number) => formatClock(seconds);
+  // formatClock is a module function: a stable reference keeps the memoised
+  // chart bodies from redrawing on every animation frame.
+  const formatTime = formatClock;
 
   return (
     <section aria-labelledby="research-charts-heading" className="research-charts">

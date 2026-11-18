@@ -81,3 +81,10 @@ def test_digest_of_encoded_signal_matches_original_column() -> None:
     signal = encode_column(FLOAT_SPEC, values)
     assert signal["digest"] == float64_digest(values)
     assert float64_digest(decode_signal(signal, len(values))) == signal["digest"]
+
+
+def test_negative_zero_survives_change_points() -> None:
+    values = [0.0, -0.0, -0.0, 1.0]
+    signal, decoded = _round_trip(CHANGE_SPEC, values)
+    assert [math.copysign(1.0, v) for v in decoded] == [1.0, -1.0, -1.0, 1.0]
+    assert signal["changes"][1] == [1, -0.0]

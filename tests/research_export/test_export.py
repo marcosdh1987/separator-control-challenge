@@ -152,6 +152,27 @@ def test_private_material_is_not_exported(runs_root, policy_path, tmp_path) -> N
     assert replay["evidence"]["modelUncertainties"] == ["No solution gas."]
 
 
+def test_free_text_leaves_only_when_curated_in_the_policy(
+    runs_root, policy_path, tmp_path
+) -> None:
+    out = tmp_path / "out"
+    _export(runs_root, policy_path, out)
+    replay = _replay(out, "center__tuned__s7100")
+    # The manifest description is replaced by the curated one.
+    assert replay["source"]["campaignDescription"] == "Curated synthetic campaign."
+    # Variant basis is withheld; only allow-listed literature references remain.
+    assert replay["run"]["variant"]["basis"] is None
+    assert replay["run"]["variant"]["references"] == [
+        "Skogestad S. (2003) Simple analytic rules."
+    ]
+    text = json.dumps({k: v for k, v in replay.items() if k != "privacy"})
+    assert "POC07" not in text and "docs/adr" not in text
+    # Without the verbatim permission the model uncertainties are not copied.
+    strict = write_policy(tmp_path / "strict.json", verbatimFields=[])
+    _export(runs_root, strict, tmp_path / "strict")
+    assert _replay(tmp_path / "strict")["evidence"]["modelUncertainties"] == []
+
+
 def test_unavailable_runs_are_pending_not_invented(runs_root, tmp_path) -> None:
     policy = write_policy(
         tmp_path / "p.json",

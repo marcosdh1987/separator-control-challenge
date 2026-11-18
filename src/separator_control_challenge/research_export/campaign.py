@@ -120,9 +120,16 @@ def build_campaign_summary(
             "version": EXPORTER_VERSION,
             "policyId": policy.policy_id,
         },
-        "source": source_block(dataset, request.documentation),
-        "evidence": evidence_block(dataset),
-        "variants": [variant_block(v) for v in variants if v],
+        "source": source_block(
+            dataset,
+            request.documentation,
+            None,
+            policy.descriptions.get(dataset.dataset_id),
+        ),
+        "evidence": evidence_block(dataset, policy.verbatim_fields),
+        "variants": [
+            variant_block(v, policy.allowed_references) for v in variants if v
+        ],
         "runs": _table(dataset.result_table("runs"), RUN_COLUMNS),
         "criteria": criteria_block(dataset),
         "privacy": policy.privacy_block(),

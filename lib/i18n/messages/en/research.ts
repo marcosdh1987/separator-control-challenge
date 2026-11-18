@@ -454,9 +454,9 @@ export const research = {
     c2simc: "c2simc",
   } satisfies Record<ControllerKey, string>,
   controllerHelp: {
-    deployed: "The virtual PLC's default tuning (POC 07), model-derived.",
+    deployed: "The virtual PLC's default tuning, model-derived.",
     simc: "SIMC τc 120 s on campaign A's identified gain, plus a 10 s PV filter (Skogestad 2003).",
-    m6b: "The POC 07 M6 B tuning, model-derived.",
+    m6b: "M6 B, a model-derived tuning from an earlier identification of the same plant.",
     c2simc: "Both C2 SIMC designs together: LIC-102 Kc 8.42 with a 15 s filter, LIC-103 Kc 5.36 with a 10 s filter.",
   } satisfies Record<ControllerKey, string>,
   events: {

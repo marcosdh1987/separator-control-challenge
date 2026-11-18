@@ -60,6 +60,14 @@ class PublicationPolicy:
     campaign_summaries: tuple[DatasetRequest, ...]
     envelope_maps: tuple[DatasetRequest, ...]
     not_publishable: tuple[dict[str, str], ...]
+    #: Curated, reviewed description per dataset (the eng_dacs text is not copied).
+    descriptions: dict[str, str]
+    #: Literature references that may be published verbatim; others are dropped.
+    allowed_references: tuple[str, ...]
+    #: Free-text fields of eng_dacs that may be copied verbatim after review.
+    verbatim_fields: tuple[str, ...]
+    #: Curated replacements for column descriptions that cite internal labels.
+    signal_descriptions: dict[str, str]
 
     def privacy_block(self) -> dict[str, Any]:
         return {
@@ -145,6 +153,17 @@ def parse_policy(raw: dict[str, Any], sha256: str) -> PublicationPolicy:
             {"id": str(n["id"]), "reason": str(n["reason"])}
             for n in raw.get("notPublishable", [])
         ),
+        descriptions={
+            str(k): str(v) for k, v in (raw.get("datasetDescriptions") or {}).items()
+        },
+        allowed_references=_strings(
+            raw.get("allowedReferences", []), "allowedReferences"
+        ),
+        verbatim_fields=_strings(raw.get("verbatimFields", []), "verbatimFields"),
+        signal_descriptions={
+            str(k): str(v)
+            for k, v in (raw.get("signalDescriptionOverrides") or {}).items()
+        },
     )
 
 

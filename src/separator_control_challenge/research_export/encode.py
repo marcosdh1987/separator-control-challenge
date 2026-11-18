@@ -62,6 +62,21 @@ def _json_number(value: float, fmt: NumberFormat) -> float | int | None:
     return float(value)
 
 
+def _decode_number(written: float | int | None, fmt: NumberFormat) -> float:
+    """What a reader gets back from the written JSON number."""
+    if written is None:
+        return math.nan
+    parsed = float(repr(float(written)))  # the JSON text, parsed again
+    return float(np.float32(parsed)) if fmt == "f32" else parsed
+
+
+def _same_bits(a: float, b: float) -> bool:
+    """Equal including the sign of zero; NaN equals NaN."""
+    if math.isnan(a) or math.isnan(b):
+        return math.isnan(a) and math.isnan(b)
+    return a == b and math.copysign(1.0, a) == math.copysign(1.0, b)
+
+
 def number_format(spec: SignalSpec, array: np.ndarray) -> NumberFormat:
     if spec.number == "int":
         finite = array[~np.isnan(array)]
@@ -82,19 +97,14 @@ def encode_column(spec: SignalSpec, raw: Sequence[Any]) -> dict[str, Any]:
     if np.isinf(array).any():
         raise EncodingError(f"{spec.column}: infinite values cannot be exported")
     fmt = number_format(spec, array)
-    decoded = [
-        math.nan
-        if math.isnan(v)
-        else float(np.float32(v))
-        if fmt == "f32"
-        else float(v)
-        for v in array
-    ]
-    if fmt == "f32" and any(
-        not (math.isnan(a) and math.isnan(b)) and a != b
-        for a, b in zip(decoded, array.tolist(), strict=True)
-    ):  # pragma: no cover - guarded by _float32_exact
-        raise EncodingError(f"{spec.column}: float32 encoding would lose precision")
+    # Check the full round trip the reader performs (JSON text -> double ->
+    # float32 when the format is f32) on every value; refuse any loss.
+    for original in array.tolist():
+        written = _json_number(original, fmt)
+        if not _same_bits(_decode_number(written, fmt), original):
+            raise EncodingError(
+                f"{spec.column}: {fmt} encoding would alter {original!r}"
+            )
 
     payload: dict[str, Any] = {
         "numberFormat": fmt,
@@ -108,9 +118,7 @@ def encode_column(spec: SignalSpec, raw: Sequence[Any]) -> dict[str, Any]:
         changes: list[list[Any]] = []
         previous: float | None = None
         for index, value in enumerate(array.tolist()):
-            same = previous is not None and (
-                value == previous or (math.isnan(value) and math.isnan(previous))
-            )
+            same = previous is not None and _same_bits(value, previous)
             if not same:
                 changes.append([index, _json_number(value, fmt)])
             previous = value

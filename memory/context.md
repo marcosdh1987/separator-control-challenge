@@ -51,6 +51,14 @@
   training and challenge pages while staying out of lesson Presentation Mode. README
   now presents the project as continued independent work after OpenAI Build Week.
 
+- **Research Lab** (branch `feature/research-lab`, 2026-11-16/17, unstaged, PR text
+  drafted, awaiting Marcos's commit): `/research` replays runs of eng_dacs (private,
+  local at `~/Documents/dev/eng_dacs`, `main` after PR #48) exported offline as
+  `ResearchReplayV1` gzip JSON in `public/research/v1/` under the deny-by-default
+  `research/publication-policy.json`. Three C2 experiments (LIC-103 SIMC vs deployed,
+  LCV-102 lag 4 h, LCV-102 stiction) and the nominal-pilot envelope explorer, all with
+  authentic data; claims re-derived from the data. ADR-0004, `docs/research-lab.md`.
+
 ## Constraints & decisions in force
 
 - Physics runs at a fixed 0.05-second step inside a Web Worker; playback speed never
@@ -64,6 +72,12 @@
   and only for newly added gas-enabled runs.
 
 ## Open threads / next steps
+
+- Research Lab: confirm the policy review note (centre-point water cut 20 % and GOR
+  199 in the published factors) before committing `public/research/v1/`; campaign D
+  is pending (not in the policy).
+- Local frontend tests need Node 22/24, or `NODE_OPTIONS=--no-experimental-webstorage`
+  on Node 25+ (see learnings).
 
 - Before public release, manually verify the four external author links and review
   the final landing copy once in each locale.

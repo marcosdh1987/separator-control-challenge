@@ -30,7 +30,10 @@ export function ReplayControls({ state, dispatch, markers, stops, anchorPhase }:
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
-    if (event.key === " " && target.tagName !== "BUTTON" && target.tagName !== "INPUT") {
+    // Space keeps its native meaning on anything interactive (buttons, inputs,
+    // the events disclosure, selects, links); elsewhere in the group it toggles.
+    const interactive = ["BUTTON", "INPUT", "SUMMARY", "SELECT", "A", "TEXTAREA"].includes(target.tagName);
+    if (event.key === " " && !interactive) {
       event.preventDefault();
       dispatch({ type: "toggle" });
     }
@@ -103,9 +106,10 @@ export function ReplayControls({ state, dispatch, markers, stops, anchorPhase }:
 
       <p className="research-note">{copy.speedNote} {copy.keyboardHint}</p>
 
-      {state.pausedBefore ? (
-        <p className="research-paused" role="status">{copy.pausedBefore(state.pausedBefore.label)}</p>
-      ) : null}
+      {/* Mounted once so screen readers announce the text when it appears. */}
+      <p aria-live="polite" className={state.pausedBefore ? "research-paused" : "sr-only"} role="status">
+        {state.pausedBefore ? copy.pausedBefore(state.pausedBefore.label) : ""}
+      </p>
 
       <details className="research-events">
         <summary>{copy.events} ({stops.length})</summary>

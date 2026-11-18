@@ -63,6 +63,15 @@ describe("chart decimation", () => {
     expect(series).toContain(null);
   });
 
+  it("does not stretch a one-tick spike of a held signal across a bucket", () => {
+    const held = Float64Array.from({ length: n }, () => 50);
+    held[8_000] = 60;
+    const steps = toSteps(decimateMinMax(times, held, 0, n, 700, 0, true));
+    const atSpike = steps.filter((p): p is { t: number; v: number } => p !== null && p.v === 60).map((p) => p.t);
+    // Drawn from its own tick to the next one, not to the end of its bucket.
+    expect(Math.max(...atSpike) - Math.min(...atSpike)).toBe(1);
+  });
+
   it("draws held signals as steps", () => {
     expect(toSteps([{ t: 0, v: 1 }, { t: 1, v: 2 }])).toEqual([{ t: 0, v: 1 }, { t: 1, v: 1 }, { t: 1, v: 2 }]);
   });

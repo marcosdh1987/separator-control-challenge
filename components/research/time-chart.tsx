@@ -144,8 +144,11 @@ const ChartBody = memo(function ChartBody({
   );
 });
 
+const NO_LINES: ChartLine[] = [];
+const NO_MARKERS: ChartMarker[] = [];
+
 export function TimeChart({
-  title, unit, x0, x1, series, lines = [], markers = [], cursorS, readout, formatTime, onSeek, fixedDomain, height = 168,
+  title, unit, x0, x1, series, lines = NO_LINES, markers = NO_MARKERS, cursorS, readout, formatTime, onSeek, fixedDomain, height = 168,
 }: TimeChartProps) {
   const [frameRef, width] = useWidth<HTMLDivElement>();
   const [y0, y1] = useMemo(() => fixedDomain ?? domainOf(series, lines), [fixedDomain, series, lines]);

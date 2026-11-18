@@ -63,7 +63,11 @@ test.describe("Research Lab", () => {
   test("walks the envelope and opens a published point's replay", async ({ page }) => {
     await page.goto("/research/envelope");
     await expect(page.getByRole("button", { name: /__nominal__s7100:/ })).toHaveCount(40, { timeout: 20_000 });
-    await page.getByRole("button", { name: /^oat-bean_64th-2__nominal__s7100:/ }).click();
+    // Points are keyboard operable (focus + Enter). Using the keyboard also avoids
+    // racing the page's smooth scrolling with a pointer click on an SVG target.
+    const point = page.getByRole("button", { name: /^oat-bean_64th-2__nominal__s7100:/ });
+    await point.focus();
+    await page.keyboard.press("Enter");
     await expect(page.getByText("Selected run")).toBeVisible();
     await page.getByRole("link", { name: "Open the replay" }).click();
     await expect(page).toHaveURL(/\/research\/replay\/nominal-pilot-20261113T234459Z\/oat-bean_64th-2__nominal__s7100$/);

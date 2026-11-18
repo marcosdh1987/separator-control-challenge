@@ -274,7 +274,7 @@ INSTRUMENTATION = {
 #: integration test re-reads the enum definitions to keep them in step.
 CODE_TABLES: dict[str, dict[str, Any]] = {
     "plant.state": {
-        "source": "dacs.core.virtual_plc.types.PlantState",
+        "source": "eng_dacs PlantState enum",
         "codes": {
             "0": "STOPPED",
             "1": "PRESTART_CHECK",
@@ -286,7 +286,7 @@ CODE_TABLES: dict[str, dict[str, Any]] = {
         },
     },
     "plant.shut_in_status": {
-        "source": "dacs.core.virtual_plc.types.ShutInStatus",
+        "source": "eng_dacs ShutInStatus enum",
         "codes": {
             "0": "OPEN",
             "1": "COMMANDED",
@@ -296,7 +296,7 @@ CODE_TABLES: dict[str, dict[str, Any]] = {
         },
     },
     "well.nodal_status": {
-        "source": "dacs.core.nodal_coupling.CouplingStatus",
+        "source": "eng_dacs nodal CouplingStatus enum",
         "codes": {
             "0": "OFF",
             "1": "CONVERGED",
@@ -311,7 +311,7 @@ CODE_TABLES: dict[str, dict[str, Any]] = {
         },
     },
     "well.no_flow_reason": {
-        "source": "dacs.core.nodal_coupling.NoFlowReason",
+        "source": "eng_dacs nodal NoFlowReason enum",
         "codes": {
             "0": "NONE",
             "1": "BACKPRESSURE_ABOVE_RESERVOIR",
@@ -321,7 +321,7 @@ CODE_TABLES: dict[str, dict[str, Any]] = {
         },
     },
     "plant.trip_causes": {
-        "source": "dacs.core.virtual_plc.types.TripCause (bit positions)",
+        "source": "eng_dacs TripCause enum (bit positions)",
         "bits": {
             "0": "PSHH",
             "1": "LSHH",
@@ -687,6 +687,14 @@ FORBIDDEN_TOKENS = (
     "load_plan",
     '"packages"',
     '"platform"',
+    # Internal labels and paths of the private code base: proof-of-concept and
+    # fidelity-register ids, module paths, private ADR and process documents.
+    "POC0",
+    "poc0",
+    "SF-0",
+    "dacs.core",
+    "docs/adr/",
+    "docs/processes/",
 )
 
 
