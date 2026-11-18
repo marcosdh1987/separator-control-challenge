@@ -25,12 +25,22 @@ import {
   SURFACE_SHADER_PATCHES,
   type PhaseDepthPalette,
 } from "./phase-geometry";
-import type { SimulationSample, SimulationStatus } from "@/lib/simulation/types";
-import type { SceneModel } from "@/lib/visualization/scene-model";
+import type { SimulationStatus } from "@/lib/simulation/types";
+import type { PhaseGeometryModel } from "@/lib/visualization/scene-model";
+
+/**
+ * The few readings the surface motion needs. A simulator sample satisfies it as
+ * is; the Research Lab passes recorded values from its own replay.
+ */
+export interface PhaseMotionSource {
+  timeS: number;
+  total: { processValuePct: number };
+  flows: { totalInletM3H: number };
+}
 
 interface PhaseVolumesProps {
-  model: SceneModel;
-  sample: SimulationSample;
+  model: PhaseGeometryModel;
+  sample: PhaseMotionSource;
   status: SimulationStatus;
   quality: SceneQuality;
 }

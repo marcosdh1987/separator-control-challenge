@@ -9,7 +9,9 @@ export interface PhaseSurfaceTransform {
   chordWidth: number;
 }
 
-export function phaseSurfaceTransforms(model: SceneModel): {
+export function phaseSurfaceTransforms(
+  model: Pick<SceneModel, "totalSurfaceY" | "totalChordWidthM" | "interfaceSurfaceY" | "interfaceChordWidthM">,
+): {
   total: PhaseSurfaceTransform;
   interface: PhaseSurfaceTransform;
 } {

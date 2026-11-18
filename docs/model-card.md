@@ -104,3 +104,12 @@ DACS research platform, which models the same equipment at higher fidelity. The
 teaching material draws on the author's doctoral research notes on well testing and
 separator control. Neither is a validation of this simulator: they are the source of
 its structure, not evidence of its accuracy.
+
+## The Research Lab is a different simulator
+
+The `/research` pages replay recorded runs of eng_dacs, the author's DACS research
+simulator, exported offline under a publication policy. Nothing on those pages is
+computed by this simulator, and nothing in this card applies to them: eng_dacs has its
+own physics, parameters, evidence classes and limitations, which each replay states.
+Its well cases are synthetic and uncalibrated. See [Research Lab](research-lab.md).
+

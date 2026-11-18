@@ -327,6 +327,24 @@ web-test:
 web-e2e:
 	@npm run test:e2e
 
+# Research Lab: offline export of eng_dacs runs to static files (never at build
+# or run time). ENG_DACS_RUNS points at the eng_dacs experiments/envelope/runs
+# folder; nothing outside research/publication-policy.json is exported.
+#   make research-export ENG_DACS_RUNS=../eng_dacs/experiments/envelope/runs
+research-export:
+	@test -n "$(ENG_DACS_RUNS)" || { echo "❌ Set ENG_DACS_RUNS=<path to eng_dacs experiments/envelope/runs>"; exit 1; }
+	@. $(VENV_DIR)/bin/activate && PYTHONPATH=${PWD}/src python -m separator_control_challenge.research_export export \
+		--runs-root "$(ENG_DACS_RUNS)" --policy research/publication-policy.json --out public/research/v1 --prune
+
+# Check the committed research files (index, hashes, contract, privacy scan) and,
+# when ENG_DACS_RUNS is set, compare every published sample with its source trace.
+research-verify:
+	@. $(VENV_DIR)/bin/activate && PYTHONPATH=${PWD}/src python -m separator_control_challenge.research_export verify --out public/research/v1
+	@if [ -n "$(ENG_DACS_RUNS)" ]; then \
+		. $(VENV_DIR)/bin/activate && PYTHONPATH=${PWD}/src python -m separator_control_challenge.research_export check-identity --runs-root "$(ENG_DACS_RUNS)" --out public/research/v1 && \
+		ENG_DACS_RUNS_ROOT="$(ENG_DACS_RUNS)" PYTHONPATH=${PWD}/src pytest tests/research_export -q --no-cov; \
+	fi
+
 # =============================================================================
 # TEMPLATE SYNC WORKFLOW
 # =============================================================================
@@ -521,6 +539,8 @@ help:
 	@echo "  make web-dev              Alias for make run-dev"
 	@echo "  make web-test             Run frontend unit and component tests"
 	@echo "  make web-e2e              Run Playwright desktop and mobile flows"
+	@echo "  make research-export ENG_DACS_RUNS=<path>  Export published eng_dacs runs (offline)"
+	@echo "  make research-verify [ENG_DACS_RUNS=<path>] Verify published research files"
 	@echo "  make run-batch-test       Run batch tests against API (dataset v1)"
 	@echo "  make run-batch-test-custom Run batch tests with custom parameters"
 	@echo ""
@@ -577,4 +597,4 @@ clean:
 .DEFAULT_GOAL := help
 
 # Declare phony targets
-.PHONY: init install setup-hooks run-dev run-api run-question run-interactive opencode opencode-doctor toolbelt-doctor build-api run-api-docker stop-docker build-fresh clean help generate-requirements run-batch-test run-batch-test-custom test test-unit web-dev web-test web-e2e format lint lint-fast fix fix-force check typecheck ci template-remote-setup template-sync-preview template-sync-merge template-sync-rebase setup-claude-skills setup-antigravity-skills setup-opencode-skills sync-agents render-adapters sync-skills check-sync purge-external-skills
+.PHONY: init install setup-hooks run-dev run-api run-question run-interactive opencode opencode-doctor toolbelt-doctor build-api run-api-docker stop-docker build-fresh clean help generate-requirements run-batch-test run-batch-test-custom test test-unit web-dev web-test web-e2e research-export research-verify format lint lint-fast fix fix-force check typecheck ci template-remote-setup template-sync-preview template-sync-merge template-sync-rebase setup-claude-skills setup-antigravity-skills setup-opencode-skills sync-agents render-adapters sync-skills check-sync purge-external-skills

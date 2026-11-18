@@ -101,7 +101,36 @@ const levelToY = (levelPct: number) =>
 const chordAtY = (yM: number) =>
   2 * Math.sqrt(Math.max(0, VESSEL_RADIUS_M ** 2 - yM ** 2));
 
-const flowMotion = (flowM3H: number): FlowMotion => {
+/** The part of the scene model that only depends on the two level readings. */
+export type PhaseGeometryModel = Pick<
+  SceneModel,
+  "totalSurfaceY" | "interfaceSurfaceY" | "totalChordWidthM" | "interfaceChordWidthM" | "oilLayerHeightM" | "waterHeightM" | "oilRegionHeightM" | "gasHeightM"
+>;
+
+/**
+ * Phase surfaces from a total level and an interface level, both in percent of
+ * the vessel diameter. Shared by the simulator scene and the Research Lab
+ * replay, which draws levels recorded by a different simulator.
+ */
+export function phaseGeometryFromLevels(totalLevelPct: number, interfaceLevelPct: number): PhaseGeometryModel {
+  const totalPct = safePercentage(totalLevelPct);
+  const interfacePct = safePercentage(interfaceLevelPct);
+  const totalSurfaceY = levelToY(totalPct);
+  const interfaceSurfaceY = levelToY(interfacePct);
+  const oilLayerHeightM = Math.max(0, totalSurfaceY - interfaceSurfaceY);
+  return {
+    totalSurfaceY,
+    interfaceSurfaceY,
+    totalChordWidthM: chordAtY(totalSurfaceY),
+    interfaceChordWidthM: chordAtY(interfaceSurfaceY),
+    oilLayerHeightM,
+    waterHeightM: VESSEL_DIAMETER_M * interfacePct / 100,
+    oilRegionHeightM: oilLayerHeightM,
+    gasHeightM: VESSEL_DIAMETER_M * (1 - totalPct / 100),
+  };
+}
+
+export const flowMotion = (flowM3H: number): FlowMotion => {
   if (!Number.isFinite(flowM3H)) return { direction: 0, speed: 0, visibleFraction: 0 };
   const normalized = clamp(Math.abs(flowM3H) / 110, 0, 1);
   return {
@@ -137,12 +166,8 @@ export function formatEngineeringValue(
 }
 
 export function createSceneModel(sample: SimulationSample): SceneModel {
-  const totalPct = safePercentage(sample.total.processValuePct);
-  const interfacePct = safePercentage(sample.interface.processValuePct);
-  const totalSurfaceY = levelToY(totalPct);
-  const interfaceSurfaceY = levelToY(interfacePct);
-  const waterHeightM = VESSEL_DIAMETER_M * interfacePct / 100;
-  const oilLayerHeightM = Math.max(0, totalSurfaceY - interfaceSurfaceY);
+  const geometry = phaseGeometryFromLevels(sample.total.processValuePct, sample.interface.processValuePct);
+  const { totalSurfaceY, interfaceSurfaceY, oilLayerHeightM } = geometry;
   const markerY = sample.safety.source === "total"
     ? totalSurfaceY
     : sample.safety.source === "interface"
@@ -157,14 +182,7 @@ export function createSceneModel(sample: SimulationSample): SceneModel {
       : { beaconIntensity: 0.34, rimIntensity: 1.9, pulseHz: 0 };
 
   return {
-    totalSurfaceY,
-    interfaceSurfaceY,
-    totalChordWidthM: chordAtY(totalSurfaceY),
-    interfaceChordWidthM: chordAtY(interfaceSurfaceY),
-    oilLayerHeightM,
-    waterHeightM,
-    oilRegionHeightM: oilLayerHeightM,
-    gasHeightM: VESSEL_DIAMETER_M * (1 - totalPct / 100),
+    ...geometry,
     inletFlow: flowMotion(sample.flows.totalInletM3H),
     oilFlow: flowMotion(sample.flows.oilOutletM3H),
     waterFlow: flowMotion(sample.flows.waterOutletM3H),

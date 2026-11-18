@@ -1,0 +1,412 @@
+{
+  "policyId": "research-lab-public-v1",
+  "description": "The only list of eng_dacs data that may be published by the Research Lab. eng_dacs is a private repository; this site is public (Apache-2.0). Anything not listed here is withheld. Review this file before committing exported data.",
+  "defaultDecision": "deny",
+  "signals": [
+    "pressure.truth",
+    "level.total.truth",
+    "level.interface.truth",
+    "flow.inlet_liquid.truth",
+    "flow.oil.truth",
+    "flow.water.truth",
+    "flow.gas_std.truth",
+    "pressure.measured",
+    "level.total.measured",
+    "level.interface.measured",
+    "loop.gas.pv",
+    "loop.oil.pv",
+    "loop.water.pv",
+    "loop.gas.sp",
+    "loop.oil.sp",
+    "loop.water.sp",
+    "loop.gas.mode",
+    "loop.oil.mode",
+    "loop.water.mode",
+    "valve.gas.command",
+    "valve.oil.command",
+    "valve.water.command",
+    "valve.gas.stem",
+    "valve.oil.stem",
+    "valve.water.stem",
+    "plant.state",
+    "plant.shut_in_status",
+    "plant.trip_causes",
+    "plant.first_out",
+    "well.nodal_status",
+    "well.no_flow_reason",
+    "well.whp",
+    "choke.bean",
+    "boundary.water_cut",
+    "boundary.gor",
+    "alarm.pah",
+    "alarm.lah",
+    "alarm.high_water_level",
+    "alarm.oil_overflow",
+    "alarm.liquid_carryover"
+  ],
+  "factors": [
+    "reservoir_pressure_bar",
+    "productivity_index_m3_d_bar",
+    "water_cut_pct",
+    "gor_sm3_sm3",
+    "bean_64th",
+    "pressure_setpoint_bar"
+  ],
+  "plantConstants": [
+    "vessel_diameter_m",
+    "vessel_length_m",
+    "vessel_orientation",
+    "gas_valve_kv",
+    "oil_valve_kv",
+    "water_valve_kv",
+    "valve_characteristic",
+    "valve_downstream_pressure_bar",
+    "lshh_pct",
+    "pshh_bar",
+    "retention_time_design_s"
+  ],
+  "datasetDescriptions": {
+    "control-c2-water-replication-20261115": "Campaign C2 on LIC-103 (confirmatory, pre-registered): one SIMC design with a 10 s PV filter against the deployed PID on eight scenarios, new seeds 7200-7202, criteria frozen before the runs.",
+    "control-c2-lag-followup-20261116": "C2 robustness follow-up (exploratory): LCV-102 actuator lag 20 s under M6 B and c2simc over a 4 h hold, to tell a damped oscillation from a slowly diverging one.",
+    "control-c2-robustness-e-pilot-20261116": "C2 designs under perturbations (exploratory): c2simc against the deployed PID and M6 B under water-cut and reservoir-pressure steps, valve stiction and actuator lags, 1 h hold, three scenarios, seed 7100.",
+    "nominal-pilot-20261113T234459Z": "Stage-1 operating-envelope pilot of the nominal plant: centre point, one-factor-at-a-time sweeps and a seeded Latin hypercube over nine boundary conditions, one seed."
+  },
+  "allowedReferences": [
+    "Skogestad S. (2003) Simple analytic rules for model reduction and PID controller tuning. J. Process Control 13, 291-309",
+    "Choudhury M.A.A.S., Shah S.L., Thornhill N.F. (2005) Modelling valve stiction. Control Eng. Practice 13(5), 641-658"
+  ],
+  "verbatimFields": [
+    "evidence.modelUncertainties"
+  ],
+  "signalDescriptionOverrides": {
+    "well.nodal_status": "dynamic nodal coupling status (1 CONVERGED)",
+    "well.no_flow_reason": "dynamic nodal coupling: why the well delivers no flow"
+  },
+  "withheld": [
+    {
+      "field": "manifest.config.raw, config.resolved.baseline, config.resolved.baseline_provenance",
+      "reason": "Verbatim campaign YAML with the baseline boundary conditions and their provenance notes; only its SHA-256 is published."
+    },
+    {
+      "field": "run.load_plan, run.prescreen, protocol.load.readback",
+      "reason": "Register-level load plan of the virtual PLC; not needed to read a result."
+    },
+    {
+      "field": "factors: oil_api_gravity, salinity_ppm, wellhead_temperature_c, reservoir_temperature_c, tubing_*",
+      "reason": "Fluid and completion values of the field-derived centre point; not needed by the viewer."
+    },
+    {
+      "field": "provenance.packages, provenance.platform, provenance.python",
+      "reason": "Workstation details."
+    },
+    {
+      "field": "provenance.source_sha256",
+      "reason": "Per-file hash map of a private code base; replaced by one digest of the map."
+    },
+    {
+      "field": "provenance.git_dirty",
+      "reason": "File names of uncommitted changes; replaced by their count."
+    },
+    {
+      "field": "run.cpu, run.wall_seconds",
+      "reason": "Host timing, not a result."
+    },
+    {
+      "field": "trace columns not listed in signals",
+      "reason": "Storage, metrology, nodal-solver internals and flow-iron columns are not needed by the replay."
+    },
+    {
+      "field": "report.html, report.md, figures/",
+      "reason": "The private report is not republished; the site re-derives every shown number from the run records."
+    },
+    {
+      "field": "manifest.description, variant.basis, constraint catalogue basis",
+      "reason": "Free text of a private code base (internal study labels, register ids, module and document paths); curated descriptions from this policy are published instead."
+    },
+    {
+      "field": "variant references other than allowedReferences",
+      "reason": "Internal file and decision-record paths; only literature citations are published."
+    }
+  ],
+  "replays": [
+    {
+      "dataset": "control-c2-water-replication-20261115",
+      "run": "center__nominal__s7200",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.6",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-water-replication-20261115",
+      "run": "center__simc-tc120-f10__s7200",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.6",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-water-replication-20261115",
+      "run": "pi_1p5-000__nominal__s7200",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.6",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-water-replication-20261115",
+      "run": "pi_1p5-000__simc-tc120-f10__s7200",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.6",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-lag-followup-20261116",
+      "run": "high_rate-000__lcv102-lag-m6b__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-lag-followup-20261116",
+      "run": "high_rate-000__lcv102-lag-c2simc__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-robustness-e-pilot-20261116",
+      "run": "center__lcv102-stick-nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        },
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.5",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-robustness-e-pilot-20261116",
+      "run": "center__lcv102-stick-m6b__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        },
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.5",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-robustness-e-pilot-20261116",
+      "run": "center__lcv102-stick-c2simc__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        },
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.5",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "center__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "oat-reservoir_pressure_bar-0__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "oat-productivity_index_m3_d_bar-0__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "oat-water_cut_pct-1__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "oat-gor_sm3_sm3-1__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "oat-bean_64th-2__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "lhs-b2-000__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "run": "lhs-b2-008__nominal__s7100",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        }
+      ]
+    }
+  ],
+  "campaignSummaries": [
+    {
+      "dataset": "control-c2-water-replication-20261115",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.6",
+          "access": "private"
+        },
+        {
+          "path": "experiments/envelope/config/control_c2_water_replication.yaml",
+          "section": "header (pre-registration)",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-lag-followup-20261116",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        }
+      ]
+    },
+    {
+      "dataset": "control-c2-robustness-e-pilot-20261116",
+      "documentation": [
+        {
+          "path": "docs/simulation/controllability_campaigns.md",
+          "section": "9.7",
+          "access": "private"
+        }
+      ]
+    }
+  ],
+  "envelopeMaps": [
+    {
+      "dataset": "nominal-pilot-20261113T234459Z",
+      "documentation": [
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "11",
+          "access": "private"
+        },
+        {
+          "path": "docs/simulation/operating_envelope.md",
+          "section": "5",
+          "access": "private"
+        }
+      ],
+      "replayRuns": [
+        "center__nominal__s7100",
+        "oat-reservoir_pressure_bar-0__nominal__s7100",
+        "oat-productivity_index_m3_d_bar-0__nominal__s7100",
+        "oat-water_cut_pct-1__nominal__s7100",
+        "oat-gor_sm3_sm3-1__nominal__s7100",
+        "oat-bean_64th-2__nominal__s7100",
+        "lhs-b2-000__nominal__s7100",
+        "lhs-b2-008__nominal__s7100"
+      ]
+    }
+  ],
+  "notPublishable": [
+    {
+      "id": "eng_dacs well-case presets",
+      "reason": "Representative research operating points derived from measured field data. Their identifiers and provenance notes are not exported; only the synthetic scenarios simulated around them are."
+    },
+    {
+      "id": "eng_dacs report.html of each dataset",
+      "reason": "Private report of a private repository; links point to it as private material."
+    }
+  ],
+  "reviewNotes": [
+    "The centre scenario of each campaign uses the boundary conditions of a representative research operating point (water cut 20 %, GOR 199 Sm3/Sm3 in the factors). eng_dacs states these are rounded, representative values and not a field-calibrated well. Confirm that publishing these two factor values is acceptable before merging or keeping public/research/v1 on a public branch."
+  ]
+}

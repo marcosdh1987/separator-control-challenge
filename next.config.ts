@@ -21,6 +21,9 @@ const basePath = process.env.BASE_PATH ?? "";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // The Research Lab fetches its static data files at run time and needs the
+  // same base path as the pages when the site is served from a subfolder.
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   ...(staticExport
     ? {
         output: "export",

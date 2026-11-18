@@ -38,6 +38,10 @@ does and does not represent is stated plainly in the [model card](docs/model-car
 - **Honest failure modes**: saturation, integral windup, derivative amplifying sensor
   noise, and a slug that a purely reactive controller cannot fully catch.
 - Interactive 3D view of the vessel with a P&ID diagram alternative.
+- **Research Lab** at `/research`: replay recorded runs of the author's eng_dacs research
+  simulator (a separate, higher-fidelity model), accelerated up to ×50, with the 3D scene,
+  a technical P&ID view, synchronized charts, controller comparisons and an operating-envelope
+  explorer. Read-only and static: the data is exported offline and verified bit for bit.
 - No backend, no account, no telemetry, and no AI at runtime.
 
 ## Using it in a course
@@ -128,6 +132,7 @@ make ci
 ## Documentation
 
 - [Model card](docs/model-card.md) — what the simulator represents, and what it does not
+- [Research Lab](docs/research-lab.md) — replay contract, export procedure, design and limitations
 - [Physical model](docs/physical-model.md) — equations, correlations and defaults
 - [Scoring](docs/scoring.md) — how a run is judged
 - [Internationalisation](docs/i18n.md) — how the bilingual layer works
@@ -193,6 +198,13 @@ permite revelar la tarea cuando quieras.
 
 La ruta `/challenge` es el simulador libre, para quien prefiera explorar en vez de
 que lo lleven de la mano.
+
+La ruta `/research` es el **Research Lab**: reproduce corridas registradas en eng_dacs,
+el simulador de investigación del autor (un modelo distinto y de mayor fidelidad), con
+vista 3D, vista técnica P&ID, gráficos sincronizados, comparación de controladores y un
+explorador de la envolvente operativa. Es de solo lectura: los datos se exportan fuera
+de línea, se verifican bit a bit y no son datos de campo ni un sistema de control
+industrial validado.
 
 ## Autor
 

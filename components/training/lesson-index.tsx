@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Download, Lock, Upload } from "lucide-react";
+import { CheckCircle2, Download, FlaskConical, Lock, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 
@@ -78,6 +78,13 @@ export function LessonIndex() {
           );
         })}
       </ol>
+
+      <section aria-labelledby="training-research-bridge" className="training-research-bridge">
+        <p className="eyebrow"><FlaskConical aria-hidden="true" /> {messages.research.bridge.eyebrow}</p>
+        <h2 id="training-research-bridge">{messages.research.bridge.title}</h2>
+        <p>{messages.research.bridge.body}</p>
+        <Link className="secondary-button" href="/research">{messages.research.bridge.link}</Link>
+      </section>
 
       <section aria-labelledby="training-progress-tools" className="training-tools">
         <h2 id="training-progress-tools">{copy.index.exportProgress}</h2>
